@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { ActionResult } from "@/lib/action-result";
 import {
   createEstablecimientoAction,
@@ -31,9 +32,10 @@ const FIELDS: {
   label: string;
   inputMode?: "decimal" | "numeric";
   autoComplete?: string;
+  wide?: boolean;
 }[] = [
-  { name: "nombreComercial", label: "Nombre comercial" },
-  { name: "direccion", label: "Dirección", autoComplete: "street-address" },
+  { name: "nombreComercial", label: "Nombre comercial", wide: true },
+  { name: "direccion", label: "Dirección", autoComplete: "street-address", wide: true },
   { name: "distrito", label: "Distrito" },
   { name: "giro", label: "Giro o actividad" },
   { name: "areaM2", label: "Área techada total (m²)", inputMode: "decimal" },
@@ -48,14 +50,14 @@ type Props = {
 
 export function EstablecimientoForm({ open, onOpenChange, establecimiento }: Props) {
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-xl">
         <FormBody
           establecimiento={establecimiento}
           onDone={() => onOpenChange(false)}
         />
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -94,20 +96,20 @@ function FormBody({
 
   return (
     <>
-      <SheetHeader>
-        <SheetTitle>
+      <DialogHeader>
+        <DialogTitle>
           {establecimiento ? "Editar establecimiento" : "Nuevo establecimiento"}
-        </SheetTitle>
-        <SheetDescription>
+        </DialogTitle>
+        <DialogDescription>
           Completa los datos del local donde se realizará la inspección.
-        </SheetDescription>
-      </SheetHeader>
-      <form action={formAction} className="flex flex-1 flex-col gap-4 px-4 pb-4" noValidate>
+        </DialogDescription>
+      </DialogHeader>
+      <form action={formAction} className="grid gap-4 sm:grid-cols-2" noValidate>
         {FIELDS.map((f) => {
           const error = fieldErrors[f.name]?.[0];
           const errorId = `${f.name}-error`;
           return (
-            <div key={f.name} className="flex flex-col gap-1.5">
+            <div key={f.name} className={`flex flex-col gap-1.5 ${f.wide ? "sm:col-span-2" : ""}`}>
               <Label htmlFor={f.name}>{f.label}</Label>
               <Input
                 id={f.name}
@@ -130,13 +132,18 @@ function FormBody({
           );
         })}
         {generalError && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-sm text-destructive sm:col-span-2">
             {generalError}
           </p>
         )}
-        <Button type="submit" disabled={pending} className="mt-auto h-11 w-full">
-          {pending ? "Guardando…" : "Guardar"}
-        </Button>
+        <div className="mt-2 flex justify-end gap-2 sm:col-span-2">
+          <DialogClose render={<Button type="button" variant="outline" className="h-11" />}>
+            Cancelar
+          </DialogClose>
+          <Button type="submit" disabled={pending} className="h-11 px-6">
+            {pending ? "Guardando…" : "Guardar"}
+          </Button>
+        </div>
       </form>
     </>
   );
