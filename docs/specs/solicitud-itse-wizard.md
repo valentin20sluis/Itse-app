@@ -4,6 +4,11 @@ Estado: approved
 
 Depende de `solicitud-itse-datos.md` (debe estar `done`: tablas, schemas, reglas y servicios). El listado de expedientes y la descarga protegida de archivos están en `mis-expedientes.md`.
 
+## Entrega en dos fases (decisión del usuario)
+El usuario pidió ver primero el formulario, sin esperar el token de UploadThing (aún sin cuenta).
+- **Fase A (ahora):** T2 sin `removeDocumentoAction`, T4, T5 y T6. El paso 3 "Documentos" muestra un aviso ("La subida de documentos estará disponible pronto") y la lista de documentos requeridos, sin subir. `enviarSolicitudAction` ya valida documentos requeridos, así que el envío responde "incompleto" con los documentos faltantes hasta que exista la Fase B.
+- **Fase B (con el token):** T1, T3, `removeDocumentoAction` y conectar el paso Documentos real.
+
 ## Objetivo
 Que el cliente cree una solicitud de ITSE para uno de sus establecimientos en `/mi-cuenta/nueva-solicitud`, mediante un wizard de 5 pasos con borrador guardable y retomable, subida de documentos (PDF/imágenes) con UploadThing y envío final que genera el número de expediente y deja el estado en `PRESENTADO`.
 
@@ -79,6 +84,7 @@ Que el cliente cree una solicitud de ITSE para uno de sus establecimientos en `/
 - Grupo paralelo: G2
 - Cubre: AC-4, AC-5, AC-6, AC-7, AC-14
 - Contrato para la UI: `saveBorradorAction(paso: 1|2|3|4, id: string | null, prev: ActionResult<Expediente> | null, formData: FormData): Promise<ActionResult<Expediente>>`; `enviarSolicitudAction(id: string, prev: ActionResult<{ id: string; numero: string }> | null, formData: FormData)`; `removeDocumentoAction(documentoId: string): Promise<ActionResult<{ id: string }>>`.
+- Nota: Fase A hecha; falta removeDocumentoAction en Fase B.
 - Tests: con `requireRole`, los servicios, `next/cache` y `deleteUploadedFile` mockeados: `requireRole("cliente")` primero; datos inválidos → `fieldErrors` sin llamar al servicio; el servicio recibe el usuario de `requireRole` aunque el `FormData` traiga `usuarioId`; paso inválido, id no uuid y `null` del servicio → mensajes de AC-5; envío `incompleto`/`no_encontrado`/éxito; `revalidatePath` solo en éxito; quitar documento intenta borrar el remoto y tolera su fallo.
 - [ ] Completada
 
@@ -96,7 +102,7 @@ Que el cliente cree una solicitud de ITSE para uno de sus establecimientos en `/
 - Grupo paralelo: G3
 - Cubre: AC-9, AC-12, AC-13, AC-15
 - Tests: `declaracion.test.ts` — los tres textos distintos y que ninguno esté vacío. (`StepResumen` y `WizardStepper` son presentacionales, SETUP.md 3.2; su accesibilidad se revisa por lectura y la integración en el test de T5.)
-- [ ] Completada
+- [x] Completada
 
 ### T5 — Wizard (shell) y pasos 1 a 3
 - Archivos: `modules/expedientes/components/SolicitudWizard.tsx` (crear: `"use client"`, estado del paso y del expediente), `modules/expedientes/components/StepEstablecimiento.tsx` (crear), `modules/expedientes/components/StepRiesgo.tsx` (crear), `modules/expedientes/components/StepSolicitante.tsx` (crear), `modules/expedientes/components/SolicitudWizard.test.tsx` (crear)
@@ -105,7 +111,7 @@ Que el cliente cree una solicitud de ITSE para uno de sus establecimientos en `/
 - Cubre: AC-10, AC-12 (integración), AC-15
 - Contrato: `SolicitudWizard({ establecimientos, borrador, documentos, defaultsSolicitante })` compone `WizardStepper`, los 5 pasos y las acciones; cada paso recibe `onSaved(expediente)` y `onBack()`.
 - Tests: `SolicitudWizard.test.tsx` — con acciones y `useUploadThing` mockeados: arranca en el paso 1 con `aria-current="step"`; "Siguiente" con una acción exitosa avanza al paso 2; con `fieldErrors` permanece y muestra el error junto al campo; en el paso 2 marcar sótano con un local de 4 pisos muestra la sugerencia correspondiente y el aviso fijo; con un borrador precarga sus valores.
-- [ ] Completada
+- [x] Completada (sin paso Documentos real: Fase B)
 
 ### T6 — Página `/mi-cuenta/nueva-solicitud`
 - Archivos: `app/mi-cuenta/nueva-solicitud/page.tsx` (crear), `app/mi-cuenta/nueva-solicitud/page.test.tsx` (crear)
@@ -114,7 +120,7 @@ Que el cliente cree una solicitud de ITSE para uno de sus establecimientos en `/
 - Cubre: AC-8
 - Detalle: Server Component: `requireRole("cliente")`, `listOwnEstablecimientos`, lectura de `searchParams.borrador` (uuid; `getExpedienteById` + `listDocumentos` solo si es propio y `BORRADOR`), `defaultsSolicitante` desde el usuario; sin lógica propia más allá de componer.
 - Tests: `page.test.tsx` (estilo de `app/mi-cuenta/establecimientos/page.test.tsx`) — `requireRole("cliente")` antes de leer datos; si lanza redirect no se llama a ningún servicio; sin establecimientos renderiza el estado vacío; `borrador` no uuid o con servicio `null` renderiza solicitud nueva; `borrador` en estado distinto de `BORRADOR` se ignora.
-- [ ] Completada
+- [x] Completada
 
 ## Grupos paralelos
 G1: T1. G2: T2. G3: T3, T4 (archivos disjuntos). G4: T5. G5: T6.
