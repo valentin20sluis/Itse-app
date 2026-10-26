@@ -43,3 +43,47 @@ Installed libraries that are not yet wired into the app (no `QueryClientProvider
 ## Next.js version caveat
 
 `AGENTS.md` (imported above) says this Next.js has breaking changes versus older versions. The bundled docs live in `node_modules/next/dist/docs/` (`01-app` for App Router); consult them before using an API from memory. `next dev` regenerates the `AGENTS.md` block, so leave it in place.
+
+---
+
+## Proyecto: ITSE App
+
+### Qué es
+
+Sistema web para gestionar el trámite de **Inspección Técnica de Seguridad en Edificaciones (ITSE)** de la oficina de **Gestión del Riesgo de Desastres y Defensa Civil (GRDyDC)** de una municipalidad distrital del Perú.
+
+Hoy el trámite es manual (expedientes en papel por duplicado, derivaciones físicas entre áreas). El sistema lo digitaliza: el administrado presenta su solicitud en línea, sigue su expediente, subsana observaciones y descarga su certificado; la oficina gestiona el flujo con plazos legales controlados.
+
+**Proyecto académico** (trabajo final de Programación Web Fullstack con IA). No es un sistema oficial. Usar siempre datos ficticios.
+
+### Documentos del proyecto (leer antes de escribir una spec o código)
+
+- `docs/constitucion-itse.md` → integraciones (Clerk, Neon, Drizzle, UploadThing, PDF), seguridad por rol y convenciones propias. Complementa a `docs/SETUP.md`, que tiene prioridad en estructura y convenciones.
+- `docs/reglas-negocio-itse.md` → reglas del dominio según el DS 002-2018-PCM y el Manual de Ejecución de ITSE del CENEPRED. **Toda lógica de negocio debe respetarlo**, y el `reviewer` debe validarlo.
+
+### Roles
+
+| Rol | Usuario real | Resumen |
+|---|---|---|
+| `cliente` | Administrado (dueño o representante del establecimiento) | Registra establecimientos, crea solicitudes, sube documentos, subsana, descarga certificado |
+| `admin` | 2 trabajadores de GRDyDC | Gestiona la bandeja de expedientes, designa inspectores, registra diligencias y observaciones |
+| `superadmin` | Jefe de GRDyDC | Todo lo del admin, más aprobar certificados, gestionar usuarios, catálogos y reportes |
+
+Las áreas externas (Servicios Públicos, Logística, Comercialización) **no son usuarios**: se representan como estados del expediente. Los **inspectores tampoco son usuarios** en el MVP: son registros gestionados por el admin.
+
+### Orden sugerido de specs (`docs/specs/<slug>.md`)
+
+Cada spec tiene máximo 6 tareas; si una funcionalidad no entra, el agente `spec` la divide en dos.
+
+1. `auth-roles` — Clerk, sincronización de usuarios, protección por rol, tabla `usuarios`
+2. `establecimientos` — CRUD de establecimientos del cliente
+3. `solicitud-itse` — wizard de solicitud y subida de documentos
+4. `bandeja-estados` — bandeja del admin, máquina de estados, historial
+5. `inspeccion` — inspectores, designación, constancia PDF, diligencia
+6. `subsanacion-plazos` — observaciones, catálogo, días hábiles
+7. `certificados` — aprobación del superadmin, PDF con QR, vigencia
+8. `dashboard-reportes` — métricas y certificados por vencer
+9. `verificacion-publica` — página pública para validar certificados
+10. `landing` — landing del trámite
+
+MVP mínimo: specs 1 a 5 y 7.
