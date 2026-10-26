@@ -1,8 +1,22 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, notExists, notInArray } from "drizzle-orm";
 import { db } from "@/db";
-import { establecimientos } from "@/db/schema";
+import { establecimientos, expedientes } from "@/db/schema";
 import type { EstablecimientoInput } from "@/modules/establecimientos/schemas/establecimiento.schema";
 import type { Actor, Establecimiento } from "@/modules/establecimientos/types/establecimiento.types";
+
+export class EstablecimientoConExpedientesError extends Error {
+  constructor() {
+    super("El establecimiento tiene expedientes en trámite");
+    this.name = "EstablecimientoConExpedientesError";
+  }
+}
+
+const ESTADOS_NO_BLOQUEANTES: (typeof expedientes.$inferSelect.estado)[] = [
+  "BORRADOR",
+  "ANULADO",
+  "ENTREGADO",
+  "DERIVADO_COMERCIALIZACION",
+];
 
 function assertCliente(actor: Actor) {
   if (actor.rol !== "cliente") throw new Error("No autorizado");
@@ -79,7 +93,27 @@ export async function archiveEstablecimiento(
   const [row] = await db
     .update(establecimientos)
     .set({ archivadoAt: now, updatedAt: now })
-    .where(ownActive(actor, id))
+    .where(
+      and(
+        ownActive(actor, id),
+        notExists(
+          db
+            .select({ id: expedientes.id })
+            .from(expedientes)
+            .where(
+              and(
+                eq(expedientes.establecimientoId, establecimientos.id),
+                notInArray(expedientes.estado, ESTADOS_NO_BLOQUEANTES),
+              ),
+            ),
+        ),
+      ),
+    )
     .returning();
-  return row ?? null;
+  if (row) return row;
+
+  // Solo se revela el bloqueo si el establecimiento es propio y está activo.
+  const [own] = await db.select().from(establecimientos).where(ownActive(actor, id)).limit(1);
+  if (own) throw new EstablecimientoConExpedientesError();
+  return null;
 }

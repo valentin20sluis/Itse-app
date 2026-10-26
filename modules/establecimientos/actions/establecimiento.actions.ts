@@ -7,6 +7,7 @@ import { establecimientoSchema } from "@/modules/establecimientos/schemas/establ
 import {
   archiveEstablecimiento,
   createEstablecimiento,
+  EstablecimientoConExpedientesError,
   updateEstablecimiento,
 } from "@/modules/establecimientos/services/establecimiento.service";
 import type { Establecimiento } from "@/modules/establecimientos/types/establecimiento.types";
@@ -14,6 +15,7 @@ import { requireRole } from "@/modules/usuarios/services/authorization.service";
 
 const PATH = "/mi-cuenta/establecimientos";
 const NO_ENCONTRADO = "No se encontró el establecimiento.";
+const CON_EXPEDIENTES = "No puedes archivar un establecimiento con expedientes en trámite.";
 const ERROR_GENERICO = "No se pudo completar la operación. Inténtalo de nuevo.";
 
 const idSchema = z.uuid();
@@ -35,7 +37,8 @@ async function run<T>(operation: () => Promise<T | null>): Promise<ActionResult<
     if (!data) return { ok: false, error: NO_ENCONTRADO };
     revalidatePath(PATH);
     return { ok: true, data };
-  } catch {
+  } catch (e) {
+    if (e instanceof EstablecimientoConExpedientesError) return { ok: false, error: CON_EXPEDIENTES };
     return { ok: false, error: ERROR_GENERICO };
   }
 }

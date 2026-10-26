@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   update: vi.fn(),
   archive: vi.fn(),
+  ConExpedientesError: class extends Error {},
 }));
 
 vi.mock("@/modules/usuarios/services/authorization.service", () => ({
@@ -16,6 +17,7 @@ vi.mock("@/modules/establecimientos/services/establecimiento.service", () => ({
   createEstablecimiento: mocks.create,
   updateEstablecimiento: mocks.update,
   archiveEstablecimiento: mocks.archive,
+  EstablecimientoConExpedientesError: mocks.ConExpedientesError,
 }));
 
 import {
@@ -130,6 +132,16 @@ describe("archiveEstablecimientoAction", () => {
     mocks.archive.mockResolvedValue(null);
     const res = await archiveEstablecimientoAction(ID);
     expect(res).toEqual({ ok: false, error: NO_ENCONTRADO });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("con expedientes en trámite devuelve el mensaje del error tipado sin revalidar", async () => {
+    mocks.archive.mockRejectedValue(new mocks.ConExpedientesError());
+    const res = await archiveEstablecimientoAction(ID);
+    expect(res).toEqual({
+      ok: false,
+      error: "No puedes archivar un establecimiento con expedientes en trámite.",
+    });
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 

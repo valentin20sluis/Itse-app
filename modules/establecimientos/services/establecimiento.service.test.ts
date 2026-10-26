@@ -1,17 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type Row = Record<string, unknown>;
-type Pred = (row: Row) => boolean;
+type Pred = (row: Row, outer?: Row) => boolean;
 
-const store = vi.hoisted(() => ({ rows: [] as Row[], seq: 0 }));
+const store = vi.hoisted(() => ({ rows: [] as Row[], expedientes: [] as Row[], seq: 0 }));
 
 vi.mock("drizzle-orm", () => {
   const key = (col: { name: string }) =>
     col.name.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+  const isCol = (v: unknown): v is { name: string } =>
+    typeof v === "object" && v !== null && "name" in v;
   return {
-    eq: (col: { name: string }, v: unknown): Pred => (r) => r[key(col)] === v,
+    eq: (col: { name: string }, v: unknown): Pred => (r, o) =>
+      r[key(col)] === (isCol(v) ? o?.[key(v)] : v),
     isNull: (col: { name: string }): Pred => (r) => r[key(col)] == null,
-    and: (...ps: Pred[]): Pred => (r) => ps.every((p) => p(r)),
+    notInArray: (col: { name: string }, vs: unknown[]): Pred => (r) => !vs.includes(r[key(col)]),
+    and: (...ps: Pred[]): Pred => (r, o) => ps.every((p) => p(r, o)),
+    notExists: (sub: { pred: Pred }): Pred => (r) =>
+      !store.expedientes.some((e) => sub.pred(e, r)),
     desc: () => "desc",
   };
 });
@@ -19,9 +25,10 @@ vi.mock("drizzle-orm", () => {
 vi.mock("@/db", () => ({
   db: {
     select: () => ({
-      from: () => ({
+      from: (table: object) => ({
         where: (p: Pred) => {
-          const found = () => store.rows.filter(p);
+          if ("estado" in table) return { pred: p };
+          const found = () => store.rows.filter((r) => p(r));
           return {
             orderBy: async () => found().sort((a, b) => Number(b.seq) - Number(a.seq)),
             limit: async () => found().slice(0, 1),
@@ -42,7 +49,7 @@ vi.mock("@/db", () => ({
       set: (s: Row) => ({
         where: (p: Pred) => ({
           returning: async () => {
-            const hit = store.rows.filter(p);
+            const hit = store.rows.filter((r) => p(r));
             hit.forEach((r) => Object.assign(r, s));
             return hit;
           },
@@ -55,6 +62,7 @@ vi.mock("@/db", () => ({
 import {
   archiveEstablecimiento,
   createEstablecimiento,
+  EstablecimientoConExpedientesError,
   getEstablecimientoById,
   listOwnEstablecimientos,
   updateEstablecimiento,
@@ -73,6 +81,7 @@ const input = {
 
 beforeEach(() => {
   store.rows = [];
+  store.expedientes = [];
   store.seq = 0;
 });
 
@@ -125,6 +134,43 @@ describe("IDOR", () => {
     expect(await getEstablecimientoById(A, "no-existe")).toBeNull();
     expect(await updateEstablecimiento(A, "no-existe", input)).toBeNull();
     expect(await archiveEstablecimiento(A, "no-existe")).toBeNull();
+  });
+});
+
+describe("guardia de archivado con expedientes", () => {
+  it("con expediente en trámite lanza el error y no archiva", async () => {
+    const e = await createEstablecimiento(A, input);
+    store.expedientes = [
+      { establecimientoId: e.id, estado: "BORRADOR" },
+      { establecimientoId: e.id, estado: "PRESENTADO" },
+    ];
+    await expect(archiveEstablecimiento(A, e.id)).rejects.toBeInstanceOf(
+      EstablecimientoConExpedientesError,
+    );
+    expect(store.rows[0].archivadoAt).toBeNull();
+  });
+
+  it("con solo borradores o finalizados archiva", async () => {
+    const e = await createEstablecimiento(A, input);
+    store.expedientes = [
+      { establecimientoId: e.id, estado: "BORRADOR" },
+      { establecimientoId: e.id, estado: "ENTREGADO" },
+      { establecimientoId: e.id, estado: "ANULADO" },
+      { establecimientoId: e.id, estado: "DERIVADO_COMERCIALIZACION" },
+    ];
+    expect((await archiveEstablecimiento(A, e.id))?.archivadoAt).toBeInstanceOf(Date);
+  });
+
+  it("ajeno con expedientes en trámite devuelve null sin lanzar", async () => {
+    const e = await createEstablecimiento(A, input);
+    store.expedientes = [{ establecimientoId: e.id, estado: "PRESENTADO" }];
+    expect(await archiveEstablecimiento(B, e.id)).toBeNull();
+  });
+
+  it("expedientes en trámite de otro establecimiento no bloquean", async () => {
+    const e = await createEstablecimiento(A, input);
+    store.expedientes = [{ establecimientoId: "otro", estado: "PRESENTADO" }];
+    expect(await archiveEstablecimiento(A, e.id)).not.toBeNull();
   });
 });
 
