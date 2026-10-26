@@ -15,7 +15,7 @@ const eslintConfig = defineConfig([
   ]),
   {
     // Archivo generado por shadcn; no se modifica.
-    files: ["components/ui/carousel.tsx"],
+    files: ["components/ui/carousel.tsx", "hooks/use-mobile.ts"],
     rules: { "react-hooks/set-state-in-effect": "off" },
   },
 ]);

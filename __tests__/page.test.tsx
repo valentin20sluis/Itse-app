@@ -4,6 +4,12 @@ import Home from "@/app/page";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
+vi.mock("@clerk/nextjs", () => ({
+  Show: ({ when, children }: { when: string; children: React.ReactNode }) =>
+    when === "signed-out" ? children : null,
+  UserButton: () => null,
+}));
+
 class Noop {
   observe() {}
   unobserve() {}

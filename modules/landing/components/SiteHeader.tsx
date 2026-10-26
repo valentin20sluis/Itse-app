@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Show, UserButton } from "@clerk/nextjs"
 import { Logo } from "@/components/shared/Logo"
 import { buttonVariants } from "@/components/ui/button"
 import { MobileNav } from "@/modules/landing/components/MobileNav"
@@ -26,6 +27,7 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="hidden items-center gap-2 md:flex">
+          <Show when="signed-out">
           <Link
             href="/sign-in"
             className={buttonVariants({ variant: "outline", size: "lg" })}
@@ -42,6 +44,10 @@ export function SiteHeader() {
           >
             Crear cuenta
           </Link>
+          </Show>
+          <Show when="signed-in">
+            <UserButton />
+          </Show>
         </div>
         <MobileNav />
       </div>
