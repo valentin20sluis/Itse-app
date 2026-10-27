@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { Establecimiento } from "@/modules/establecimientos/types/establecimiento.types";
 import { DocumentoUploader } from "@/modules/expedientes/components/DocumentoUploader";
 import type { Expediente, ExpedienteDocumento } from "@/modules/expedientes/types/expediente.types";
 import {
@@ -13,21 +12,15 @@ import {
 
 type Props = {
   expediente: Expediente;
-  establecimiento: Establecimiento;
   documentos: ExpedienteDocumento[];
   onNext: () => void;
   onBack: () => void;
 };
 
-export function StepDocumentos({ expediente, establecimiento, documentos, onNext, onBack }: Props) {
+export function StepDocumentos({ expediente, documentos, onNext, onBack }: Props) {
   const requeridos = documentosRequeridos(expediente);
   const opcionales = documentosOpcionales(expediente);
-  const planFisico = planSeguridadFisico({
-    nivelRiesgo: expediente.nivelRiesgo,
-    numeroPisos: establecimiento.numeroPisos,
-    tieneSotano: expediente.tieneSotano,
-    areaM2: Number(establecimiento.areaM2),
-  });
+  const planFisico = planSeguridadFisico(expediente.nivelRiesgo);
   const ordenados = [
     ...DOCUMENTOS.filter((d) => requeridos.includes(d.tipo)),
     ...DOCUMENTOS.filter((d) => opcionales.includes(d.tipo)),

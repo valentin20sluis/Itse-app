@@ -91,7 +91,7 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 - **Opcional en riesgo BAJO y MEDIO:** certificado de pozo a tierra (algunos negocios pequeños no lo tienen). En ALTO/MUY_ALTO es obligatorio.
 - El paso Documentos solo lista los obligatorios y los opcionales del caso; no se muestran documentos que no aplican.
 
-**Plan de seguridad:** no se sube como archivo; el inspector lo revisa en físico durante la diligencia. El sistema solo muestra un aviso cuando corresponde (riesgo ALTO/MUY_ALTO, o BAJO/MEDIO con más de 2 pisos, sótano o más de 500 m²).
+**Plan de seguridad:** no se sube como archivo; el inspector lo revisa en físico durante la diligencia. El sistema solo muestra un aviso cuando corresponde: riesgo MEDIO (hasta 2 pisos; con más pisos el local ya es ALTO), ALTO y MUY_ALTO. En riesgo BAJO no se pide.
 
 **Pago de la tasa:** no hay comprobante de pago como archivo ni número de boleta. El cliente paga en línea con Stripe (Checkout hospedado, **modo prueba**, dinero ficticio). El monto lo fija el servidor según el nivel de riesgo y la solicitud solo se presenta cuando Stripe confirma el pago.
 

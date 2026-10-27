@@ -2,10 +2,6 @@ import type {
   NivelRiesgo,
   TipoDocumento,
 } from "@/modules/expedientes/types/expediente.types";
-import {
-  MAX_AREA_MEDIO_M2,
-  MAX_PISOS_MEDIO,
-} from "@/modules/expedientes/utils/riesgo";
 
 export const DOCUMENTOS: readonly { tipo: TipoDocumento; etiqueta: string }[] = [
   { tipo: "FICHA_RUC", etiqueta: "Ficha RUC" },
@@ -63,15 +59,7 @@ export function documentosFaltantes(
   return documentosRequeridos(ctx).filter((t) => !subidos.includes(t));
 }
 
-export function planSeguridadFisico(d: {
-  nivelRiesgo: NivelRiesgo | null;
-  numeroPisos: number;
-  tieneSotano: boolean;
-  areaM2: number;
-}): boolean {
-  if (!d.nivelRiesgo) return false;
-  if (esAlto(d.nivelRiesgo)) return true;
-  return (
-    d.numeroPisos <= MAX_PISOS_MEDIO && !d.tieneSotano && d.areaM2 <= MAX_AREA_MEDIO_M2
-  );
+// Medio hasta 2 pisos lo pide; con más pisos el local ya es Alto. Bajo no lo pide.
+export function planSeguridadFisico(nivelRiesgo: NivelRiesgo | null): boolean {
+  return nivelRiesgo === "MEDIO" || (nivelRiesgo !== null && esAlto(nivelRiesgo));
 }

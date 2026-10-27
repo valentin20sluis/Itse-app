@@ -209,17 +209,17 @@ describe("SolicitudWizard", () => {
     }
     const AVISO = /El Plan de seguridad no se sube/;
 
-    it("MEDIO lista 3 documentos y el aviso del plan según planSeguridadFisico", async () => {
+    it("MEDIO lista 3 documentos y muestra el aviso del plan", async () => {
       await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO" }, 4);
       expect(screen.getAllByText("Obligatorio")).toHaveLength(3);
       expect(screen.getByText("Ficha RUC")).toBeTruthy();
       expect(screen.queryByLabelText("Número de boleta")).toBeNull();
-      expect(screen.queryByText(AVISO)).toBeNull();
+      expect(screen.getByText(AVISO)).toBeTruthy();
     });
 
-    it("muestra el aviso del plan cuando el local es pequeño", async () => {
-      await irAlPaso({ ...expediente, establecimientoId: EST_CHICO_ID, nivelRiesgo: "MEDIO" }, 4);
-      expect(screen.getByText(AVISO)).toBeTruthy();
+    it("BAJO no muestra el aviso del plan", async () => {
+      await irAlPaso({ ...expediente, nivelRiesgo: "BAJO" }, 4);
+      expect(screen.queryByText(AVISO)).toBeNull();
     });
 
     it("ALTO lista los documentos técnicos y el aviso del plan", async () => {

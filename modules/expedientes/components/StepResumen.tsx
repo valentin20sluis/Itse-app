@@ -54,12 +54,7 @@ export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack 
   const tipos = documentosRequeridos(expediente);
   const requeridos = DOCUMENTOS.filter((d) => tipos.includes(d.tipo));
   const faltantes = requeridos.filter((d) => !tiposSubidos.includes(d.tipo));
-  const planFisico = planSeguridadFisico({
-    nivelRiesgo: nivel,
-    numeroPisos: establecimiento.numeroPisos,
-    tieneSotano: expediente.tieneSotano,
-    areaM2: Number(establecimiento.areaM2),
-  });
+  const planFisico = planSeguridadFisico(nivel);
   const errorCampo = !state?.ok ? state?.fieldErrors?.aceptada?.[0] : undefined;
 
   return (

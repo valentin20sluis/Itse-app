@@ -66,10 +66,9 @@ export function SolicitudWizard({
           onBack={atras}
         />
       )}
-      {paso === 4 && expediente && establecimiento && (
+      {paso === 4 && expediente && (
         <StepDocumentos
           expediente={expediente}
-          establecimiento={establecimiento}
           documentos={documentos}
           onNext={() => setPaso(5)}
           onBack={atras}

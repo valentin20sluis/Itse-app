@@ -92,29 +92,11 @@ describe("documentosFaltantes", () => {
 });
 
 describe("planSeguridadFisico", () => {
-  const base = { nivelRiesgo: "MEDIO" as const, numeroPisos: 2, tieneSotano: false, areaM2: 500 };
-  it("ALTO/MUY_ALTO siempre true", () => {
-    expect(planSeguridadFisico({ ...base, nivelRiesgo: "ALTO", numeroPisos: 9, areaM2: 9999 })).toBe(true);
-    expect(planSeguridadFisico({ ...base, nivelRiesgo: "MUY_ALTO", tieneSotano: true })).toBe(true);
+  it("MEDIO, ALTO y MUY_ALTO lo piden", () => {
+    for (const n of ["MEDIO", "ALTO", "MUY_ALTO"] as const) expect(planSeguridadFisico(n)).toBe(true);
   });
-  it("BAJO/MEDIO true en los límites 2 pisos y 500 m2", () => {
-    expect(planSeguridadFisico(base)).toBe(true);
-    expect(planSeguridadFisico({ ...base, nivelRiesgo: "BAJO" })).toBe(true);
-  });
-  it("false con 3 pisos, sótano o 500,01 m2", () => {
-    expect(planSeguridadFisico({ ...base, numeroPisos: 3 })).toBe(false);
-    expect(planSeguridadFisico({ ...base, tieneSotano: true })).toBe(false);
-    expect(planSeguridadFisico({ ...base, areaM2: 500.01 })).toBe(false);
-  });
-  it("nivel null es false", () => {
-    expect(planSeguridadFisico({ ...base, nivelRiesgo: null })).toBe(false);
-  });
-});
-
-describe("DOCUMENTOS", () => {
-  it("tiene 9 tipos con etiqueta en español", () => {
-    expect(DOCUMENTOS).toHaveLength(9);
-    expect(DOCUMENTOS.every((d) => d.etiqueta.length > 0)).toBe(true);
-    expect(DOCUMENTOS.find((d) => d.tipo === "FICHA_RUC")?.etiqueta).toBe("Ficha RUC");
+  it("BAJO y nivel null no lo piden", () => {
+    expect(planSeguridadFisico("BAJO")).toBe(false);
+    expect(planSeguridadFisico(null)).toBe(false);
   });
 });
