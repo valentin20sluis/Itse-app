@@ -60,6 +60,9 @@ vi.mock("@/db", async () => {
                         establecimientoNombre: store.establecimientos.find(
                           (e) => e.id === r.establecimientoId,
                         )?.nombreComercial,
+                        numeroPisos: store.establecimientos.find(
+                          (e) => e.id === r.establecimientoId,
+                        )?.numeroPisos,
                       }
                     : r,
                 );
@@ -172,7 +175,7 @@ beforeEach(() => {
   store.documentos = [];
   store.historial = [];
   store.establecimientos = [
-    { id: ESTAB, usuarioId: "user-a", nombreComercial: "Bodega Ficticia", archivadoAt: null },
+    { id: ESTAB, usuarioId: "user-a", nombreComercial: "Bodega Ficticia", numeroPisos: 1, archivadoAt: null },
   ];
   store.seq = 0;
   store.conflictos = 0;
@@ -341,12 +344,12 @@ describe("prepararPago", () => {
     });
   });
 
-  it("riesgo ALTO con solo los básicos: faltan los técnicos", async () => {
+  it("riesgo ALTO con solo los básicos: faltan el plan y los técnicos", async () => {
     const e = await borradorCompleto();
     await updateBorrador(A, e.id, { ...paso2, nivelRiesgo: "ALTO" });
     expect(await prepararPago(A, e.id, true)).toEqual({
       status: "incompleto",
-      faltantes: TECNICOS,
+      faltantes: ["PLAN_SEGURIDAD", ...TECNICOS],
     });
   });
 

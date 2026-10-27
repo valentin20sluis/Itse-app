@@ -15,7 +15,6 @@ import { declaracionTexto } from "@/modules/expedientes/utils/declaracion";
 import {
   DOCUMENTOS,
   documentosRequeridos,
-  planSeguridadFisico,
 } from "@/modules/expedientes/utils/documentos";
 import type { Establecimiento } from "@/modules/establecimientos/types/establecimiento.types";
 import { tipoItsePorRiesgo } from "@/modules/expedientes/utils/riesgo";
@@ -51,10 +50,9 @@ export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack 
   );
 
   const nivel = expediente.nivelRiesgo;
-  const tipos = documentosRequeridos(expediente);
+  const tipos = documentosRequeridos({ ...expediente, numeroPisos: establecimiento.numeroPisos });
   const requeridos = DOCUMENTOS.filter((d) => tipos.includes(d.tipo));
   const faltantes = requeridos.filter((d) => !tiposSubidos.includes(d.tipo));
-  const planFisico = planSeguridadFisico(nivel);
   const errorCampo = !state?.ok ? state?.fieldErrors?.aceptada?.[0] : undefined;
 
   return (
@@ -98,11 +96,6 @@ export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack 
               </li>
             ))}
           </ul>
-          {planFisico && (
-            <p className="text-sm text-muted-foreground">
-              El Plan de seguridad no se sube: el inspector lo revisa en físico durante la diligencia.
-            </p>
-          )}
           {faltantes.length > 0 && (
             <p className="text-sm text-destructive">
               Faltan documentos obligatorios: {faltantes.map((d) => d.etiqueta).join(", ")}.

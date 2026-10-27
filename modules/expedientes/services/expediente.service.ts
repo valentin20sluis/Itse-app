@@ -121,6 +121,7 @@ export async function listOwnExpedientes(actor: Actor): Promise<ExpedienteListIt
     .select({
       ...getTableColumns(expedientes),
       establecimientoNombre: establecimientos.nombreComercial,
+      numeroPisos: establecimientos.numeroPisos,
     })
     .from(expedientes)
     .innerJoin(establecimientos, eq(expedientes.establecimientoId, establecimientos.id))
@@ -140,11 +141,11 @@ export async function listOwnExpedientes(actor: Actor): Promise<ExpedienteListIt
       tiposPorExpediente.set(d.expedienteId, tipos);
     }
   }
-  return filas.map((f) => ({
+  return filas.map(({ numeroPisos, ...f }) => ({
     ...f,
     pagoPendiente:
       f.estado === "BORRADOR" &&
-      faltantesBorrador(f, tiposPorExpediente.get(f.id) ?? []).length === 0,
+      faltantesBorrador({ ...f, numeroPisos }, tiposPorExpediente.get(f.id) ?? []).length === 0,
   }));
 }
 
@@ -166,14 +167,15 @@ export async function prepararPago(
     .select({ tipo: expedienteDocumentos.tipo })
     .from(expedienteDocumentos)
     .where(eq(expedienteDocumentos.expedienteId, exp.id));
+  const establecimiento = await getEstablecimientoById(actor, exp.establecimientoId);
   const faltantes = faltantesBorrador(
-    exp,
+    { ...exp, numeroPisos: establecimiento?.numeroPisos ?? 1 },
     subidos.map((d) => d.tipo),
   );
   if (!declaracionSchema.safeParse({ aceptada: declaracionAceptada }).success) {
     faltantes.push("declaracion");
   }
-  if (!(await getEstablecimientoById(actor, exp.establecimientoId))) {
+  if (!establecimiento) {
     faltantes.push("establecimiento");
   }
   if (faltantes.length > 0) return { status: "incompleto", faltantes };

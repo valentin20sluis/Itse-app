@@ -98,7 +98,7 @@ export const tipoDocumentoEnum = pgEnum("tipo_documento", [
   "COMPROBANTE_PAGO",
   "POZO_TIERRA",
   "EXTINTORES",
-  // obsoleto: los valores anteriores a FICHA_RUC se conservan por datos existentes
+  // obsoleto (salvo PLAN_SEGURIDAD, que vuelve a usarse): los valores anteriores a FICHA_RUC se conservan por datos existentes
   "FICHA_RUC",
   "EXTINTORES_PQS",
   "EXTINTORES_TIPO_K",

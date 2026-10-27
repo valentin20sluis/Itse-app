@@ -207,30 +207,36 @@ describe("SolicitudWizard", () => {
       }
       await screen.findByText(new RegExp(`Paso ${paso} de 5`));
     }
-    const AVISO = /El Plan de seguridad no se sube/;
+    const CHICO = { ...expediente, establecimientoId: EST_CHICO_ID };
 
-    it("MEDIO lista 3 documentos y muestra el aviso del plan", async () => {
-      await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO" }, 4);
+    it("MEDIO de 1 piso lista 3 documentos, sin Plan de seguridad", async () => {
+      await irAlPaso({ ...CHICO, nivelRiesgo: "MEDIO" }, 4);
       expect(screen.getAllByText("Obligatorio")).toHaveLength(3);
       expect(screen.getByText("Ficha RUC")).toBeTruthy();
       expect(screen.queryByLabelText("Número de boleta")).toBeNull();
-      expect(screen.getByText(AVISO)).toBeTruthy();
+      expect(screen.queryByText("Plan de seguridad")).toBeNull();
     });
 
-    it("BAJO no muestra el aviso del plan", async () => {
+    it("MEDIO de 2 o más pisos pide el Plan de seguridad", async () => {
+      await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO" }, 4);
+      expect(screen.getAllByText("Obligatorio")).toHaveLength(4);
+      expect(screen.getByText("Plan de seguridad")).toBeTruthy();
+    });
+
+    it("BAJO no pide el Plan de seguridad", async () => {
       await irAlPaso({ ...expediente, nivelRiesgo: "BAJO" }, 4);
-      expect(screen.queryByText(AVISO)).toBeNull();
+      expect(screen.queryByText("Plan de seguridad")).toBeNull();
     });
 
-    it("ALTO lista los documentos técnicos y el aviso del plan", async () => {
-      await irAlPaso({ ...expediente, nivelRiesgo: "ALTO" }, 4);
-      expect(screen.getAllByText("Obligatorio")).toHaveLength(7);
+    it("ALTO con 1 piso lista los técnicos y el Plan de seguridad", async () => {
+      await irAlPaso({ ...CHICO, nivelRiesgo: "ALTO" }, 4);
+      expect(screen.getAllByText("Obligatorio")).toHaveLength(8);
       expect(screen.getByText("Planos eléctricos")).toBeTruthy();
-      expect(screen.getByText(AVISO)).toBeTruthy();
+      expect(screen.getByText("Plan de seguridad")).toBeTruthy();
     });
 
     it("cocina agrega extintores Tipo K", async () => {
-      await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO", tieneCocina: true }, 4);
+      await irAlPaso({ ...CHICO, nivelRiesgo: "MEDIO", tieneCocina: true }, 4);
       expect(screen.getAllByText("Obligatorio")).toHaveLength(4);
       expect(screen.getByText("Certificado de extintores Tipo K")).toBeTruthy();
     });
@@ -238,7 +244,6 @@ describe("SolicitudWizard", () => {
     it("el resumen sin nivel de riesgo no lista documentos", async () => {
       await irAlPaso(expediente, 5);
       expect(screen.queryByText("Ficha RUC")).toBeNull();
-      expect(screen.queryByText(AVISO)).toBeNull();
     });
 
     it("el paso 4 avanza sin llamar a saveBorradorAction", async () => {
@@ -290,7 +295,7 @@ describe("SolicitudWizard", () => {
     });
 
     it("el resumen lista los requeridos del riesgo", async () => {
-      await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO" }, 5);
+      await irAlPaso({ ...CHICO, nivelRiesgo: "MEDIO" }, 5);
       expect(screen.getByText("Ficha RUC")).toBeTruthy();
       expect(screen.getAllByText("Pendiente")).toHaveLength(3);
     });

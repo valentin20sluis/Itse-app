@@ -28,12 +28,18 @@ export function SolicitudWizard({
   documentos,
   defaultsSolicitante,
 }: Props) {
-  const [paso, setPaso] = useState<1 | 2 | 3 | 4 | 5>(
-    borrador && faltantesBorrador(borrador, documentos.map((d) => d.tipo)).length === 0 ? 5 : 1,
-  );
   const [expediente, setExpediente] = useState<Expediente | null>(borrador);
-
   const establecimiento = establecimientos.find((e) => e.id === expediente?.establecimientoId);
+  const [paso, setPaso] = useState<1 | 2 | 3 | 4 | 5>(
+    borrador &&
+      establecimiento &&
+      faltantesBorrador(
+        { ...borrador, numeroPisos: establecimiento.numeroPisos },
+        documentos.map((d) => d.tipo),
+      ).length === 0
+      ? 5
+      : 1,
+  );
   const siguiente = (nuevo: Expediente) => {
     setExpediente(nuevo);
     setPaso((p) => (p < 5 ? ((p + 1) as 2 | 3 | 4 | 5) : p));
@@ -66,9 +72,10 @@ export function SolicitudWizard({
           onBack={atras}
         />
       )}
-      {paso === 4 && expediente && (
+      {paso === 4 && expediente && establecimiento && (
         <StepDocumentos
           expediente={expediente}
+          establecimiento={establecimiento}
           documentos={documentos}
           onNext={() => setPaso(5)}
           onBack={atras}

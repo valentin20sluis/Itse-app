@@ -4,7 +4,6 @@ import {
   documentosFaltantes,
   documentosOpcionales,
   documentosRequeridos,
-  planSeguridadFisico,
   type ContextoDocumentos,
 } from "./documentos";
 
@@ -13,6 +12,7 @@ const ctx = (o: Partial<ContextoDocumentos> = {}): ContextoDocumentos => ({
   tieneCocina: false,
   esGrifo: false,
   almacenaInflamables: false,
+  numeroPisos: 1,
   ...o,
 });
 
@@ -58,20 +58,20 @@ describe("documentosRequeridos", () => {
       expect(documentosOpcionales(ctx({ nivelRiesgo }))).toEqual([]);
   });
 
-  it.each(["ALTO", "MUY_ALTO"] as const)("%s agrega los 4 técnicos, en orden de catálogo", (nivelRiesgo) => {
-    expect(documentosRequeridos(ctx({ nivelRiesgo }))).toEqual([...BASICOS, ...TECNICOS].sort(
+  it.each(["ALTO", "MUY_ALTO"] as const)("%s agrega los 4 técnicos y el plan, en orden de catálogo", (nivelRiesgo) => {
+    expect(documentosRequeridos(ctx({ nivelRiesgo }))).toEqual([...BASICOS, ...TECNICOS, "PLAN_SEGURIDAD"].sort(
       (a, b) =>
         DOCUMENTOS.findIndex((d) => d.tipo === a) - DOCUMENTOS.findIndex((d) => d.tipo === b),
     ));
   });
 
-  it("sin duplicados y sin tipos obsoletos con todo activo", () => {
+  it("sin duplicados y con todo activo", () => {
     const r = documentosRequeridos(
       ctx({ nivelRiesgo: "MUY_ALTO", tieneCocina: true, esGrifo: true, almacenaInflamables: true }),
     );
     expect(new Set(r).size).toBe(r.length);
-    expect(r).toHaveLength(9);
-    for (const o of ["PLANO_UBICACION", "PLANO_DISTRIBUCION", "PLAN_SEGURIDAD", "COMPROBANTE_PAGO", "EXTINTORES"])
+    expect(r).toHaveLength(10);
+    for (const o of ["PLANO_UBICACION", "PLANO_DISTRIBUCION", "COMPROBANTE_PAGO", "EXTINTORES"])
       expect(r).not.toContain(o);
   });
 });
@@ -91,12 +91,20 @@ describe("documentosFaltantes", () => {
   });
 });
 
-describe("planSeguridadFisico", () => {
-  it("MEDIO, ALTO y MUY_ALTO lo piden", () => {
-    for (const n of ["MEDIO", "ALTO", "MUY_ALTO"] as const) expect(planSeguridadFisico(n)).toBe(true);
+describe("Plan de seguridad", () => {
+  it.each([
+    ["MEDIO", 1, false],
+    ["MEDIO", 2, true],
+    ["MEDIO", 3, true],
+    ["BAJO", 3, false],
+    ["ALTO", 1, true],
+    ["MUY_ALTO", 1, true],
+  ] as const)("%s con %i piso(s): requerido=%s", (nivelRiesgo, numeroPisos, esperado) => {
+    expect(documentosRequeridos(ctx({ nivelRiesgo, numeroPisos })).includes("PLAN_SEGURIDAD")).toBe(
+      esperado,
+    );
   });
-  it("BAJO y nivel null no lo piden", () => {
-    expect(planSeguridadFisico("BAJO")).toBe(false);
-    expect(planSeguridadFisico(null)).toBe(false);
+  it("el catálogo tiene 10 tipos", () => {
+    expect(DOCUMENTOS).toHaveLength(10);
   });
 });

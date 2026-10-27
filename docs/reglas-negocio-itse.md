@@ -87,11 +87,12 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 - **Todo nivel de riesgo:** Ficha RUC, extintores PQS, capacitación en uso de extintores (un solo documento que cubre PQS, Tipo K o ambos).
 - **Si tiene cocina (restaurante), en cualquier nivel:** extintores Tipo K. La casilla solo aparece para la función Comercio.
 - **Licencia/certificado de Osinergmin:** solo si es grifo (riesgo MEDIO). La casilla solo aparece para la función Oficinas administrativas.
+- **Plan de seguridad:** ALTO/MUY_ALTO, y MEDIO con 2 o más pisos (ver párrafo "Plan de seguridad").
 - **Solo riesgo ALTO/MUY_ALTO:** plano de arquitectura con aforo, planos eléctricos, certificado de pozo a tierra, memoria de pruebas de equipos.
 - **Opcional en riesgo BAJO y MEDIO:** certificado de pozo a tierra (algunos negocios pequeños no lo tienen). En ALTO/MUY_ALTO es obligatorio.
 - El paso Documentos solo lista los obligatorios y los opcionales del caso; no se muestran documentos que no aplican.
 
-**Plan de seguridad:** no se sube como archivo; el inspector lo revisa en físico durante la diligencia. El sistema solo muestra un aviso cuando corresponde: riesgo MEDIO (hasta 2 pisos; con más pisos el local ya es ALTO), ALTO y MUY_ALTO. En riesgo BAJO no se pide.
+**Plan de seguridad:** se sube como archivo (`PLAN_SEGURIDAD`). Es obligatorio en riesgo ALTO/MUY_ALTO (siempre) y en riesgo MEDIO cuando el edificio tiene 2 o más pisos (con más de 2 pisos el local ya es ALTO). No se pide en MEDIO de 1 piso ni en BAJO. Regla anterior (reemplazada): el plan no se subía y solo se mostraba un aviso porque el inspector lo revisaba en físico.
 
 **Pago de la tasa:** no hay comprobante de pago como archivo ni número de boleta. El cliente paga en línea con Stripe (Checkout hospedado, **modo prueba**, dinero ficticio). El monto lo fija el servidor según el nivel de riesgo y la solicitud solo se presenta cuando Stripe confirma el pago.
 

@@ -10,6 +10,7 @@ const completo = {
   almacenaInflamables: false,
   tieneCocina: false,
   esGrifo: false,
+  numeroPisos: 1,
   usoMixtoPatrimonio: false,
   granEscala: false,
   solicitanteNombre: "Juan Pérez",
@@ -26,6 +27,7 @@ describe("faltantesBorrador", () => {
       tieneCocina: false,
       esGrifo: false,
       almacenaInflamables: false,
+      numeroPisos: 1,
     };
     expect(faltantesBorrador(vacio, [])).toEqual(["paso1", "paso2", "paso3"]);
   });
@@ -40,5 +42,11 @@ describe("faltantesBorrador", () => {
   it("completo: vacía; un documento extra no requerido no bloquea", () => {
     expect(faltantesBorrador(completo, [...medioDocs])).toEqual([]);
     expect(faltantesBorrador(completo, [...medioDocs, "POZO_TIERRA"])).toEqual([]);
+  });
+
+  it("MEDIO de 2 pisos exige el Plan de seguridad", () => {
+    expect(faltantesBorrador({ ...completo, numeroPisos: 2 }, [...medioDocs])).toEqual([
+      "PLAN_SEGURIDAD",
+    ]);
   });
 });

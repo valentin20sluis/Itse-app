@@ -105,3 +105,6 @@ El paso 4 "Documentos" del wizard de solicitud ITSE deja de usar un catálogo fi
 ## Fases siguientes
 - Fase B de `solicitud-itse-wizard`: UploadThing, `StepDocumentos` con carga, `removeDocumentoAction` y descarga, sobre el catálogo de esta spec.
 - `riesgo-hospedaje` (spec aparte, depende de esta).
+
+## Nota de cambio
+El Plan de seguridad ahora SÍ se sube (`PLAN_SEGURIDAD`, ya no obsoleto): obligatorio en ALTO/MUY_ALTO y en MEDIO con `numeroPisos >= 2` del establecimiento. Se eliminó `planSeguridadFisico` y el aviso de AC-9; `ContextoDocumentos` incluye `numeroPisos`; el catálogo tiene 10 tipos. Esto reemplaza lo dicho arriba sobre el Plan físico.
