@@ -38,7 +38,7 @@ export function documentosRequeridos(ctx: ContextoDocumentos): TipoDocumento[] {
     "CAPACITACION_EXTINTORES",
   ]);
   if (ctx.tieneCocina) requeridos.add("EXTINTORES_TIPO_K");
-  if (ctx.esGrifo || (ctx.almacenaInflamables && alto)) requeridos.add("LICENCIA_OSINERGMIN");
+  if (ctx.esGrifo) requeridos.add("LICENCIA_OSINERGMIN");
   if (alto) {
     for (const t of [
       "PLANO_ARQUITECTURA_AFORO",
@@ -49,6 +49,11 @@ export function documentosRequeridos(ctx: ContextoDocumentos): TipoDocumento[] {
       requeridos.add(t);
   }
   return DOCUMENTOS.map((d) => d.tipo).filter((t) => requeridos.has(t));
+}
+
+// El pozo a tierra es opcional en riesgo bajo y medio: algunos negocios pequeños no lo tienen.
+export function documentosOpcionales(ctx: ContextoDocumentos): TipoDocumento[] {
+  return ctx.nivelRiesgo === "BAJO" || ctx.nivelRiesgo === "MEDIO" ? ["POZO_TIERRA"] : [];
 }
 
 export function documentosFaltantes(

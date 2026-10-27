@@ -341,12 +341,12 @@ describe("prepararPago", () => {
     });
   });
 
-  it("riesgo ALTO con solo los básicos: faltan los técnicos y Osinergmin", async () => {
+  it("riesgo ALTO con solo los básicos: faltan los técnicos", async () => {
     const e = await borradorCompleto();
     await updateBorrador(A, e.id, { ...paso2, nivelRiesgo: "ALTO" });
     expect(await prepararPago(A, e.id, true)).toEqual({
       status: "incompleto",
-      faltantes: ["LICENCIA_OSINERGMIN", ...TECNICOS],
+      faltantes: TECNICOS,
     });
   });
 

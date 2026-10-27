@@ -59,7 +59,7 @@ Que el cliente vea en `/mi-cuenta/expedientes` sus solicitudes con número, esta
 - Grupo paralelo: G1
 - Cubre: AC-5, AC-6
 - Tests: `route.test.ts` — con `getOrCreateUser`, `getDocumentoForDownload` y `getSignedFileUrl` mockeados: sin sesión → 401; inactivo → 401; id no uuid → 404 sin llamar al servicio; servicio `null` → 404; éxito → 302 a la URL; el servicio se invoca con el usuario de la sesión.
-- [ ] Completada
+- [x] Completada
 
 ### T3 — Listado y página
 - Archivos: `modules/expedientes/components/ExpedientesView.tsx` (crear: presentacional; tarjetas, estado vacío, "Continuar"), `app/mi-cuenta/expedientes/page.tsx` (crear), `app/mi-cuenta/expedientes/page.test.tsx` (crear)

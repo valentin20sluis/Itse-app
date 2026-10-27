@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DOCUMENTOS,
   documentosFaltantes,
+  documentosOpcionales,
   documentosRequeridos,
   planSeguridadFisico,
   type ContextoDocumentos,
@@ -44,15 +45,17 @@ describe("documentosRequeridos", () => {
     );
   });
 
-  it("inflamables agrega Osinergmin solo en ALTO/MUY_ALTO", () => {
+  it.each(["BAJO", "MEDIO", "ALTO", "MUY_ALTO"] as const)("inflamables sin grifo no agrega Osinergmin en %s", (nivelRiesgo) => {
+    expect(documentosRequeridos(ctx({ nivelRiesgo, almacenaInflamables: true }))).not.toContain(
+      "LICENCIA_OSINERGMIN",
+    );
+  });
+
+  it("el pozo a tierra es opcional solo en riesgo bajo y medio", () => {
     for (const nivelRiesgo of ["BAJO", "MEDIO"] as const)
-      expect(
-        documentosRequeridos(ctx({ nivelRiesgo, almacenaInflamables: true })),
-      ).not.toContain("LICENCIA_OSINERGMIN");
-    for (const nivelRiesgo of ["ALTO", "MUY_ALTO"] as const)
-      expect(
-        documentosRequeridos(ctx({ nivelRiesgo, almacenaInflamables: true })),
-      ).toContain("LICENCIA_OSINERGMIN");
+      expect(documentosOpcionales(ctx({ nivelRiesgo }))).toEqual(["POZO_TIERRA"]);
+    for (const nivelRiesgo of ["ALTO", "MUY_ALTO", null] as const)
+      expect(documentosOpcionales(ctx({ nivelRiesgo }))).toEqual([]);
   });
 
   it.each(["ALTO", "MUY_ALTO"] as const)("%s agrega los 4 técnicos, en orden de catálogo", (nivelRiesgo) => {

@@ -58,7 +58,7 @@ Que el cliente cree una solicitud de ITSE para uno de sus establecimientos en `/
 - AC-4: `saveBorradorAction`, `enviarSolicitudAction` y `removeDocumentoAction` llaman `requireRole("cliente")` antes de cualquier otra cosa, usan el `Usuario` devuelto (nunca un `usuarioId` del formulario), validan ids con `z.uuid()` (id inválido → "No se encontró la solicitud." sin consultar la BD) y devuelven `ActionResult`. Con datos inválidos no se llama al servicio y se devuelven `fieldErrors`. Error inesperado: "No se pudo completar la operación. Inténtalo de nuevo."
 - AC-5: `saveBorradorAction(paso, id, prev, formData)`: paso 1 sin `id` crea el borrador, con `id` actualiza; pasos 2 a 4 sin `id` responden "No se encontró la solicitud."; el `paso` fuera de 1 a 4 responde el mismo error; el servicio devuelve `null` (ajeno, inexistente o no `BORRADOR`) → "No se encontró la solicitud." Un establecimiento ajeno en el paso 1 → "No se encontró el establecimiento." Éxito devuelve el `Expediente` actualizado.
 - AC-6: `enviarSolicitudAction(id, prev, formData)` valida `declaracionSchema`; mapea `incompleto` a un error "Aún falta completar: <lista en español>." (nombres de pasos y documentos), `no_encontrado` a "No se encontró la solicitud." y éxito a `{ ok: true, data: { id, numero } }` con `revalidatePath("/mi-cuenta/expedientes")` solo en éxito.
-- AC-7: `removeDocumentoAction(documentoId)` elimina vía `removeDocumento`; si el documento no es propio o el expediente no es `BORRADOR` responde "No se encontró el documento."; tras borrar el registro intenta borrar el archivo remoto y su fallo no cambia el resultado.
+- AC-7: `removeDocumentoAction(expedienteId, tipo)` elimina vía `removeDocumento`; si el documento no es propio o el expediente no es `BORRADOR` responde "No se encontró el documento."; tras borrar el registro intenta borrar el archivo remoto y su fallo no cambia el resultado.
 - AC-8: `/mi-cuenta/nueva-solicitud`: `admin`/`superadmin` van a `/panel`, sin sesión a `/sign-in`, inactivo a `/cuenta-desactivada` (`requireRole("cliente")` en la página). Sin establecimientos propios muestra `EmptyState` con botón a `/mi-cuenta/establecimientos`. Con `?borrador=<id>` propio y en `BORRADOR` carga el borrador y sus documentos; con uno ajeno, inexistente, no uuid o presentado muestra una solicitud nueva.
 - AC-9: `WizardStepper` es un `nav` con `aria-label`, una lista ordenada con los 5 pasos, `aria-current="step"` en el actual y estado completado/pendiente legible por lector de pantalla (no solo color). A 360 px muestra "Paso X de 5: <título>" compacto; desde `md` muestra los 5 pasos en horizontal.
 - AC-10: Paso 1: tarjetas seleccionables (radio nativo o `radio-group`) con los establecimientos propios (nombre, dirección, área y pisos) y selección del tipo de trámite (Nueva / Renovación). Paso 2: checkboxes "¿Tiene sótano?" y "¿Almacena inflamables?", sugerencia en vivo con el aviso fijo, elección del nivel (Bajo/Medio/Alto/Muy alto) y tipo de ITSE resultante visible. Paso 3: datos del solicitante precargados desde el usuario (nombres y apellidos, documento, teléfono, correo, editables); interruptor "Actúo como representante de una empresa" que muestra y exige la razón social. Cada campo con `label`, error en español junto al campo (`aria-invalid`, `aria-describedby`) y botón de envío deshabilitado mientras guarda.
@@ -76,17 +76,17 @@ Que el cliente cree una solicitud de ITSE para uno de sus establecimientos en `/
 - Grupo paralelo: G1
 - Cubre: AC-1, AC-2, AC-3
 - Tests: no aplica a `core.ts`/`route.ts`/`proxy.ts` (glue de framework y configuración; la lógica de autorización y validación vive en servicios y utils ya testeados, SETUP.md 3.2). Verificación manual indicada en la descripción de la tarea.
-- [ ] Completada
+- [x] Completada
 
 ### T2 — Server Actions del expediente
 - Archivos: `modules/expedientes/actions/expediente.actions.ts` (crear: `"use server"`; `saveBorradorAction`, `enviarSolicitudAction`, `removeDocumentoAction`), `modules/expedientes/actions/expediente.actions.test.ts` (crear)
 - Depende de: T1 (`deleteUploadedFile`)
 - Grupo paralelo: G2
 - Cubre: AC-4, AC-5, AC-6, AC-7, AC-14
-- Contrato para la UI: `saveBorradorAction(paso: 1|2|3|4, id: string | null, prev: ActionResult<Expediente> | null, formData: FormData): Promise<ActionResult<Expediente>>`; `enviarSolicitudAction(id: string, prev: ActionResult<{ id: string; numero: string }> | null, formData: FormData)`; `removeDocumentoAction(documentoId: string): Promise<ActionResult<{ id: string }>>`.
+- Contrato para la UI: `saveBorradorAction(paso: 1|2|3|4, id: string | null, prev: ActionResult<Expediente> | null, formData: FormData): Promise<ActionResult<Expediente>>`; `enviarSolicitudAction(id: string, prev: ActionResult<{ id: string; numero: string }> | null, formData: FormData)`; `removeDocumentoAction(expedienteId: string, tipo: TipoDocumento): Promise<ActionResult<{ id: string }>>`.
 - Nota: Fase A hecha; falta removeDocumentoAction en Fase B.
 - Tests: con `requireRole`, los servicios, `next/cache` y `deleteUploadedFile` mockeados: `requireRole("cliente")` primero; datos inválidos → `fieldErrors` sin llamar al servicio; el servicio recibe el usuario de `requireRole` aunque el `FormData` traiga `usuarioId`; paso inválido, id no uuid y `null` del servicio → mensajes de AC-5; envío `incompleto`/`no_encontrado`/éxito; `revalidatePath` solo en éxito; quitar documento intenta borrar el remoto y tolera su fallo.
-- [ ] Completada
+- [x] Completada (removeDocumentoAction hecho; firma (expedienteId, tipo))
 
 ### T3 — Paso Documentos
 - Archivos: `modules/expedientes/components/StepDocumentos.tsx` (crear), `modules/expedientes/components/DocumentoUploader.tsx` (crear: una fila por tipo; `"use client"`; usa `useUploadThing`, `validateArchivo`, `removeDocumentoAction`, `router.refresh()`), `modules/expedientes/components/DocumentoUploader.test.tsx` (crear)
@@ -94,7 +94,7 @@ Que el cliente cree una solicitud de ITSE para uno de sus establecimientos en `/
 - Grupo paralelo: G3
 - Cubre: AC-11, AC-15
 - Tests: `DocumentoUploader.test.tsx` — con `@/lib/uploadthing` y acciones mockeadas: un archivo `.exe` o PDF > 8 MB muestra el mensaje y no llama a la subida; un PDF válido llama a la subida con `expedienteId` y `tipo`; muestra "Subido" con enlace "Ver archivo" cuando hay documento; "Quitar" pide confirmación.
-- [ ] Completada
+- [x] Completada
 
 ### T4 — Paso Resumen, texto de declaración y stepper
 - Archivos: `modules/expedientes/components/StepResumen.tsx` (crear), `modules/expedientes/utils/declaracion.ts` (crear: `declaracionTexto`), `modules/expedientes/utils/declaracion.test.ts` (crear), `modules/expedientes/components/WizardStepper.tsx` (crear)

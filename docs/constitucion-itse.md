@@ -58,7 +58,7 @@ Imports con el alias `@/*` (raíz del repo).
 ## 3. Convenciones propias
 
 - **Server Components por defecto.** `"use client"` solo cuando haya interactividad.
-- **Mutaciones con Server Actions.** API routes solo para webhooks y UploadThing.
+- **Mutaciones con Server Actions.** API routes solo para webhooks, UploadThing y la descarga protegida de documentos (`/api/documentos`).
 - **Toda Server Action:**
   1. Obtiene el usuario actual.
   2. Verifica el rol en servidor.

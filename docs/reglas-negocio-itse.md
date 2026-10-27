@@ -85,9 +85,11 @@ Para la **renovación de riesgo alto y muy alto**: solicitud + pago + declaraci�
 Los documentos que debe subir el cliente dependen del nivel de riesgo declarado y de tres datos del paso 2 (cocina, grifo, inflamables):
 
 - **Todo nivel de riesgo:** Ficha RUC, extintores PQS, capacitación en uso de extintores (un solo documento que cubre PQS, Tipo K o ambos).
-- **Si tiene cocina (restaurante):** extintores Tipo K.
-- **Licencia/certificado de Osinergmin:** si es grifo (cualquier nivel) o si almacena inflamables con riesgo ALTO/MUY_ALTO.
+- **Si tiene cocina (restaurante), en cualquier nivel:** extintores Tipo K. La casilla solo aparece para la función Comercio.
+- **Licencia/certificado de Osinergmin:** solo si es grifo (riesgo MEDIO). La casilla solo aparece para la función Oficinas administrativas.
 - **Solo riesgo ALTO/MUY_ALTO:** plano de arquitectura con aforo, planos eléctricos, certificado de pozo a tierra, memoria de pruebas de equipos.
+- **Opcional en riesgo BAJO y MEDIO:** certificado de pozo a tierra (algunos negocios pequeños no lo tienen). En ALTO/MUY_ALTO es obligatorio.
+- El paso Documentos solo lista los obligatorios y los opcionales del caso; no se muestran documentos que no aplican.
 
 **Plan de seguridad:** no se sube como archivo; el inspector lo revisa en físico durante la diligencia. El sistema solo muestra un aviso cuando corresponde (riesgo ALTO/MUY_ALTO, o BAJO/MEDIO con más de 2 pisos, sótano o más de 500 m²).
 

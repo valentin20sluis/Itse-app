@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import type { Establecimiento } from "@/modules/establecimientos/types/establecimiento.types";
+import { StepDocumentos } from "@/modules/expedientes/components/StepDocumentos";
 import { StepEstablecimiento } from "@/modules/expedientes/components/StepEstablecimiento";
 import { StepResumen } from "@/modules/expedientes/components/StepResumen";
 import { StepRiesgo } from "@/modules/expedientes/components/StepRiesgo";
@@ -14,11 +13,6 @@ import {
 import { WizardStepper } from "@/modules/expedientes/components/WizardStepper";
 import type { Expediente, ExpedienteDocumento } from "@/modules/expedientes/types/expediente.types";
 import { faltantesBorrador } from "@/modules/expedientes/utils/completitud";
-import {
-  DOCUMENTOS,
-  documentosRequeridos,
-  planSeguridadFisico,
-} from "@/modules/expedientes/utils/documentos";
 
 type Props = {
   establecimientos: Establecimiento[];
@@ -27,59 +21,6 @@ type Props = {
   defaultsSolicitante: DefaultsSolicitante;
 };
 
-function PasoDocumentos({
-  expediente,
-  establecimiento,
-  documentos,
-  onNext,
-  onBack,
-}: {
-  expediente: Expediente;
-  establecimiento: Establecimiento;
-  documentos: ExpedienteDocumento[];
-  onNext: () => void;
-  onBack: () => void;
-}) {
-  const tipos = documentosRequeridos(expediente);
-  const requeridos = DOCUMENTOS.filter((d) => tipos.includes(d.tipo));
-  const planFisico = planSeguridadFisico({
-    nivelRiesgo: expediente.nivelRiesgo,
-    numeroPisos: establecimiento.numeroPisos,
-    tieneSotano: expediente.tieneSotano,
-    areaM2: Number(establecimiento.areaM2),
-  });
-
-  return (
-    <div className="space-y-6">
-      <p className="rounded-lg bg-muted p-3 text-sm">
-        La subida de documentos estará disponible pronto.
-      </p>
-      <ul className="space-y-2 text-sm">
-        {requeridos.map((d) => (
-          <li key={d.tipo} className="flex flex-wrap items-center justify-between gap-2">
-            <span>{d.etiqueta}</span>
-            <Badge variant="outline">
-              {documentos.some((x) => x.tipo === d.tipo) ? "Subido" : "Pendiente"}
-            </Badge>
-          </li>
-        ))}
-      </ul>
-      {planFisico && (
-        <p className="rounded-lg bg-muted p-3 text-sm">
-          El Plan de seguridad no se sube: el inspector lo revisa en físico durante la diligencia.
-        </p>
-      )}
-      <div className="flex flex-wrap justify-between gap-2">
-        <Button type="button" variant="outline" className="h-11 px-4" onClick={onBack}>
-          Atrás
-        </Button>
-        <Button type="button" className="h-11 px-6" onClick={onNext}>
-          Siguiente
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 export function SolicitudWizard({
   establecimientos,
@@ -126,7 +67,7 @@ export function SolicitudWizard({
         />
       )}
       {paso === 4 && expediente && establecimiento && (
-        <PasoDocumentos
+        <StepDocumentos
           expediente={expediente}
           establecimiento={establecimiento}
           documentos={documentos}

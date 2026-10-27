@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   createBorrador: vi.fn(),
   updateBorrador: vi.fn(),
+  removeDocumento: vi.fn(),
+  deleteUploadedFile: vi.fn(),
 }));
 
 vi.mock("@/modules/usuarios/services/authorization.service", () => ({
@@ -16,7 +18,12 @@ vi.mock("@/modules/expedientes/services/expediente.service", () => ({
   updateBorrador: mocks.updateBorrador,
 }));
 
-import { saveBorradorAction } from "./expediente.actions";
+vi.mock("@/modules/expedientes/services/documento.service", () => ({
+  removeDocumento: mocks.removeDocumento,
+}));
+vi.mock("@/lib/uploadthing-server", () => ({ deleteUploadedFile: mocks.deleteUploadedFile }));
+
+import { removeDocumentoAction, saveBorradorAction } from "./expediente.actions";
 
 const usuario = { id: "u-1", rol: "cliente" };
 const ID = "3f2b8c1e-5a4d-4e6f-8b7a-1c2d3e4f5a6b";
@@ -128,5 +135,33 @@ describe("saveBorradorAction", () => {
       ok: false,
       error: "No se pudo completar la operación. Inténtalo de nuevo.",
     });
+  });
+});
+
+describe("removeDocumentoAction", () => {
+  const NO_DOC = { ok: false, error: "No se encontró el documento." };
+
+  it("requireRole primero; si redirige no llega al servicio", async () => {
+    mocks.requireRole.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(removeDocumentoAction(ID, "FICHA_RUC")).rejects.toThrow("NEXT_REDIRECT");
+    expect(mocks.removeDocumento).not.toHaveBeenCalled();
+  });
+
+  it("id no uuid: no encontrado sin llamar al servicio", async () => {
+    expect(await removeDocumentoAction("abc", "FICHA_RUC")).toEqual(NO_DOC);
+    expect(mocks.removeDocumento).not.toHaveBeenCalled();
+  });
+
+  it("ajeno o no BORRADOR (servicio null): no encontrado y sin borrado remoto", async () => {
+    mocks.removeDocumento.mockResolvedValue(null);
+    expect(await removeDocumentoAction(ID, "FICHA_RUC")).toEqual(NO_DOC);
+    expect(mocks.deleteUploadedFile).not.toHaveBeenCalled();
+  });
+
+  it("éxito: usa el usuario de la sesión y borra el archivo remoto", async () => {
+    mocks.removeDocumento.mockResolvedValue({ id: "d-1", fileKey: "k-1" });
+    expect(await removeDocumentoAction(ID, "FICHA_RUC")).toEqual({ ok: true, data: { id: "d-1" } });
+    expect(mocks.removeDocumento).toHaveBeenCalledWith(usuario, ID, "FICHA_RUC");
+    expect(mocks.deleteUploadedFile).toHaveBeenCalledWith("k-1");
   });
 });

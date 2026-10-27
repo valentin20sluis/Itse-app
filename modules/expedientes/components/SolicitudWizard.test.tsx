@@ -9,6 +9,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/modules/expedientes/actions/expediente.actions", () => ({
   saveBorradorAction: mocks.saveBorradorAction,
 }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock("@/lib/uploadthing", () => ({
+  useUploadThing: () => ({ startUpload: vi.fn(), isUploading: false }),
+}));
 vi.mock("@/modules/expedientes/actions/pago.actions", () => ({
   iniciarPagoAction: mocks.iniciarPagoAction,
 }));
@@ -120,19 +124,28 @@ describe("SolicitudWizard", () => {
     expect((screen.getByLabelText(/Bodega Central/) as HTMLInputElement).checked).toBe(true);
   });
 
-  it("paso 2: las casillas de cocina y grifo se envían en el formulario", async () => {
+  it.each([
+    ["COMERCIO", /¿Tiene cocina/, /¿Es un grifo/, "tieneCocina"],
+    ["OFICINAS_ADMINISTRATIVAS", /¿Es un grifo/, /¿Tiene cocina/, "esGrifo"],
+  ] as const)("paso 2 con %s: solo muestra su casilla y se envía en el formulario", async (funcion, visible, oculta, campo) => {
     mocks.saveBorradorAction.mockResolvedValue({ ok: true, data: expediente });
-    renderWizard(expediente);
+    render(
+      <SolicitudWizard
+        establecimientos={[{ ...establecimientos[0], funcion }] as unknown as Establecimiento[]}
+        borrador={expediente}
+        documentos={[]}
+        defaultsSolicitante={defaults}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
     await screen.findByText("Paso 2 de 5: Riesgo");
-    fireEvent.click(screen.getByLabelText(/¿Tiene cocina/));
-    fireEvent.click(screen.getByLabelText(/¿Es un grifo/));
+    expect(screen.queryByLabelText(oculta)).toBeNull();
+    fireEvent.click(screen.getByLabelText(visible));
     mocks.saveBorradorAction.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
     await waitFor(() => expect(mocks.saveBorradorAction).toHaveBeenCalled());
     const formData = mocks.saveBorradorAction.mock.calls[0][3] as FormData;
-    expect(formData.get("tieneCocina")).toBe("on");
-    expect(formData.get("esGrifo")).toBe("on");
+    expect(formData.get(campo)).toBe("on");
   });
 
   describe("paso 2 con Hospedaje", () => {
@@ -198,7 +211,7 @@ describe("SolicitudWizard", () => {
 
     it("MEDIO lista 3 documentos y el aviso del plan según planSeguridadFisico", async () => {
       await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO" }, 4);
-      expect(screen.getAllByText(/Pendiente/)).toHaveLength(3);
+      expect(screen.getAllByText("Obligatorio")).toHaveLength(3);
       expect(screen.getByText("Ficha RUC")).toBeTruthy();
       expect(screen.queryByLabelText("Número de boleta")).toBeNull();
       expect(screen.queryByText(AVISO)).toBeNull();
@@ -211,14 +224,14 @@ describe("SolicitudWizard", () => {
 
     it("ALTO lista los documentos técnicos y el aviso del plan", async () => {
       await irAlPaso({ ...expediente, nivelRiesgo: "ALTO" }, 4);
-      expect(screen.getAllByText(/Pendiente/)).toHaveLength(7);
+      expect(screen.getAllByText("Obligatorio")).toHaveLength(7);
       expect(screen.getByText("Planos eléctricos")).toBeTruthy();
       expect(screen.getByText(AVISO)).toBeTruthy();
     });
 
     it("cocina agrega extintores Tipo K", async () => {
       await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO", tieneCocina: true }, 4);
-      expect(screen.getAllByText(/Pendiente/)).toHaveLength(4);
+      expect(screen.getAllByText("Obligatorio")).toHaveLength(4);
       expect(screen.getByText("Certificado de extintores Tipo K")).toBeTruthy();
     });
 

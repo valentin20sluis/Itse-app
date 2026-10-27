@@ -1,19 +1,22 @@
 "use server";
 
 import { z } from "zod";
+import { tipoDocumentoEnum } from "@/db/schema";
 import type { ActionResult } from "@/lib/action-result";
+import { deleteUploadedFile } from "@/lib/uploadthing-server";
 import {
   paso1Schema,
   paso2Schema,
   paso3Schema,
   type Paso1Input,
 } from "@/modules/expedientes/schemas/solicitud.schema";
+import { removeDocumento } from "@/modules/expedientes/services/documento.service";
 import {
   createBorrador,
   updateBorrador,
   type PatchBorrador,
 } from "@/modules/expedientes/services/expediente.service";
-import type { Expediente } from "@/modules/expedientes/types/expediente.types";
+import type { Expediente, TipoDocumento } from "@/modules/expedientes/types/expediente.types";
 import { requireRole } from "@/modules/usuarios/services/authorization.service";
 
 const NO_SOLICITUD = "No se encontró la solicitud.";
@@ -79,6 +82,29 @@ export async function saveBorradorAction(
         : await updateBorrador(usuario, id, parsed.data as PatchBorrador);
     if (!data) return { ok: false, error: id === null ? NO_ESTABLECIMIENTO : NO_SOLICITUD };
     return { ok: true, data };
+  } catch {
+    return { ok: false, error: ERROR_GENERICO };
+  }
+}
+
+const NO_DOCUMENTO = "No se encontró el documento.";
+
+export async function removeDocumentoAction(
+  expedienteId: string,
+  tipo: TipoDocumento,
+): Promise<ActionResult<{ id: string }>> {
+  const usuario = await requireRole("cliente");
+  if (
+    !idSchema.safeParse(expedienteId).success ||
+    !z.enum(tipoDocumentoEnum.enumValues).safeParse(tipo).success
+  ) {
+    return { ok: false, error: NO_DOCUMENTO };
+  }
+  try {
+    const removed = await removeDocumento(usuario, expedienteId, tipo);
+    if (!removed) return { ok: false, error: NO_DOCUMENTO };
+    await deleteUploadedFile(removed.fileKey);
+    return { ok: true, data: { id: removed.id } };
   } catch {
     return { ok: false, error: ERROR_GENERICO };
   }
