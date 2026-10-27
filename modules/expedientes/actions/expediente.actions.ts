@@ -50,8 +50,7 @@ function parsePaso(paso: number, formData: FormData) {
     case 1:
       return paso1Schema.safeParse({
         establecimientoId: formData.get("establecimientoId"),
-        tipoTramite: formData.get("tipoTramite"),
-      });
+        tipoTramite: formData.get("tipoTramite"),      });
     case 2:
       return paso2Schema.safeParse({
         nivelRiesgo: formData.get("nivelRiesgo"),
@@ -64,8 +63,6 @@ function parsePaso(paso: number, formData: FormData) {
         solicitanteDocumento: formData.get("solicitanteDocumento"),
         solicitanteTelefono: formData.get("solicitanteTelefono"),
         solicitanteEmail: formData.get("solicitanteEmail"),
-        esRepresentante: formData.get("esRepresentante"),
-        razonSocial: formData.get("razonSocial") ?? undefined,
       });
     case 4:
       return paso4Schema.safeParse({ numeroBoleta: formData.get("numeroBoleta") });

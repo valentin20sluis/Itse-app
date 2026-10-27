@@ -10,6 +10,11 @@ const texto = (campo: string, min: number, max: number) =>
     .max(max, `Debe tener como máximo ${max} caracteres.`);
 
 export const establecimientoSchema = z.object({
+  razonSocial: texto("la razón social", 3, 150),
+  ruc: z
+    .string({ error: "Ingresa el RUC." })
+    .trim()
+    .regex(/^\d{11}$/, "El RUC debe tener 11 dígitos."),
   nombreComercial: texto("el nombre comercial", 3, 100),
   direccion: texto("la dirección", 5, 200),
   distrito: texto("el distrito", 2, 80),

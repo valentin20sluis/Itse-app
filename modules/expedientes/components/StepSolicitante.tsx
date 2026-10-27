@@ -19,11 +19,10 @@ type FieldName =
   | "solicitanteNombre"
   | "solicitanteDocumento"
   | "solicitanteTelefono"
-  | "solicitanteEmail"
-  | "razonSocial";
+  | "solicitanteEmail";
 
 const FIELDS: {
-  name: Exclude<FieldName, "razonSocial">;
+  name: FieldName;
   label: string;
   type?: string;
   inputMode?: "numeric" | "tel" | "email";
@@ -56,9 +55,7 @@ export function StepSolicitante({ expediente, defaults, onSaved, onBack }: Props
     solicitanteDocumento: expediente.solicitanteDocumento ?? defaults.documento,
     solicitanteTelefono: expediente.solicitanteTelefono ?? defaults.telefono,
     solicitanteEmail: expediente.solicitanteEmail ?? defaults.email,
-    razonSocial: expediente.razonSocial ?? "",
   });
-  const [esRepresentante, setEsRepresentante] = useState(expediente.esRepresentante);
 
   const fieldErrors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const generalError =
@@ -93,19 +90,6 @@ export function StepSolicitante({ expediente, defaults, onSaved, onBack }: Props
   return (
     <form action={action} className="space-y-4" noValidate>
       {FIELDS.map((f) => campo(f.name, f.label, f))}
-
-      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
-        <input
-          type="checkbox"
-          name="esRepresentante"
-          value="on"
-          checked={esRepresentante}
-          onChange={(e) => setEsRepresentante(e.target.checked)}
-          className="size-5 shrink-0 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        />
-        <span>Actúo como representante de una empresa</span>
-      </label>
-      {esRepresentante && campo("razonSocial", "Razón social")}
 
       {generalError && (
         <p role="alert" className="text-sm text-destructive">

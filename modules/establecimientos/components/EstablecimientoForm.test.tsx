@@ -17,6 +17,8 @@ import { EstablecimientoForm } from "@/modules/establecimientos/components/Estab
 const existente = {
   id: "8b1f6c1e-3b0a-4f5e-9a55-0d6b6d1c9a11",
   usuarioId: "u1",
+  razonSocial: "Bodega Don Pepe SAC",
+  ruc: "20123456789",
   nombreComercial: "Bodega Don Pepe",
   direccion: "Av. Lima 123",
   distrito: "Miraflores",

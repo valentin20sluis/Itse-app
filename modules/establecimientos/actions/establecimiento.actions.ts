@@ -22,6 +22,8 @@ const idSchema = z.uuid();
 
 function parseForm(formData: FormData) {
   return establecimientoSchema.safeParse({
+    razonSocial: formData.get("razonSocial"),
+    ruc: formData.get("ruc"),
     nombreComercial: formData.get("nombreComercial"),
     direccion: formData.get("direccion"),
     distrito: formData.get("distrito"),

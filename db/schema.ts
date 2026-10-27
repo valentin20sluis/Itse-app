@@ -47,6 +47,8 @@ export const establecimientos = pgTable(
     usuarioId: uuid("usuario_id")
       .notNull()
       .references(() => usuarios.id, { onDelete: "restrict" }),
+    razonSocial: text("razon_social"),
+    ruc: text("ruc"),
     nombreComercial: text("nombre_comercial").notNull(),
     direccion: text("direccion").notNull(),
     distrito: text("distrito").notNull(),

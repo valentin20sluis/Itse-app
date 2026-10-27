@@ -21,6 +21,8 @@ import { FUNCION_LABELS, FUNCION_VALUES } from "@/modules/establecimientos/const
 import type { Establecimiento } from "@/modules/establecimientos/types/establecimiento.types";
 
 type FieldName =
+  | "razonSocial"
+  | "ruc"
   | "nombreComercial"
   | "direccion"
   | "distrito"
@@ -38,6 +40,8 @@ const FIELDS: {
   autoComplete?: string;
   wide?: boolean;
 }[] = [
+  { name: "razonSocial", label: "Razón social", wide: true },
+  { name: "ruc", label: "RUC", inputMode: "numeric" },
   { name: "nombreComercial", label: "Nombre comercial", wide: true },
   { name: "direccion", label: "Dirección", autoComplete: "street-address", wide: true },
   { name: "distrito", label: "Distrito" },
@@ -85,6 +89,8 @@ function FormBody({
 
   // Controlado: React 19 vacía los campos no controlados tras cada envío, también si hubo errores.
   const [values, setValues] = useState<Record<FieldName, string>>({
+    razonSocial: establecimiento?.razonSocial ?? "",
+    ruc: establecimiento?.ruc ?? "",
     nombreComercial: establecimiento?.nombreComercial ?? "",
     direccion: establecimiento?.direccion ?? "",
     distrito: establecimiento?.distrito ?? "",

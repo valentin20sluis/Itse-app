@@ -81,8 +81,7 @@ export function StepResumen({ expediente, establecimientoNombre, tiposSubidos, o
         </CardHeader>
         <CardContent>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <Dato etiqueta="Establecimiento" valor={establecimientoNombre} />
-            <Dato
+            <Dato etiqueta="Establecimiento" valor={establecimientoNombre} />            <Dato
               etiqueta="Trámite"
               valor={expediente.tipoTramite === "NUEVA" ? "ITSE nueva" : "Renovación"}
             />
@@ -95,9 +94,6 @@ export function StepResumen({ expediente, establecimientoNombre, tiposSubidos, o
             <Dato etiqueta="Documento" valor={expediente.solicitanteDocumento} />
             <Dato etiqueta="Teléfono" valor={expediente.solicitanteTelefono} />
             <Dato etiqueta="Correo" valor={expediente.solicitanteEmail} />
-            {expediente.esRepresentante && (
-              <Dato etiqueta="Razón social" valor={expediente.razonSocial} />
-            )}
             <Dato etiqueta="Número de boleta" valor={expediente.numeroBoleta} />
           </dl>
         </CardContent>

@@ -33,6 +33,8 @@ const NO_ENCONTRADO = "No se encontró el establecimiento.";
 function form(overrides: Record<string, string> = {}) {
   const fd = new FormData();
   const base = {
+    razonSocial: "Bodega Don Pepe SAC",
+    ruc: "20123456789",
     nombreComercial: "Bodega Don Pepe",
     direccion: "Av. Lima 123",
     distrito: "Miraflores",

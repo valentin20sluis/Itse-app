@@ -43,6 +43,13 @@
       "when": 1793061532561,
       "tag": "0005_polite_wasp",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793069400543,
+      "tag": "0006_closed_the_stranger",
+      "breakpoints": true
     }
   ]
 }

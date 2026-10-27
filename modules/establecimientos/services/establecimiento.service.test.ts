@@ -71,6 +71,8 @@ import {
 const A = { id: "user-a", rol: "cliente" } as const;
 const B = { id: "user-b", rol: "cliente" } as const;
 const input = {
+  razonSocial: "Bodega Ficticia SAC",
+  ruc: "20123456789",
   nombreComercial: "Bodega Ficticia",
   direccion: "Av. Falsa 123",
   distrito: "Distrito Uno",

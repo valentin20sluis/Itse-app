@@ -24,6 +24,8 @@ function assertCliente(actor: Actor) {
 
 function toValues(input: EstablecimientoInput) {
   return {
+    razonSocial: input.razonSocial,
+    ruc: input.ruc,
     nombreComercial: input.nombreComercial,
     direccion: input.direccion,
     distrito: input.distrito,

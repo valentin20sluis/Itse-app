@@ -144,7 +144,6 @@ const paso3 = {
   solicitanteDocumento: "12345678",
   solicitanteTelefono: "987654321",
   solicitanteEmail: "juan@example.com",
-  esRepresentante: false,
 } as const;
 const paso4 = { numeroBoleta: "B-001" };
 
@@ -221,12 +220,6 @@ describe("updateBorrador", () => {
     expect(u?.estado).toBe("BORRADOR");
     expect(u?.numero).toBeNull();
     expect(u?.usuarioId).toBe("user-a");
-  });
-
-  it("razonSocial se limpia si no es representante", async () => {
-    const e = (await createBorrador(A, paso1))!;
-    const u = await updateBorrador(A, e.id, { ...paso3, razonSocial: "Empresa" });
-    expect(u?.razonSocial).toBeNull();
   });
 
   it("paso1 con establecimiento ajeno da null", async () => {
@@ -338,15 +331,6 @@ describe("enviarExpediente", () => {
     expect(await enviarExpediente(A, e.id, true)).toEqual({
       status: "incompleto",
       faltantes: ["establecimiento"],
-    });
-  });
-
-  it("representante exige razón social", async () => {
-    const e = await borradorCompleto();
-    await updateBorrador(A, e.id, { ...paso3, esRepresentante: true });
-    expect(await enviarExpediente(A, e.id, true)).toEqual({
-      status: "incompleto",
-      faltantes: ["paso3"],
     });
   });
 

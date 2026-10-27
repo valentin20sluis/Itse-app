@@ -19,9 +19,7 @@ const msg = (r: { success: boolean; error?: { issues: { message: string }[] } })
 
 describe("paso1Schema", () => {
   it("acepta datos válidos", () => {
-    expect(paso1Schema.safeParse({ establecimientoId: uuid, tipoTramite: "NUEVA" }).success).toBe(
-      true,
-    );
+    expect(paso1Schema.safeParse({ establecimientoId: uuid, tipoTramite: "NUEVA" }).success).toBe(true);
   });
   it("rechaza uuid y enum inválidos con mensaje en español", () => {
     const a = paso1Schema.safeParse({ establecimientoId: "x", tipoTramite: "NUEVA" });
@@ -45,7 +43,6 @@ describe("paso3Schema", () => {
   it("acepta válido y recorta espacios", () => {
     const r = paso3Schema.parse(paso3);
     expect(r.solicitanteNombre).toBe("Juan Pérez");
-    expect(r.esRepresentante).toBe(false);
   });
   it("DNI 8 y RUC 11 válidos; 9 dígitos y letras inválidos", () => {
     for (const d of ["12345678", "20123456789"]) {
@@ -74,16 +71,6 @@ describe("paso3Schema", () => {
     expect(msg(paso3Schema.safeParse({ ...paso3, solicitanteNombre: "Jo" }))).toBe(
       "Debe tener al menos 3 caracteres.",
     );
-  });
-  it("razonSocial obligatoria solo con representante", () => {
-    expect(paso3Schema.safeParse({ ...paso3, esRepresentante: "on" }).success).toBe(false);
-    const r = paso3Schema.safeParse({ ...paso3, esRepresentante: "on", razonSocial: "  " });
-    expect(msg(r)).toBe("Ingresa la razón social.");
-    expect(
-      paso3Schema.safeParse({ ...paso3, esRepresentante: "on", razonSocial: " Mi Empresa SAC " })
-        .success,
-    ).toBe(true);
-    expect(paso3Schema.safeParse(paso3).success).toBe(true);
   });
 });
 

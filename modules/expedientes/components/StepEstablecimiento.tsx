@@ -71,6 +71,11 @@ export function StepEstablecimiento({ establecimientos, expediente, onSaved }: P
             />
             <span className="min-w-0">
               <span className="block font-medium">{e.nombreComercial}</span>
+              {establecimientoId === e.id && (
+                <span className="block text-muted-foreground">
+                  {e.razonSocial ?? "Sin razón social"} · RUC {e.ruc ?? "—"}
+                </span>
+              )}
               <span className="block break-words text-muted-foreground">{e.direccion}</span>
               <span className="block text-muted-foreground">
                 {e.areaM2} m² · {e.numeroPisos} {e.numeroPisos === 1 ? "piso" : "pisos"} de la edificación

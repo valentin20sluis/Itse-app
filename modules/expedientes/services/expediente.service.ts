@@ -64,8 +64,6 @@ function patchToValues(patch: PatchBorrador) {
       solicitanteDocumento: patch.solicitanteDocumento,
       solicitanteTelefono: patch.solicitanteTelefono,
       solicitanteEmail: patch.solicitanteEmail,
-      esRepresentante: patch.esRepresentante,
-      razonSocial: patch.esRepresentante ? (patch.razonSocial ?? null) : null,
     };
   }
   return { numeroBoleta: patch.numeroBoleta };
@@ -144,7 +142,7 @@ export async function enviarExpediente(
   const pasos = [
     paso1Schema.safeParse(exp),
     paso2Schema.safeParse(exp),
-    paso3Schema.safeParse({ ...exp, razonSocial: exp.razonSocial ?? undefined }),
+    paso3Schema.safeParse(exp),
     paso4Schema.safeParse(exp),
   ];
   pasos.forEach((r, i) => {

@@ -3,6 +3,8 @@ import { FUNCION_VALUES } from "@/modules/establecimientos/constants/funciones";
 import { establecimientoSchema } from "./establecimiento.schema";
 
 const valido = {
+  razonSocial: "Bodega Don Pepe SAC",
+  ruc: "20123456789",
   nombreComercial: "Bodega Don Pepe",
   direccion: "Av. Lima 123",
   distrito: "Miraflores",
@@ -43,7 +45,11 @@ describe("establecimientoSchema", () => {
     expect(mensaje({ ...valido, funcion: null }, "funcion")).toBe(msg);
   });
 
-  it.each(["nombreComercial", "direccion", "distrito", "numeroGiro", "giro"])(
+  it.each(["2012345678", "2012345678a", "201234567890", ""])("rechaza RUC %j", (ruc) => {
+    expect(mensaje({ ...valido, ruc }, "ruc")).toBe("El RUC debe tener 11 dígitos.");
+  });
+
+  it.each(["razonSocial", "nombreComercial", "direccion", "distrito", "numeroGiro", "giro"])(
     "rechaza %s vacío o solo espacios",
     (campo) => {
       expect(mensaje({ ...valido, [campo]: "" }, campo)).toMatch(/^Ingresa /);

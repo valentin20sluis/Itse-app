@@ -26,41 +26,21 @@ export const paso2Schema = z.object({
   almacenaInflamables: checkbox,
 });
 
-export const paso3Schema = z
-  .object({
-    solicitanteNombre: texto("el nombre del solicitante", 3, 120),
-    solicitanteDocumento: z
-      .string({ error: "Ingresa el DNI o RUC." })
-      .trim()
-      .regex(/^(\d{8}|\d{11})$/, "Ingresa un DNI (8 dígitos) o RUC (11 dígitos) válido."),
-    solicitanteTelefono: z
-      .string({ error: "Ingresa el teléfono." })
-      .trim()
-      .regex(/^\d{7,9}$/, "El teléfono debe tener entre 7 y 9 dígitos."),
-    solicitanteEmail: z
-      .string({ error: "Ingresa el correo electrónico." })
-      .trim()
-      .pipe(z.email("Ingresa un correo electrónico válido.")),
-    esRepresentante: checkbox,
-    razonSocial: z
-      .string()
-      .trim()
-      .max(150, "Debe tener como máximo 150 caracteres.")
-      .optional(),
-  })
-  .superRefine((v, ctx) => {
-    if (!v.esRepresentante) return;
-    const rs = v.razonSocial ?? "";
-    if (rs.length === 0) {
-      ctx.addIssue({ code: "custom", path: ["razonSocial"], message: "Ingresa la razón social." });
-    } else if (rs.length < 3) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["razonSocial"],
-        message: "Debe tener al menos 3 caracteres.",
-      });
-    }
-  });
+export const paso3Schema = z.object({
+  solicitanteNombre: texto("el nombre del solicitante", 3, 120),
+  solicitanteDocumento: z
+    .string({ error: "Ingresa el DNI o RUC." })
+    .trim()
+    .regex(/^(\d{8}|\d{11})$/, "Ingresa un DNI (8 dígitos) o RUC (11 dígitos) válido."),
+  solicitanteTelefono: z
+    .string({ error: "Ingresa el teléfono." })
+    .trim()
+    .regex(/^\d{7,9}$/, "El teléfono debe tener entre 7 y 9 dígitos."),
+  solicitanteEmail: z
+    .string({ error: "Ingresa el correo electrónico." })
+    .trim()
+    .pipe(z.email("Ingresa un correo electrónico válido.")),
+});
 
 export const paso4Schema = z.object({
   numeroBoleta: z
