@@ -28,8 +28,8 @@ const FIELDS: {
   inputMode?: "numeric" | "tel" | "email";
   autoComplete?: string;
 }[] = [
+  { name: "solicitanteDocumento", label: "DNI", inputMode: "numeric" },
   { name: "solicitanteNombre", label: "Nombres y apellidos", autoComplete: "name" },
-  { name: "solicitanteDocumento", label: "DNI o RUC", inputMode: "numeric" },
   { name: "solicitanteTelefono", label: "Teléfono", type: "tel", inputMode: "tel", autoComplete: "tel" },
   { name: "solicitanteEmail", label: "Correo electrónico", type: "email", inputMode: "email", autoComplete: "email" },
 ];

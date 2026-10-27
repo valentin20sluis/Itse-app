@@ -44,11 +44,11 @@ describe("paso3Schema", () => {
     const r = paso3Schema.parse(paso3);
     expect(r.solicitanteNombre).toBe("Juan Pérez");
   });
-  it("DNI 8 y RUC 11 válidos; 9 dígitos y letras inválidos", () => {
-    for (const d of ["12345678", "20123456789"]) {
+  it("DNI de 8 dígitos válido; RUC, 9 dígitos y letras inválidos", () => {
+    for (const d of ["12345678"]) {
       expect(paso3Schema.safeParse({ ...paso3, solicitanteDocumento: d }).success).toBe(true);
     }
-    for (const d of ["123456789", "1234567a"]) {
+    for (const d of ["20123456789", "123456789", "1234567a"]) {
       expect(paso3Schema.safeParse({ ...paso3, solicitanteDocumento: d }).success).toBe(false);
     }
   });

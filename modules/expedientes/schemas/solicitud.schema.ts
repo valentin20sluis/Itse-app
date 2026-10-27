@@ -29,9 +29,9 @@ export const paso2Schema = z.object({
 export const paso3Schema = z.object({
   solicitanteNombre: texto("el nombre del solicitante", 3, 120),
   solicitanteDocumento: z
-    .string({ error: "Ingresa el DNI o RUC." })
+    .string({ error: "Ingresa el DNI." })
     .trim()
-    .regex(/^(\d{8}|\d{11})$/, "Ingresa un DNI (8 dígitos) o RUC (11 dígitos) válido."),
+    .regex(/^\d{8}$/, "El DNI debe tener 8 dígitos."),
   solicitanteTelefono: z
     .string({ error: "Ingresa el teléfono." })
     .trim()
