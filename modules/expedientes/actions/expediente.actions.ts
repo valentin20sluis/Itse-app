@@ -56,6 +56,10 @@ function parsePaso(paso: number, formData: FormData) {
         nivelRiesgo: formData.get("nivelRiesgo"),
         tieneSotano: formData.get("tieneSotano"),
         almacenaInflamables: formData.get("almacenaInflamables"),
+        tieneCocina: formData.get("tieneCocina"),
+        esGrifo: formData.get("esGrifo"),
+        usoMixtoPatrimonio: formData.get("usoMixtoPatrimonio"),
+        granEscala: formData.get("granEscala"),
       });
     case 3:
       return paso3Schema.safeParse({

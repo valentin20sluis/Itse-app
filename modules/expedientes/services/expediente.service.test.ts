@@ -134,11 +134,20 @@ import {
 
 const A = { id: "user-a", rol: "cliente" } as const;
 const B = { id: "user-b", rol: "cliente" } as const;
-const TIPOS = ["PLANO_UBICACION", "PLANO_DISTRIBUCION", "PLAN_SEGURIDAD", "COMPROBANTE_PAGO"];
+const TIPOS = ["FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"];
+const TECNICOS = ["PLANO_ARQUITECTURA_AFORO", "PLANOS_ELECTRICOS", "POZO_TIERRA", "MEMORIA_PRUEBAS_EQUIPOS"];
 const ESTAB = "11111111-1111-4111-8111-111111111111";
 
 const paso1 = { establecimientoId: ESTAB, tipoTramite: "NUEVA" } as const;
-const paso2 = { nivelRiesgo: "MEDIO", tieneSotano: false, almacenaInflamables: true } as const;
+const paso2 = {
+  nivelRiesgo: "MEDIO",
+  tieneSotano: false,
+  almacenaInflamables: true,
+  tieneCocina: false,
+  esGrifo: false,
+  usoMixtoPatrimonio: false,
+  granEscala: false,
+} as const;
 const paso3 = {
   solicitanteNombre: "Juan Pérez",
   solicitanteDocumento: "12345678",
@@ -217,9 +226,25 @@ describe("updateBorrador", () => {
     const u = await updateBorrador(A, e.id, { ...paso2, estado: "ANULADO", numero: "X" } as typeof paso2);
     expect(u?.nivelRiesgo).toBe("MEDIO");
     expect(u?.almacenaInflamables).toBe(true);
+    expect(u?.tieneCocina).toBe(false);
+    expect(u?.esGrifo).toBe(false);
     expect(u?.estado).toBe("BORRADOR");
     expect(u?.numero).toBeNull();
     expect(u?.usuarioId).toBe("user-a");
+  });
+
+  it("paso 2 persiste usoMixtoPatrimonio y granEscala", async () => {
+    const e = (await createBorrador(A, paso1))!;
+    const u = await updateBorrador(A, e.id, { ...paso2, usoMixtoPatrimonio: true, granEscala: true });
+    expect(u?.usoMixtoPatrimonio).toBe(true);
+    expect(u?.granEscala).toBe(true);
+  });
+
+  it("paso 2 persiste tieneCocina y esGrifo", async () => {
+    const e = (await createBorrador(A, paso1))!;
+    const u = await updateBorrador(A, e.id, { ...paso2, tieneCocina: true, esGrifo: true });
+    expect(u?.tieneCocina).toBe(true);
+    expect(u?.esGrifo).toBe(true);
   });
 
   it("paso1 con establecimiento ajeno da null", async () => {
@@ -310,8 +335,7 @@ describe("enviarExpediente", () => {
     const r = await enviarExpediente(A, e.id, true);
     expect(r).toMatchObject({ status: "incompleto" });
     if (r.status === "incompleto") {
-      expect(r.faltantes).toEqual(expect.arrayContaining(["paso2", "paso3", "paso4", ...TIPOS]));
-      expect(r.faltantes).not.toContain("paso1");
+      expect(r.faltantes).toEqual(["paso2", "paso3", "paso4"]);
     }
     expect(store.expedientes[0].estado).toBe("BORRADOR");
   });
@@ -321,8 +345,23 @@ describe("enviarExpediente", () => {
     store.documentos.pop();
     expect(await enviarExpediente(A, e.id, true)).toEqual({
       status: "incompleto",
-      faltantes: ["COMPROBANTE_PAGO"],
+      faltantes: ["CAPACITACION_EXTINTORES"],
     });
+  });
+
+  it("riesgo ALTO con solo los básicos: faltan los técnicos y Osinergmin", async () => {
+    const e = await borradorCompleto();
+    await updateBorrador(A, e.id, { ...paso2, nivelRiesgo: "ALTO" });
+    expect(await enviarExpediente(A, e.id, true)).toEqual({
+      status: "incompleto",
+      faltantes: ["LICENCIA_OSINERGMIN", ...TECNICOS],
+    });
+  });
+
+  it("documentos subidos que ya no son requeridos no bloquean", async () => {
+    const e = await borradorCompleto();
+    TECNICOS.forEach((tipo) => store.documentos.push({ expedienteId: e.id, tipo }));
+    expect((await enviarExpediente(A, e.id, true)).status).toBe("ok");
   });
 
   it("incompleto: establecimiento archivado", async () => {

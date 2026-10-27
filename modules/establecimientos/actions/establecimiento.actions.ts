@@ -33,6 +33,7 @@ function parseForm(formData: FormData) {
     areaM2: formData.get("areaM2"),
     numeroPisos: formData.get("numeroPisos"),
     pisoEstablecimiento: formData.get("pisoEstablecimiento"),
+    numeroCamas: formData.get("numeroCamas"),
   });
 }
 

@@ -58,6 +58,7 @@ export const establecimientos = pgTable(
     areaM2: numeric("area_m2", { precision: 10, scale: 2 }).notNull(),
     numeroPisos: integer("numero_pisos").notNull(),
     pisoEstablecimiento: integer("piso_establecimiento"),
+    numeroCamas: integer("numero_camas"),
     archivadoAt: timestamp("archivado_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -97,6 +98,15 @@ export const tipoDocumentoEnum = pgEnum("tipo_documento", [
   "COMPROBANTE_PAGO",
   "POZO_TIERRA",
   "EXTINTORES",
+  // obsoleto: los valores anteriores a FICHA_RUC se conservan por datos existentes
+  "FICHA_RUC",
+  "EXTINTORES_PQS",
+  "EXTINTORES_TIPO_K",
+  "CAPACITACION_EXTINTORES",
+  "LICENCIA_OSINERGMIN",
+  "PLANO_ARQUITECTURA_AFORO",
+  "PLANOS_ELECTRICOS",
+  "MEMORIA_PRUEBAS_EQUIPOS",
 ]);
 
 export const expedientes = pgTable(
@@ -115,6 +125,10 @@ export const expedientes = pgTable(
     nivelRiesgo: nivelRiesgoEnum("nivel_riesgo"),
     tieneSotano: boolean("tiene_sotano").notNull().default(false),
     almacenaInflamables: boolean("almacena_inflamables").notNull().default(false),
+    tieneCocina: boolean("tiene_cocina").notNull().default(false),
+    esGrifo: boolean("es_grifo").notNull().default(false),
+    usoMixtoPatrimonio: boolean("uso_mixto_patrimonio").notNull().default(false),
+    granEscala: boolean("gran_escala").notNull().default(false),
     solicitanteNombre: text("solicitante_nombre"),
     solicitanteDocumento: text("solicitante_documento"),
     solicitanteTelefono: text("solicitante_telefono"),

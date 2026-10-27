@@ -24,6 +24,10 @@ export const paso2Schema = z.object({
   }),
   tieneSotano: checkbox,
   almacenaInflamables: checkbox,
+  tieneCocina: checkbox,
+  esGrifo: checkbox,
+  usoMixtoPatrimonio: checkbox,
+  granEscala: checkbox,
 });
 
 export const paso3Schema = z.object({

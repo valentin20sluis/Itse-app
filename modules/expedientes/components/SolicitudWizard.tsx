@@ -17,7 +17,11 @@ import {
 } from "@/modules/expedientes/components/StepSolicitante";
 import { WizardStepper } from "@/modules/expedientes/components/WizardStepper";
 import type { Expediente, ExpedienteDocumento } from "@/modules/expedientes/types/expediente.types";
-import { DOCUMENTOS } from "@/modules/expedientes/utils/documentos";
+import {
+  DOCUMENTOS,
+  documentosRequeridos,
+  planSeguridadFisico,
+} from "@/modules/expedientes/utils/documentos";
 
 type Props = {
   establecimientos: Establecimiento[];
@@ -29,11 +33,13 @@ type Props = {
 // Fase A: el paso Documentos real (subida) llega en la Fase B.
 function PasoDocumentos({
   expediente,
+  establecimiento,
   documentos,
   onSaved,
   onBack,
 }: {
   expediente: Expediente;
+  establecimiento: Establecimiento;
   documentos: ExpedienteDocumento[];
   onSaved: (expediente: Expediente) => void;
   onBack: () => void;
@@ -46,6 +52,14 @@ function PasoDocumentos({
     },
     null,
   );
+  const tipos = documentosRequeridos(expediente);
+  const requeridos = DOCUMENTOS.filter((d) => tipos.includes(d.tipo));
+  const planFisico = planSeguridadFisico({
+    nivelRiesgo: expediente.nivelRiesgo,
+    numeroPisos: establecimiento.numeroPisos,
+    tieneSotano: expediente.tieneSotano,
+    areaM2: Number(establecimiento.areaM2),
+  });
   const [boleta, setBoleta] = useState(expediente.numeroBoleta ?? "");
   const fieldErrors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const error = fieldErrors.numeroBoleta?.[0];
@@ -58,20 +72,20 @@ function PasoDocumentos({
         La subida de documentos estará disponible pronto.
       </p>
       <ul className="space-y-2 text-sm">
-        {DOCUMENTOS.map((d) => (
+        {requeridos.map((d) => (
           <li key={d.tipo} className="flex flex-wrap items-center justify-between gap-2">
             <span>{d.etiqueta}</span>
-            <span className="flex gap-2">
-              <Badge variant={d.requerido ? "default" : "outline"}>
-                {d.requerido ? "Obligatorio" : "Opcional"}
-              </Badge>
-              <Badge variant="outline">
-                {documentos.some((x) => x.tipo === d.tipo) ? "Subido" : "Pendiente"}
-              </Badge>
-            </span>
+            <Badge variant="outline">
+              {documentos.some((x) => x.tipo === d.tipo) ? "Subido" : "Pendiente"}
+            </Badge>
           </li>
         ))}
       </ul>
+      {planFisico && (
+        <p className="rounded-lg bg-muted p-3 text-sm">
+          El Plan de seguridad no se sube: el inspector lo revisa en físico durante la diligencia.
+        </p>
+      )}
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="numeroBoleta">Número de boleta</Label>
@@ -150,9 +164,10 @@ export function SolicitudWizard({
           onBack={atras}
         />
       )}
-      {paso === 4 && expediente && (
+      {paso === 4 && expediente && establecimiento && (
         <PasoDocumentos
           expediente={expediente}
+          establecimiento={establecimiento}
           documentos={documentos}
           onSaved={siguiente}
           onBack={atras}
@@ -161,7 +176,7 @@ export function SolicitudWizard({
       {paso === 5 && expediente && establecimiento && (
         <StepResumen
           expediente={expediente}
-          establecimientoNombre={establecimiento.nombreComercial}
+          establecimiento={establecimiento}
           tiposSubidos={documentos.map((d) => d.tipo)}
           onBack={atras}
         />

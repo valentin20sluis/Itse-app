@@ -70,6 +70,21 @@ describe("saveBorradorAction", () => {
     expect(mocks.updateBorrador).toHaveBeenCalledWith(usuario, ID, expect.any(Object));
   });
 
+  it("paso 2 pasa usoMixtoPatrimonio y granEscala al servicio", async () => {
+    mocks.updateBorrador.mockResolvedValue({ id: ID });
+    await saveBorradorAction(
+      2,
+      ID,
+      null,
+      fd({ nivelRiesgo: "ALTO", usoMixtoPatrimonio: "on", granEscala: "on" }),
+    );
+    expect(mocks.updateBorrador).toHaveBeenCalledWith(
+      usuario,
+      ID,
+      expect.objectContaining({ usoMixtoPatrimonio: true, granEscala: true }),
+    );
+  });
+
   it("pasos 2 a 4 sin id responden no encontrado", async () => {
     const res = await saveBorradorAction(2, null, null, fd({ nivelRiesgo: "BAJO" }));
     expect(res).toEqual(NO_SOLICITUD);
@@ -123,12 +138,12 @@ describe("enviarSolicitudAction", () => {
   it("incompleto lista pasos y documentos en español, sin revalidar", async () => {
     mocks.enviarExpediente.mockResolvedValue({
       status: "incompleto",
-      faltantes: ["paso3", "PLANO_UBICACION"],
+      faltantes: ["paso3", "PLANOS_ELECTRICOS"],
     });
     const res = await enviarSolicitudAction(ID, null, fd({ aceptada: "on" }));
     expect(res).toEqual({
       ok: false,
-      error: "Aún falta completar: Solicitante, Plano de ubicación.",
+      error: "Aún falta completar: Solicitante, Planos eléctricos.",
     });
     expect(mocks.enviarExpediente).toHaveBeenCalledWith(usuario, ID, true);
     expect(mocks.revalidatePath).not.toHaveBeenCalled();

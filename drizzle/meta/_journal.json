@@ -50,6 +50,20 @@
       "when": 1793069400543,
       "tag": "0006_closed_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793125473483,
+      "tag": "0007_striped_juggernaut",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793125929345,
+      "tag": "0008_ancient_jigsaw",
+      "breakpoints": true
     }
   ]
 }

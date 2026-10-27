@@ -31,7 +31,8 @@ type FieldName =
   | "giro"
   | "areaM2"
   | "numeroPisos"
-  | "pisoEstablecimiento";
+  | "pisoEstablecimiento"
+  | "numeroCamas";
 
 const FIELDS: {
   name: FieldName;
@@ -48,6 +49,7 @@ const FIELDS: {
   { name: "numeroGiro", label: "Número de giro" },
   { name: "giro", label: "Giro o actividad", wide: true },
   { name: "funcion", label: "Función" },
+  { name: "numeroCamas", label: "Número de camas o habitaciones", inputMode: "numeric" },
   { name: "areaM2", label: "Área techada total (m²)", inputMode: "decimal" },
   { name: "numeroPisos", label: "Número de pisos de la edificación", inputMode: "numeric" },
   { name: "pisoEstablecimiento", label: "Piso donde está el establecimiento", inputMode: "numeric" },
@@ -101,6 +103,7 @@ function FormBody({
     numeroPisos: establecimiento ? String(establecimiento.numeroPisos) : "",
     pisoEstablecimiento:
       establecimiento?.pisoEstablecimiento != null ? String(establecimiento.pisoEstablecimiento) : "",
+    numeroCamas: establecimiento?.numeroCamas != null ? String(establecimiento.numeroCamas) : "",
   });
 
   useEffect(() => {
@@ -122,7 +125,7 @@ function FormBody({
         </DialogDescription>
       </DialogHeader>
       <form action={formAction} className="grid gap-4 sm:grid-cols-2" noValidate>
-        {FIELDS.map((f) => {
+        {FIELDS.filter((f) => f.name !== "numeroCamas" || values.funcion === "HOSPEDAJE").map((f) => {
           const error = fieldErrors[f.name]?.[0];
           const errorId = `${f.name}-error`;
           return (

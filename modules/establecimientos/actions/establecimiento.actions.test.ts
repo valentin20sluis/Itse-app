@@ -98,6 +98,21 @@ describe("createEstablecimientoAction", () => {
     expect(mocks.update).toHaveBeenCalledWith(usuario, ID, expect.objectContaining({ pisoEstablecimiento: 2 }));
   });
 
+  it("Hospedaje sin camas devuelve fieldErrors; con camas las pasa al servicio al crear y editar; otras funciones pasan null", async () => {
+    const res = await createEstablecimientoAction(null, form({ funcion: "HOSPEDAJE" }));
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.fieldErrors?.numeroCamas).toBeDefined();
+    expect(mocks.create).not.toHaveBeenCalled();
+    mocks.create.mockResolvedValue({ id: ID });
+    mocks.update.mockResolvedValue({ id: ID });
+    await createEstablecimientoAction(null, form({ funcion: "HOSPEDAJE", numeroCamas: "40" }));
+    expect(mocks.create).toHaveBeenCalledWith(usuario, expect.objectContaining({ numeroCamas: 40 }));
+    await updateEstablecimientoAction(ID, null, form({ funcion: "HOSPEDAJE", numeroCamas: "12" }));
+    expect(mocks.update).toHaveBeenCalledWith(usuario, ID, expect.objectContaining({ numeroCamas: 12 }));
+    await createEstablecimientoAction(null, form({ numeroCamas: "40" }));
+    expect(mocks.create).toHaveBeenLastCalledWith(usuario, expect.objectContaining({ numeroCamas: null }));
+  });
+
   it("pasa numeroGiro al servicio", async () => {
     mocks.create.mockResolvedValue({ id: ID });
     await createEstablecimientoAction(null, form());

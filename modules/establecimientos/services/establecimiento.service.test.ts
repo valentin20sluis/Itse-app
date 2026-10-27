@@ -82,6 +82,7 @@ const input = {
   areaM2: 120.5,
   numeroPisos: 2,
   pisoEstablecimiento: 1,
+  numeroCamas: null as number | null,
 };
 
 beforeEach(() => {
@@ -121,6 +122,16 @@ describe("create y list", () => {
     expect(e.pisoEstablecimiento).toBe(1);
     const u = await updateEstablecimiento(A, e.id, { ...input, pisoEstablecimiento: 2 });
     expect(u?.pisoEstablecimiento).toBe(2);
+  });
+
+  it("persiste numeroCamas solo en Hospedaje, también al editar", async () => {
+    const e = await createEstablecimiento(A, { ...input, funcion: "HOSPEDAJE", numeroCamas: 40 });
+    expect(e.numeroCamas).toBe(40);
+    const u = await updateEstablecimiento(A, e.id, { ...input, funcion: "HOSPEDAJE", numeroCamas: 12 });
+    expect(u?.numeroCamas).toBe(12);
+    const c = await updateEstablecimiento(A, e.id, { ...input, numeroCamas: 12 });
+    expect(c?.numeroCamas).toBeNull();
+    expect((await createEstablecimiento(A, { ...input, numeroCamas: 5 })).numeroCamas).toBeNull();
   });
 
   it("lista solo los propios no archivados, el más reciente primero", async () => {

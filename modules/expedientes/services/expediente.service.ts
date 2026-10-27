@@ -56,6 +56,10 @@ function patchToValues(patch: PatchBorrador) {
       nivelRiesgo: patch.nivelRiesgo,
       tieneSotano: patch.tieneSotano,
       almacenaInflamables: patch.almacenaInflamables,
+      tieneCocina: patch.tieneCocina,
+      esGrifo: patch.esGrifo,
+      usoMixtoPatrimonio: patch.usoMixtoPatrimonio,
+      granEscala: patch.granEscala,
     };
   }
   if ("solicitanteNombre" in patch) {
@@ -158,7 +162,17 @@ export async function enviarExpediente(
     .select({ tipo: expedienteDocumentos.tipo })
     .from(expedienteDocumentos)
     .where(eq(expedienteDocumentos.expedienteId, exp.id));
-  faltantes.push(...documentosFaltantes(subidos.map((d) => d.tipo)));
+  faltantes.push(
+    ...documentosFaltantes(
+      subidos.map((d) => d.tipo),
+      {
+        nivelRiesgo: exp.nivelRiesgo,
+        tieneCocina: exp.tieneCocina,
+        esGrifo: exp.esGrifo,
+        almacenaInflamables: exp.almacenaInflamables,
+      },
+    ),
+  );
   if (faltantes.length > 0) return { status: "incompleto", faltantes };
 
   const ahora = new Date();

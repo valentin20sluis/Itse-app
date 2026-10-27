@@ -36,6 +36,11 @@ export function StepRiesgo({ establecimiento, expediente, onSaved, onBack }: Pro
   );
   const [tieneSotano, setTieneSotano] = useState(expediente.tieneSotano);
   const [almacenaInflamables, setAlmacenaInflamables] = useState(expediente.almacenaInflamables);
+  const [tieneCocina, setTieneCocina] = useState(expediente.tieneCocina);
+  const [esGrifo, setEsGrifo] = useState(expediente.esGrifo);
+  const esHospedaje = establecimiento.funcion === "HOSPEDAJE";
+  const [usoMixtoPatrimonio, setUsoMixtoPatrimonio] = useState(expediente.usoMixtoPatrimonio);
+  const [granEscala, setGranEscala] = useState(expediente.granEscala);
   const [nivel, setNivel] = useState<string>(expediente.nivelRiesgo ?? "");
 
   const sugerido = sugerirNivelRiesgo({
@@ -43,6 +48,11 @@ export function StepRiesgo({ establecimiento, expediente, onSaved, onBack }: Pro
     numeroPisos: establecimiento.numeroPisos,
     tieneSotano,
     almacenaInflamables,
+    esGrifo,
+    funcion: establecimiento.funcion,
+    numeroCamas: establecimiento.numeroCamas,
+    usoMixtoPatrimonio: esHospedaje && usoMixtoPatrimonio,
+    granEscala: esHospedaje && granEscala,
   });
   const etiquetaSugerido = NIVELES.find((n) => n.valor === sugerido)?.etiqueta;
   const elegido = NIVELES.find((n) => n.valor === nivel);
@@ -83,6 +93,60 @@ export function StepRiesgo({ establecimiento, expediente, onSaved, onBack }: Pro
           />
           <span>¿Almacena inflamables?</span>
         </label>
+        <label className={OPCION}>
+          <input
+            type="checkbox"
+            name="tieneCocina"
+            value="on"
+            checked={tieneCocina}
+            onChange={(e) => setTieneCocina(e.target.checked)}
+            className="size-5 shrink-0 accent-primary"
+          />
+          <span>¿Tiene cocina (restaurante)?</span>
+        </label>
+        <label className={OPCION}>
+          <input
+            type="checkbox"
+            name="esGrifo"
+            value="on"
+            checked={esGrifo}
+            onChange={(e) => setEsGrifo(e.target.checked)}
+            className="size-5 shrink-0 accent-primary"
+          />
+          <span>¿Es un grifo / estación de servicio?</span>
+        </label>
+        {esHospedaje && (
+          <>
+            <label className={OPCION}>
+              <input
+                type="checkbox"
+                name="usoMixtoPatrimonio"
+                value="on"
+                checked={usoMixtoPatrimonio}
+                onChange={(e) => setUsoMixtoPatrimonio(e.target.checked)}
+                className="size-5 shrink-0 accent-primary"
+              />
+              <span>¿Está en una edificación de uso mixto o es patrimonio cultural?</span>
+            </label>
+            <label className={OPCION}>
+              <input
+                type="checkbox"
+                name="granEscala"
+                value="on"
+                checked={granEscala}
+                onChange={(e) => setGranEscala(e.target.checked)}
+                className="size-5 shrink-0 accent-primary"
+              />
+              <span>¿Tiene restaurante de alta capacidad, discoteca o salas de eventos integradas?</span>
+            </label>
+          </>
+        )}
+        {esGrifo && (
+          <p className="text-sm text-muted-foreground">
+            La municipalidad solo realiza la ITSE a las oficinas administrativas del grifo (riesgo
+            medio). Se te pedirá la licencia de Osinergmin por el área de combustible.
+          </p>
+        )}
       </fieldset>
 
       <div className="space-y-1 rounded-lg bg-muted p-3 text-sm" aria-live="polite">

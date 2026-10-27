@@ -35,6 +35,7 @@ function toValues(input: EstablecimientoInput) {
     areaM2: String(input.areaM2),
     numeroPisos: input.numeroPisos,
     pisoEstablecimiento: input.pisoEstablecimiento,
+    numeroCamas: input.funcion === "HOSPEDAJE" ? input.numeroCamas : null,
   };
 }
 

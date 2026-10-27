@@ -45,10 +45,25 @@ inspectoresRequeridos(riesgo) → { BAJO: 1, MEDIO: 1, ALTO: 2, MUY_ALTO: 3 }[ri
 
 ### 2.1 Referencia de la Matriz de Riesgos (función Comercio)
 
-- Edificación de hasta 3 pisos y/o área techada total de hasta 750 m² → riesgo **MEDIO**.
-- Edificación de más de 3 pisos y/o área techada total mayor a 750 m² → riesgo **ALTO**.
+- **Decisión del proyecto:** la Matriz para Comercio usa 3 pisos / 750 m²; este sistema usa umbrales más estrictos.
+- Edificación de hasta 2 pisos y/o área techada total de hasta 500 m² → riesgo **MEDIO**.
+- Edificación de más de 2 pisos y/o área techada total mayor a 500 m² → riesgo **ALTO**.
+- **Grifos / estaciones de servicio:** siempre riesgo **MEDIO**. La municipalidad solo realiza la ITSE a sus oficinas administrativas; el combustible (tanques, área de despacho) lo regula Osinergmin, cuya licencia se pide como documento.
 - Factores que incrementan el riesgo: sótano, almacenamiento de inflamables, ubicación en edificación de uso mixto sin certificado de ITSE en áreas comunes, entre otros.
 - Ejemplos típicos de riesgo medio: bodegas, librerías, boticas, minimarkets.
+
+**Hospedaje (Matriz CENEPRED):** cuando la función es Hospedaje se aplica esta tabla en lugar de la lógica general. El nivel es el **más alto** entre los criterios y nunca es BAJO. El grifo conserva prioridad (MEDIO).
+
+| Criterio | MEDIO | ALTO | MUY_ALTO |
+|---|---|---|---|
+| Pisos | hasta 2 | 3 a 4 | 5 o más |
+| Camas o habitaciones | hasta 20 | 21 a 100 | más de 100 |
+| Área techada (m²) | hasta 500 | más de 500 hasta 3000 | más de 3000 |
+| Sótano | | al menos ALTO | |
+| Uso mixto o patrimonio cultural | | al menos ALTO | |
+| Gran escala (restaurante de alta capacidad, discoteca o salas de eventos integradas) | | | MUY_ALTO |
+
+Los sumandos de sótano e inflamables de la lógica general no se aplican a Hospedaje. Límites aceptados: no se distingue un sótano comercial o estacionamiento amplio de otro sótano (se resuelve con la casilla de gran escala); si un Hospedaje existente tiene el número de camas sin registrar (null), ese criterio se ignora hasta que se edite el establecimiento.
 
 **En el sistema:** el cliente **declara** el nivel de riesgo en el wizard con ayuda de preguntas orientativas (función, área, pisos, sótano, inflamables). La clasificación final la confirma el `admin`. El sistema solo sugiere, no decide.
 
@@ -67,16 +82,16 @@ Para la **renovación de riesgo alto y muy alto**: solicitud + pago + declaraci�
 
 ## 4. Documentos de la solicitud
 
-Requeridos (configurables por el superadmin):
-1. Solicitud de ITSE / FUT (Anexo 1)
-2. Reporte de nivel de riesgo (Anexo 3)
-3. Declaración jurada de cumplimiento de condiciones de seguridad (Anexo 4), solo para riesgo bajo y medio
-4. Plano de ubicación con cuadro de áreas
-5. Plano de distribución / arquitectura
-6. Plan de seguridad del establecimiento
-7. Comprobante de pago de la tasa (número de boleta + archivo)
+Los documentos que debe subir el cliente dependen del nivel de riesgo declarado y de tres datos del paso 2 (cocina, grifo, inflamables):
 
-Opcionales según el caso: certificado de medición de pozo a tierra, constancia de mantenimiento de extintores, otros.
+- **Todo nivel de riesgo:** Ficha RUC, extintores PQS, capacitación en uso de extintores (un solo documento que cubre PQS, Tipo K o ambos).
+- **Si tiene cocina (restaurante):** extintores Tipo K.
+- **Licencia/certificado de Osinergmin:** si es grifo (cualquier nivel) o si almacena inflamables con riesgo ALTO/MUY_ALTO.
+- **Solo riesgo ALTO/MUY_ALTO:** plano de arquitectura con aforo, planos eléctricos, certificado de pozo a tierra, memoria de pruebas de equipos.
+
+**Plan de seguridad:** no se sube como archivo; el inspector lo revisa en físico durante la diligencia. El sistema solo muestra un aviso cuando corresponde (riesgo ALTO/MUY_ALTO, o BAJO/MEDIO con más de 2 pisos, sótano o más de 500 m²).
+
+**Pago de la tasa:** ya no hay comprobante de pago como archivo; solo se registra el número de boleta.
 
 **En el sistema** ya no se piden "2 juegos": los archivos digitales reemplazan las copias físicas.
 

@@ -13,6 +13,7 @@ import type { Expediente } from "@/modules/expedientes/types/expediente.types";
 import { SolicitudWizard } from "./SolicitudWizard";
 
 const EST_ID = "7a1c2d3e-5a4d-4e6f-8b7a-1c2d3e4f5a6b";
+const EST_CHICO_ID = "9b2c3d4e-5a4d-4e6f-8b7a-1c2d3e4f5a6b";
 const establecimientos = [
   {
     id: EST_ID,
@@ -20,6 +21,13 @@ const establecimientos = [
     direccion: "Av. Lima 123",
     areaM2: "100.00",
     numeroPisos: 4,
+  },
+  {
+    id: EST_CHICO_ID,
+    nombreComercial: "Kiosco",
+    direccion: "Jr. Cusco 45",
+    areaM2: "50.00",
+    numeroPisos: 1,
   },
 ] as unknown as Establecimiento[];
 
@@ -30,6 +38,10 @@ const expediente = {
   nivelRiesgo: null,
   tieneSotano: false,
   almacenaInflamables: false,
+  tieneCocina: false,
+  esGrifo: false,
+  usoMixtoPatrimonio: false,
+  granEscala: false,
   solicitanteNombre: null,
   solicitanteDocumento: null,
   solicitanteTelefono: null,
@@ -102,5 +114,120 @@ describe("SolicitudWizard", () => {
     renderWizard(expediente);
     expect((screen.getByLabelText("Renovación") as HTMLInputElement).checked).toBe(true);
     expect((screen.getByLabelText(/Bodega Central/) as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("paso 2: las casillas de cocina y grifo se envían en el formulario", async () => {
+    mocks.saveBorradorAction.mockResolvedValue({ ok: true, data: expediente });
+    renderWizard(expediente);
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    await screen.findByText("Paso 2 de 5: Riesgo");
+    fireEvent.click(screen.getByLabelText(/¿Tiene cocina/));
+    fireEvent.click(screen.getByLabelText(/¿Es un grifo/));
+    mocks.saveBorradorAction.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+    await waitFor(() => expect(mocks.saveBorradorAction).toHaveBeenCalled());
+    const formData = mocks.saveBorradorAction.mock.calls[0][3] as FormData;
+    expect(formData.get("tieneCocina")).toBe("on");
+    expect(formData.get("esGrifo")).toBe("on");
+  });
+
+  describe("paso 2 con Hospedaje", () => {
+    const MIXTO = /uso mixto o es patrimonio/;
+    const GRAN = /restaurante de alta capacidad/;
+    const hospedaje = (numeroCamas: number) =>
+      [{ ...establecimientos[0], funcion: "HOSPEDAJE", numeroCamas, numeroPisos: 1 }] as unknown as Establecimiento[];
+
+    async function irAlPaso2(ests: Establecimiento[]) {
+      mocks.saveBorradorAction.mockResolvedValue({ ok: true, data: expediente });
+      render(
+        <SolicitudWizard establecimientos={ests} borrador={expediente} documentos={[]} defaultsSolicitante={defaults} />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+      await screen.findByText("Paso 2 de 5: Riesgo");
+    }
+
+    it("sin Hospedaje no muestra las casillas ni las envía", async () => {
+      await irAlPaso2(establecimientos);
+      expect(screen.queryByLabelText(MIXTO)).toBeNull();
+      expect(screen.queryByLabelText(GRAN)).toBeNull();
+      mocks.saveBorradorAction.mockClear();
+      fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+      await waitFor(() => expect(mocks.saveBorradorAction).toHaveBeenCalled());
+      const formData = mocks.saveBorradorAction.mock.calls[0][3] as FormData;
+      expect(formData.get("usoMixtoPatrimonio")).toBeNull();
+      expect(formData.get("granEscala")).toBeNull();
+    });
+
+    it("con Hospedaje muestra las casillas, las envía y recalcula la sugerencia", async () => {
+      await irAlPaso2(hospedaje(40));
+      const mixto = screen.getByLabelText(MIXTO);
+      expect(screen.getByLabelText(GRAN)).toBeTruthy();
+      fireEvent.click(mixto);
+      expect(screen.getByText("Sugerencia: Riesgo alto")).toBeTruthy();
+      fireEvent.click(screen.getByLabelText(GRAN));
+      expect(screen.getByText("Sugerencia: Riesgo muy alto")).toBeTruthy();
+      mocks.saveBorradorAction.mockClear();
+      fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+      await waitFor(() => expect(mocks.saveBorradorAction).toHaveBeenCalled());
+      const formData = mocks.saveBorradorAction.mock.calls[0][3] as FormData;
+      expect(formData.get("usoMixtoPatrimonio")).toBe("on");
+      expect(formData.get("granEscala")).toBe("on");
+    });
+
+    it("101 camas sugiere riesgo muy alto", async () => {
+      await irAlPaso2(hospedaje(101));
+      expect(screen.getByText("Sugerencia: Riesgo muy alto")).toBeTruthy();
+    });
+  });
+
+  describe("paso 4 y resumen", () => {
+    async function irAlPaso(exp: Expediente, paso: 4 | 5) {
+      mocks.saveBorradorAction.mockResolvedValue({ ok: true, data: exp });
+      renderWizard(exp);
+      for (let p = 1; p < paso; p++) {
+        await screen.findByText(new RegExp(`Paso ${p} de 5`));
+        fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+      }
+      await screen.findByText(new RegExp(`Paso ${paso} de 5`));
+    }
+    const AVISO = /El Plan de seguridad no se sube/;
+
+    it("MEDIO lista 3 documentos y el aviso del plan según planSeguridadFisico", async () => {
+      await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO" }, 4);
+      expect(screen.getAllByText(/Pendiente/)).toHaveLength(3);
+      expect(screen.getByText("Ficha RUC")).toBeTruthy();
+      expect(screen.getByLabelText("Número de boleta")).toBeTruthy();
+      expect(screen.queryByText(AVISO)).toBeNull();
+    });
+
+    it("muestra el aviso del plan cuando el local es pequeño", async () => {
+      await irAlPaso({ ...expediente, establecimientoId: EST_CHICO_ID, nivelRiesgo: "MEDIO" }, 4);
+      expect(screen.getByText(AVISO)).toBeTruthy();
+    });
+
+    it("ALTO lista los documentos técnicos y el aviso del plan", async () => {
+      await irAlPaso({ ...expediente, nivelRiesgo: "ALTO" }, 4);
+      expect(screen.getAllByText(/Pendiente/)).toHaveLength(7);
+      expect(screen.getByText("Planos eléctricos")).toBeTruthy();
+      expect(screen.getByText(AVISO)).toBeTruthy();
+    });
+
+    it("cocina agrega extintores Tipo K", async () => {
+      await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO", tieneCocina: true }, 4);
+      expect(screen.getAllByText(/Pendiente/)).toHaveLength(4);
+      expect(screen.getByText("Certificado de extintores Tipo K")).toBeTruthy();
+    });
+
+    it("el resumen sin nivel de riesgo no lista documentos", async () => {
+      await irAlPaso(expediente, 5);
+      expect(screen.queryByText("Ficha RUC")).toBeNull();
+      expect(screen.queryByText(AVISO)).toBeNull();
+    });
+
+    it("el resumen lista los requeridos del riesgo", async () => {
+      await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO" }, 5);
+      expect(screen.getByText("Ficha RUC")).toBeTruthy();
+      expect(screen.getAllByText("Pendiente")).toHaveLength(3);
+    });
   });
 });

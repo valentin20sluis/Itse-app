@@ -1,33 +1,117 @@
 import { describe, expect, it } from "vitest";
-import { DOCUMENTOS, documentosFaltantes } from "./documentos";
+import {
+  DOCUMENTOS,
+  documentosFaltantes,
+  documentosRequeridos,
+  planSeguridadFisico,
+  type ContextoDocumentos,
+} from "./documentos";
 
-const REQUERIDOS = [
-  "PLANO_UBICACION",
-  "PLANO_DISTRIBUCION",
-  "PLAN_SEGURIDAD",
-  "COMPROBANTE_PAGO",
-] as const;
+const ctx = (o: Partial<ContextoDocumentos> = {}): ContextoDocumentos => ({
+  nivelRiesgo: "MEDIO",
+  tieneCocina: false,
+  esGrifo: false,
+  almacenaInflamables: false,
+  ...o,
+});
+
+const BASICOS = ["FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"];
+const TECNICOS = [
+  "PLANO_ARQUITECTURA_AFORO",
+  "PLANOS_ELECTRICOS",
+  "POZO_TIERRA",
+  "MEMORIA_PRUEBAS_EQUIPOS",
+];
+
+describe("documentosRequeridos", () => {
+  it("nivel null no requiere nada", () => {
+    expect(documentosRequeridos(ctx({ nivelRiesgo: null, tieneCocina: true }))).toEqual([]);
+  });
+
+  it.each(["BAJO", "MEDIO"] as const)("%s sin extras pide los 3 básicos", (nivelRiesgo) => {
+    expect(documentosRequeridos(ctx({ nivelRiesgo }))).toEqual(BASICOS);
+  });
+
+  it.each(["BAJO", "MEDIO", "ALTO", "MUY_ALTO"] as const)("cocina agrega Tipo K en %s", (nivelRiesgo) => {
+    expect(documentosRequeridos(ctx({ nivelRiesgo, tieneCocina: true }))).toContain(
+      "EXTINTORES_TIPO_K",
+    );
+  });
+
+  it.each(["BAJO", "MEDIO", "ALTO", "MUY_ALTO"] as const)("grifo agrega Osinergmin en %s", (nivelRiesgo) => {
+    expect(documentosRequeridos(ctx({ nivelRiesgo, esGrifo: true }))).toContain(
+      "LICENCIA_OSINERGMIN",
+    );
+  });
+
+  it("inflamables agrega Osinergmin solo en ALTO/MUY_ALTO", () => {
+    for (const nivelRiesgo of ["BAJO", "MEDIO"] as const)
+      expect(
+        documentosRequeridos(ctx({ nivelRiesgo, almacenaInflamables: true })),
+      ).not.toContain("LICENCIA_OSINERGMIN");
+    for (const nivelRiesgo of ["ALTO", "MUY_ALTO"] as const)
+      expect(
+        documentosRequeridos(ctx({ nivelRiesgo, almacenaInflamables: true })),
+      ).toContain("LICENCIA_OSINERGMIN");
+  });
+
+  it.each(["ALTO", "MUY_ALTO"] as const)("%s agrega los 4 técnicos, en orden de catálogo", (nivelRiesgo) => {
+    expect(documentosRequeridos(ctx({ nivelRiesgo }))).toEqual([...BASICOS, ...TECNICOS].sort(
+      (a, b) =>
+        DOCUMENTOS.findIndex((d) => d.tipo === a) - DOCUMENTOS.findIndex((d) => d.tipo === b),
+    ));
+  });
+
+  it("sin duplicados y sin tipos obsoletos con todo activo", () => {
+    const r = documentosRequeridos(
+      ctx({ nivelRiesgo: "MUY_ALTO", tieneCocina: true, esGrifo: true, almacenaInflamables: true }),
+    );
+    expect(new Set(r).size).toBe(r.length);
+    expect(r).toHaveLength(9);
+    for (const o of ["PLANO_UBICACION", "PLANO_DISTRIBUCION", "PLAN_SEGURIDAD", "COMPROBANTE_PAGO", "EXTINTORES"])
+      expect(r).not.toContain(o);
+  });
+});
 
 describe("documentosFaltantes", () => {
-  it("sin subidos faltan los 4 requeridos", () => {
-    expect(documentosFaltantes([])).toEqual(REQUERIDOS);
+  it("devuelve los requeridos no subidos", () => {
+    expect(documentosFaltantes(["FICHA_RUC"], ctx())).toEqual([
+      "EXTINTORES_PQS",
+      "CAPACITACION_EXTINTORES",
+    ]);
   });
-  it("con 3 requeridos falta el restante", () => {
-    expect(documentosFaltantes(REQUERIDOS.slice(0, 3))).toEqual(["COMPROBANTE_PAGO"]);
+  it("un subido no requerido no aparece ni bloquea", () => {
+    expect(documentosFaltantes([...BASICOS, "POZO_TIERRA"] as never, ctx())).toEqual([]);
   });
-  it("con los 4 requeridos no falta nada", () => {
-    expect(documentosFaltantes([...REQUERIDOS])).toEqual([]);
+  it("nivel null devuelve []", () => {
+    expect(documentosFaltantes([], ctx({ nivelRiesgo: null }))).toEqual([]);
   });
-  it("los opcionales no cuentan", () => {
-    expect(documentosFaltantes(["POZO_TIERRA", "EXTINTORES"])).toEqual(REQUERIDOS);
-    expect(documentosFaltantes([...REQUERIDOS, "POZO_TIERRA"])).toEqual([]);
+});
+
+describe("planSeguridadFisico", () => {
+  const base = { nivelRiesgo: "MEDIO" as const, numeroPisos: 2, tieneSotano: false, areaM2: 500 };
+  it("ALTO/MUY_ALTO siempre true", () => {
+    expect(planSeguridadFisico({ ...base, nivelRiesgo: "ALTO", numeroPisos: 9, areaM2: 9999 })).toBe(true);
+    expect(planSeguridadFisico({ ...base, nivelRiesgo: "MUY_ALTO", tieneSotano: true })).toBe(true);
+  });
+  it("BAJO/MEDIO true en los límites 2 pisos y 500 m2", () => {
+    expect(planSeguridadFisico(base)).toBe(true);
+    expect(planSeguridadFisico({ ...base, nivelRiesgo: "BAJO" })).toBe(true);
+  });
+  it("false con 3 pisos, sótano o 500,01 m2", () => {
+    expect(planSeguridadFisico({ ...base, numeroPisos: 3 })).toBe(false);
+    expect(planSeguridadFisico({ ...base, tieneSotano: true })).toBe(false);
+    expect(planSeguridadFisico({ ...base, areaM2: 500.01 })).toBe(false);
+  });
+  it("nivel null es false", () => {
+    expect(planSeguridadFisico({ ...base, nivelRiesgo: null })).toBe(false);
   });
 });
 
 describe("DOCUMENTOS", () => {
-  it("tiene 6 tipos con etiqueta en español", () => {
-    expect(DOCUMENTOS).toHaveLength(6);
+  it("tiene 9 tipos con etiqueta en español", () => {
+    expect(DOCUMENTOS).toHaveLength(9);
     expect(DOCUMENTOS.every((d) => d.etiqueta.length > 0)).toBe(true);
-    expect(DOCUMENTOS.find((d) => d.tipo === "PLAN_SEGURIDAD")?.etiqueta).toBe("Plan de seguridad");
+    expect(DOCUMENTOS.find((d) => d.tipo === "FICHA_RUC")?.etiqueta).toBe("Ficha RUC");
   });
 });

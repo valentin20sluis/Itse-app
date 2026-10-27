@@ -32,7 +32,29 @@ describe("paso1Schema", () => {
 describe("paso2Schema", () => {
   it("checkboxes: 'on' es true y ausente es false", () => {
     const r = paso2Schema.parse({ nivelRiesgo: "ALTO", tieneSotano: "on" });
-    expect(r).toEqual({ nivelRiesgo: "ALTO", tieneSotano: true, almacenaInflamables: false });
+    expect(r).toEqual({
+      nivelRiesgo: "ALTO",
+      tieneSotano: true,
+      almacenaInflamables: false,
+      tieneCocina: false,
+      esGrifo: false,
+      usoMixtoPatrimonio: false,
+      granEscala: false,
+    });
+  });
+  it("tieneCocina y esGrifo: 'on' y true son true, ausente es false", () => {
+    const base = { nivelRiesgo: "MEDIO" };
+    const on = paso2Schema.parse({ ...base, tieneCocina: "on", esGrifo: true });
+    expect([on.tieneCocina, on.esGrifo]).toEqual([true, true]);
+    const off = paso2Schema.parse(base);
+    expect([off.tieneCocina, off.esGrifo]).toEqual([false, false]);
+  });
+  it("usoMixtoPatrimonio y granEscala: 'on' y true son true, ausente es false", () => {
+    const base = { nivelRiesgo: "MEDIO" };
+    const on = paso2Schema.parse({ ...base, usoMixtoPatrimonio: "on", granEscala: true });
+    expect([on.usoMixtoPatrimonio, on.granEscala]).toEqual([true, true]);
+    const off = paso2Schema.parse(base);
+    expect([off.usoMixtoPatrimonio, off.granEscala]).toEqual([false, false]);
   });
   it("rechaza nivel inválido", () => {
     expect(msg(paso2Schema.safeParse({ nivelRiesgo: "X" }))).toBe("Selecciona el nivel de riesgo.");

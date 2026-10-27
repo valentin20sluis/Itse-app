@@ -73,7 +73,7 @@ import {
 const A = { id: "user-a", rol: "cliente" } as const;
 const B = { id: "user-b", rol: "cliente" } as const;
 const pdf = {
-  tipo: "PLANO_UBICACION",
+  tipo: "FICHA_RUC",
   fileKey: "key-1",
   nombreOriginal: "plano.pdf",
   mimeType: "application/pdf",
@@ -123,28 +123,28 @@ describe("IDOR", () => {
     const before = structuredClone(store.docs);
 
     expect(await registerDocumento(B, "exp-1", { ...pdf, fileKey: "hack" })).toBeNull();
-    expect(await removeDocumento(B, "exp-1", "PLANO_UBICACION")).toBeNull();
+    expect(await removeDocumento(B, "exp-1", "FICHA_RUC")).toBeNull();
     expect(await listDocumentos(B, "exp-1")).toEqual([]);
-    expect(await getDocumentoForDownload(B, "exp-1", "PLANO_UBICACION")).toBeNull();
+    expect(await getDocumentoForDownload(B, "exp-1", "FICHA_RUC")).toBeNull();
     expect(store.docs).toEqual(before);
 
     expect(await registerDocumento(A, "no-existe", pdf)).toBeNull();
-    expect(await removeDocumento(A, "no-existe", "PLANO_UBICACION")).toBeNull();
+    expect(await removeDocumento(A, "no-existe", "FICHA_RUC")).toBeNull();
     expect(await listDocumentos(A, "no-existe")).toEqual([]);
-    expect(await getDocumentoForDownload(A, "no-existe", "PLANO_UBICACION")).toBeNull();
+    expect(await getDocumentoForDownload(A, "no-existe", "FICHA_RUC")).toBeNull();
   });
 });
 
 describe("removeDocumento", () => {
   it("el dueño elimina en borrador y recibe la fila", async () => {
     await registerDocumento(A, "exp-1", pdf);
-    expect((await removeDocumento(A, "exp-1", "PLANO_UBICACION"))?.fileKey).toBe("key-1");
+    expect((await removeDocumento(A, "exp-1", "FICHA_RUC"))?.fileKey).toBe("key-1");
     expect(store.docs).toHaveLength(0);
   });
 
   it("no elimina en un expediente presentado", async () => {
-    store.docs = [{ id: "d", expedienteId: "exp-2", tipo: "PLANO_UBICACION", fileKey: "k" }];
-    expect(await removeDocumento(A, "exp-2", "PLANO_UBICACION")).toBeNull();
+    store.docs = [{ id: "d", expedienteId: "exp-2", tipo: "FICHA_RUC", fileKey: "k" }];
+    expect(await removeDocumento(A, "exp-2", "FICHA_RUC")).toBeNull();
     expect(store.docs).toHaveLength(1);
   });
 });
@@ -154,7 +154,7 @@ describe("lectura y descarga", () => {
     await registerDocumento(A, "exp-1", pdf);
     for (const actor of [A, { id: "s", rol: "admin" }, { id: "s", rol: "superadmin" }] as const) {
       expect(await listDocumentos(actor, "exp-1")).toHaveLength(1);
-      expect((await getDocumentoForDownload(actor, "exp-1", "PLANO_UBICACION"))?.fileKey).toBe(
+      expect((await getDocumentoForDownload(actor, "exp-1", "FICHA_RUC"))?.fileKey).toBe(
         "key-1",
       );
     }
@@ -167,7 +167,7 @@ describe("autorización por rol", () => {
     it(`${rol}: registrar y eliminar lanzan No autorizado`, async () => {
       const staff = { id: "s", rol };
       await expect(registerDocumento(staff, "exp-1", pdf)).rejects.toThrow("No autorizado");
-      await expect(removeDocumento(staff, "exp-1", "PLANO_UBICACION")).rejects.toThrow(
+      await expect(removeDocumento(staff, "exp-1", "FICHA_RUC")).rejects.toThrow(
         "No autorizado",
       );
     });

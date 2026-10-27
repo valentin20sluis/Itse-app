@@ -34,7 +34,7 @@ describe("establecimientoSchema", () => {
   });
 
   it.each(FUNCION_VALUES)("funcion acepta %s", (funcion) => {
-    expect(establecimientoSchema.safeParse({ ...valido, funcion }).success).toBe(true);
+    expect(establecimientoSchema.safeParse({ ...valido, funcion, numeroCamas: "10" }).success).toBe(true);
   });
 
   it("funcion rechaza vacío, ausente o fuera de la lista", () => {
@@ -113,6 +113,31 @@ describe("establecimientoSchema", () => {
     );
     expect(mensaje({ ...valido, pisoEstablecimiento: "1.5" }, "pisoEstablecimiento")).toBe("El piso debe ser un entero.");
     expect(mensaje({ ...valido, pisoEstablecimiento: "abc" }, "pisoEstablecimiento")).toBe("Ingresa un piso válido.");
+  });
+
+  describe("numeroCamas", () => {
+    const hosp = { ...valido, funcion: "HOSPEDAJE" };
+
+    it("Hospedaje lo exige", () => {
+      expect(mensaje(hosp, "numeroCamas")).toBe("Ingresa el número de camas o habitaciones.");
+      expect(mensaje({ ...hosp, numeroCamas: "" }, "numeroCamas")).toBe("Ingresa el número de camas o habitaciones.");
+      expect(mensaje({ ...hosp, numeroCamas: null }, "numeroCamas")).toBeDefined();
+    });
+
+    it.each(["0", "1.5", "5001", "abc"])("Hospedaje rechaza %j", (numeroCamas) => {
+      expect(mensaje({ ...hosp, numeroCamas }, "numeroCamas")).toBeDefined();
+    });
+
+    it("Hospedaje acepta 1 y 5000 y lo convierte a número", () => {
+      expect(establecimientoSchema.parse({ ...hosp, numeroCamas: "1" }).numeroCamas).toBe(1);
+      expect(establecimientoSchema.parse({ ...hosp, numeroCamas: "5000" }).numeroCamas).toBe(5000);
+    });
+
+    it("otras funciones lo ignoran (null) aunque llegue inválido", () => {
+      expect(establecimientoSchema.parse(valido).numeroCamas).toBeNull();
+      expect(establecimientoSchema.parse({ ...valido, numeroCamas: "10" }).numeroCamas).toBeNull();
+      expect(establecimientoSchema.parse({ ...valido, numeroCamas: "abc" }).numeroCamas).toBeNull();
+    });
   });
 
   it("pisoEstablecimiento no puede ser mayor que los pisos de la edificación", () => {

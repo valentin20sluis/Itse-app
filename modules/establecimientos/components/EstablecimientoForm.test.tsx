@@ -97,6 +97,39 @@ describe("EstablecimientoForm", () => {
     expect(screen.getByLabelText("Función")).toHaveValue("COMERCIO");
   });
 
+  it("el campo de camas aparece solo con Hospedaje y se precarga al editar", () => {
+    const { unmount } = render(<EstablecimientoForm open onOpenChange={() => {}} establecimiento={existente} />);
+    expect(screen.queryByLabelText("Número de camas o habitaciones")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Función"), { target: { value: "HOSPEDAJE" } });
+    expect(screen.getByLabelText("Número de camas o habitaciones")).toHaveAttribute("inputmode", "numeric");
+    unmount();
+    render(
+      <EstablecimientoForm
+        open
+        onOpenChange={() => {}}
+        establecimiento={{ ...existente, funcion: "HOSPEDAJE", numeroCamas: 30 }}
+      />,
+    );
+    expect(screen.getByLabelText("Número de camas o habitaciones")).toHaveValue("30");
+  });
+
+  it("muestra el error de camas asociado al campo y conserva el valor", async () => {
+    updateMock.mockResolvedValue({
+      ok: false,
+      error: "Revisa los campos marcados.",
+      fieldErrors: { numeroCamas: ["Ingresa el número de camas o habitaciones."] },
+    });
+    render(<EstablecimientoForm open onOpenChange={() => {}} establecimiento={{ ...existente, funcion: "HOSPEDAJE" }} />);
+    fireEvent.change(screen.getByLabelText("Número de camas o habitaciones"), { target: { value: "0" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+
+    const input = await screen.findByLabelText("Número de camas o habitaciones");
+    const mensaje = await screen.findByText("Ingresa el número de camas o habitaciones.");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(input.getAttribute("aria-describedby")).toBe(mensaje.id);
+    expect(input).toHaveValue("0");
+  });
+
   it("la función ofrece las 8 opciones con etiqueta y parte vacía en filas viejas", () => {
     render(
       <EstablecimientoForm

@@ -12,7 +12,12 @@ import type {
   TipoDocumento,
 } from "@/modules/expedientes/types/expediente.types";
 import { declaracionTexto } from "@/modules/expedientes/utils/declaracion";
-import { DOCUMENTOS } from "@/modules/expedientes/utils/documentos";
+import {
+  DOCUMENTOS,
+  documentosRequeridos,
+  planSeguridadFisico,
+} from "@/modules/expedientes/utils/documentos";
+import type { Establecimiento } from "@/modules/establecimientos/types/establecimiento.types";
 import { tipoItsePorRiesgo } from "@/modules/expedientes/utils/riesgo";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -25,7 +30,7 @@ const NIVELES: Record<NivelRiesgo, string> = {
 
 type Props = {
   expediente: Expediente;
-  establecimientoNombre: string;
+  establecimiento: Establecimiento;
   tiposSubidos: readonly TipoDocumento[];
   onBack: () => void;
 };
@@ -39,7 +44,7 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string | null }) {
   );
 }
 
-export function StepResumen({ expediente, establecimientoNombre, tiposSubidos, onBack }: Props) {
+export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack }: Props) {
   const [state, action, pending] = useActionState<
     ActionResult<{ id: string; numero: string }> | null,
     FormData
@@ -70,7 +75,15 @@ export function StepResumen({ expediente, establecimientoNombre, tiposSubidos, o
   }
 
   const nivel = expediente.nivelRiesgo;
-  const faltantes = DOCUMENTOS.filter((d) => d.requerido && !tiposSubidos.includes(d.tipo));
+  const tipos = documentosRequeridos(expediente);
+  const requeridos = DOCUMENTOS.filter((d) => tipos.includes(d.tipo));
+  const faltantes = requeridos.filter((d) => !tiposSubidos.includes(d.tipo));
+  const planFisico = planSeguridadFisico({
+    nivelRiesgo: nivel,
+    numeroPisos: establecimiento.numeroPisos,
+    tieneSotano: expediente.tieneSotano,
+    areaM2: Number(establecimiento.areaM2),
+  });
   const errorCampo = !state?.ok ? state?.fieldErrors?.aceptada?.[0] : undefined;
 
   return (
@@ -81,7 +94,8 @@ export function StepResumen({ expediente, establecimientoNombre, tiposSubidos, o
         </CardHeader>
         <CardContent>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <Dato etiqueta="Establecimiento" valor={establecimientoNombre} />            <Dato
+            <Dato etiqueta="Establecimiento" valor={establecimiento.nombreComercial} />
+            <Dato
               etiqueta="Trámite"
               valor={expediente.tipoTramite === "NUEVA" ? "ITSE nueva" : "Renovación"}
             />
@@ -105,17 +119,20 @@ export function StepResumen({ expediente, establecimientoNombre, tiposSubidos, o
         </CardHeader>
         <CardContent className="space-y-3">
           <ul className="space-y-2 text-sm">
-            {DOCUMENTOS.map((d) => (
+            {requeridos.map((d) => (
               <li key={d.tipo} className="flex flex-wrap items-center justify-between gap-2">
-                <span>
-                  {d.etiqueta} ({d.requerido ? "obligatorio" : "opcional"})
-                </span>
+                <span>{d.etiqueta}</span>
                 <Badge variant={tiposSubidos.includes(d.tipo) ? "secondary" : "outline"}>
                   {tiposSubidos.includes(d.tipo) ? "Subido" : "Pendiente"}
                 </Badge>
               </li>
             ))}
           </ul>
+          {planFisico && (
+            <p className="text-sm text-muted-foreground">
+              El Plan de seguridad no se sube: el inspector lo revisa en físico durante la diligencia.
+            </p>
+          )}
           {faltantes.length > 0 && (
             <p className="text-sm text-destructive">
               Faltan documentos obligatorios: {faltantes.map((d) => d.etiqueta).join(", ")}.
