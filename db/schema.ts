@@ -135,7 +135,10 @@ export const expedientes = pgTable(
     solicitanteEmail: text("solicitante_email"),
     esRepresentante: boolean("es_representante").notNull().default(false),
     razonSocial: text("razon_social"),
+    // Obsoleta: el pago se confirma con Stripe (stripe_session_id). Ningún código la usa.
     numeroBoleta: text("numero_boleta"),
+    stripeSessionId: text("stripe_session_id").unique(),
+    pagadoAt: timestamp("pagado_at", { withTimezone: true }),
     declaracionAceptadaAt: timestamp("declaracion_aceptada_at", { withTimezone: true }),
     presentadoAt: timestamp("presentado_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

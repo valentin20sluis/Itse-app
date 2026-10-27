@@ -1,27 +1,30 @@
-import { and, desc, eq, getTableColumns, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { establecimientos, expedienteDocumentos, expedientes, historialEstados } from "@/db/schema";
 import { getEstablecimientoById } from "@/modules/establecimientos/services/establecimiento.service";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
 import {
   declaracionSchema,
-  paso1Schema,
-  paso2Schema,
-  paso3Schema,
-  paso4Schema,
   type Paso1Input,
   type Paso2Input,
   type Paso3Input,
-  type Paso4Input,
 } from "@/modules/expedientes/schemas/solicitud.schema";
-import type { Expediente, ExpedienteListItem } from "@/modules/expedientes/types/expediente.types";
-import { documentosFaltantes } from "@/modules/expedientes/utils/documentos";
+import type {
+  Expediente,
+  ExpedienteListItem,
+  TipoDocumento,
+} from "@/modules/expedientes/types/expediente.types";
+import { faltantesBorrador } from "@/modules/expedientes/utils/completitud";
 
-export type PatchBorrador = Paso1Input | Paso2Input | Paso3Input | Paso4Input;
+export type PatchBorrador = Paso1Input | Paso2Input | Paso3Input;
 
-export type EnviarResultado =
+export type PrepararPagoResultado =
   | { status: "ok"; expediente: Expediente }
   | { status: "incompleto"; faltantes: string[] }
+  | { status: "no_encontrado" };
+
+export type PresentarResultado =
+  | { status: "ok"; expediente: Expediente }
   | { status: "no_encontrado" };
 
 const MAX_INTENTOS_NUMERO = 3;
@@ -62,15 +65,12 @@ function patchToValues(patch: PatchBorrador) {
       granEscala: patch.granEscala,
     };
   }
-  if ("solicitanteNombre" in patch) {
-    return {
-      solicitanteNombre: patch.solicitanteNombre,
-      solicitanteDocumento: patch.solicitanteDocumento,
-      solicitanteTelefono: patch.solicitanteTelefono,
-      solicitanteEmail: patch.solicitanteEmail,
-    };
-  }
-  return { numeroBoleta: patch.numeroBoleta };
+  return {
+    solicitanteNombre: patch.solicitanteNombre,
+    solicitanteDocumento: patch.solicitanteDocumento,
+    solicitanteTelefono: patch.solicitanteTelefono,
+    solicitanteEmail: patch.solicitanteEmail,
+  };
 }
 
 export async function createBorrador(actor: Actor, input: Paso1Input): Promise<Expediente | null> {
@@ -117,7 +117,7 @@ export async function getExpedienteById(actor: Actor, id: string): Promise<Exped
 
 export async function listOwnExpedientes(actor: Actor): Promise<ExpedienteListItem[]> {
   assertCliente(actor);
-  return db
+  const filas = await db
     .select({
       ...getTableColumns(expedientes),
       establecimientoNombre: establecimientos.nombreComercial,
@@ -126,6 +126,26 @@ export async function listOwnExpedientes(actor: Actor): Promise<ExpedienteListIt
     .innerJoin(establecimientos, eq(expedientes.establecimientoId, establecimientos.id))
     .where(eq(expedientes.usuarioId, actor.id))
     .orderBy(desc(expedientes.createdAt));
+
+  const borradorIds = filas.filter((f) => f.estado === "BORRADOR").map((f) => f.id);
+  const tiposPorExpediente = new Map<string, TipoDocumento[]>();
+  if (borradorIds.length > 0) {
+    const docs = await db
+      .select({ expedienteId: expedienteDocumentos.expedienteId, tipo: expedienteDocumentos.tipo })
+      .from(expedienteDocumentos)
+      .where(inArray(expedienteDocumentos.expedienteId, borradorIds));
+    for (const d of docs) {
+      const tipos = tiposPorExpediente.get(d.expedienteId) ?? [];
+      tipos.push(d.tipo);
+      tiposPorExpediente.set(d.expedienteId, tipos);
+    }
+  }
+  return filas.map((f) => ({
+    ...f,
+    pagoPendiente:
+      f.estado === "BORRADOR" &&
+      faltantesBorrador(f, tiposPorExpediente.get(f.id) ?? []).length === 0,
+  }));
 }
 
 function codigoPg(e: unknown): unknown {
@@ -133,48 +153,61 @@ function codigoPg(e: unknown): unknown {
   return err?.code ?? err?.cause?.code;
 }
 
-export async function enviarExpediente(
+export async function prepararPago(
   actor: Actor,
   id: string,
   declaracionAceptada: boolean,
-): Promise<EnviarResultado> {
+): Promise<PrepararPagoResultado> {
   assertCliente(actor);
   const [exp] = await db.select().from(expedientes).where(ownBorrador(actor, id)).limit(1);
   if (!exp) return { status: "no_encontrado" };
 
-  const faltantes: string[] = [];
-  const pasos = [
-    paso1Schema.safeParse(exp),
-    paso2Schema.safeParse(exp),
-    paso3Schema.safeParse(exp),
-    paso4Schema.safeParse(exp),
-  ];
-  pasos.forEach((r, i) => {
-    if (!r.success) faltantes.push(`paso${i + 1}`);
-  });
+  const subidos = await db
+    .select({ tipo: expedienteDocumentos.tipo })
+    .from(expedienteDocumentos)
+    .where(eq(expedienteDocumentos.expedienteId, exp.id));
+  const faltantes = faltantesBorrador(
+    exp,
+    subidos.map((d) => d.tipo),
+  );
   if (!declaracionSchema.safeParse({ aceptada: declaracionAceptada }).success) {
     faltantes.push("declaracion");
   }
   if (!(await getEstablecimientoById(actor, exp.establecimientoId))) {
     faltantes.push("establecimiento");
   }
-  const subidos = await db
-    .select({ tipo: expedienteDocumentos.tipo })
-    .from(expedienteDocumentos)
-    .where(eq(expedienteDocumentos.expedienteId, exp.id));
-  faltantes.push(
-    ...documentosFaltantes(
-      subidos.map((d) => d.tipo),
-      {
-        nivelRiesgo: exp.nivelRiesgo,
-        tieneCocina: exp.tieneCocina,
-        esGrifo: exp.esGrifo,
-        almacenaInflamables: exp.almacenaInflamables,
-      },
-    ),
-  );
   if (faltantes.length > 0) return { status: "incompleto", faltantes };
 
+  const ahora = new Date();
+  const [row] = await db
+    .update(expedientes)
+    .set({ declaracionAceptadaAt: ahora, updatedAt: ahora })
+    .where(ownBorrador(actor, id))
+    .returning();
+  if (!row) return { status: "no_encontrado" };
+  return { status: "ok", expediente: row };
+}
+
+export async function guardarSesionPago(
+  actor: Actor,
+  id: string,
+  stripeSessionId: string,
+): Promise<boolean> {
+  assertCliente(actor);
+  const rows = await db
+    .update(expedientes)
+    .set({ stripeSessionId, updatedAt: new Date() })
+    .where(ownBorrador(actor, id))
+    .returning({ id: expedientes.id });
+  return rows.length > 0;
+}
+
+export async function presentarExpediente(
+  actor: Actor,
+  id: string,
+  pago: { stripeSessionId: string; pagadoAt: Date },
+): Promise<PresentarResultado> {
+  assertCliente(actor);
   const ahora = new Date();
   const anio = getAnioLima(ahora);
   for (let intento = 1; ; intento++) {
@@ -185,8 +218,9 @@ export async function enviarExpediente(
         .set({
           estado: "PRESENTADO",
           numero: sql<string>`(select 'EXP-' || ${String(anio)}::text || '-' || lpad((coalesce(max(substring(numero from 10)::int), 0) + 1)::text, 5, '0') from expedientes where numero like ${`EXP-${anio}-%`})`,
+          stripeSessionId: pago.stripeSessionId,
+          pagadoAt: pago.pagadoAt,
           presentadoAt: ahora,
-          declaracionAceptadaAt: ahora,
           updatedAt: ahora,
         })
         .where(ownBorrador(actor, id))
@@ -199,7 +233,7 @@ export async function enviarExpediente(
         estadoAnterior: "BORRADOR",
         estadoNuevo: "PRESENTADO",
         usuarioId: actor.id,
-        comentario: "Solicitud presentada",
+        comentario: "Solicitud presentada con pago en línea",
       });
       return { status: "ok", expediente: presentado };
     } catch (e) {

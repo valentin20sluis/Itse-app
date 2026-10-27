@@ -91,7 +91,7 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 
 **Plan de seguridad:** no se sube como archivo; el inspector lo revisa en físico durante la diligencia. El sistema solo muestra un aviso cuando corresponde (riesgo ALTO/MUY_ALTO, o BAJO/MEDIO con más de 2 pisos, sótano o más de 500 m²).
 
-**Pago de la tasa:** ya no hay comprobante de pago como archivo; solo se registra el número de boleta.
+**Pago de la tasa:** no hay comprobante de pago como archivo ni número de boleta. El cliente paga en línea con Stripe (Checkout hospedado, **modo prueba**, dinero ficticio). El monto lo fija el servidor según el nivel de riesgo y la solicitud solo se presenta cuando Stripe confirma el pago.
 
 **En el sistema** ya no se piden "2 juegos": los archivos digitales reemplazan las copias físicas.
 
@@ -147,7 +147,7 @@ accionComercializacion(riesgo, tipoTramite) →
 ### 6.1 Transiciones permitidas
 
 ```
-BORRADOR → PRESENTADO
+BORRADOR → PRESENTADO   (solo con el pago de la tasa confirmado por Stripe)
 PRESENTADO → EN_REVISION
 EN_REVISION → OBSERVADO_REQUISITOS | EN_TRAMITE_EXTERNO
 OBSERVADO_REQUISITOS → PRESENTADO (cuando el cliente corrige)
@@ -287,7 +287,6 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 ## 12. Fuera del alcance del MVP
 
 - Firma digital certificada.
-- Pago en línea de la tasa (solo se registra el número de boleta).
 - Integración con el sistema de trámite documentario de la municipalidad.
 - Inspectores, Servicios Públicos, Logística y Comercialización como usuarios del sistema.
 - ECSE (espectáculos) y VISE completas.

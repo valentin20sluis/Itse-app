@@ -46,16 +46,6 @@ export const paso3Schema = z.object({
     .pipe(z.email("Ingresa un correo electrónico válido.")),
 });
 
-export const paso4Schema = z.object({
-  numeroBoleta: z
-    .string({ error: "Ingresa el número de boleta." })
-    .trim()
-    .min(1, "Ingresa el número de boleta.")
-    .min(3, "Debe tener al menos 3 caracteres.")
-    .max(30, "Debe tener como máximo 30 caracteres.")
-    .regex(/^[A-Za-z0-9-]+$/, "Solo se permiten letras, números y guion."),
-});
-
 export const declaracionSchema = z.object({
   aceptada: checkbox.refine((v) => v === true, "Debes aceptar la declaración jurada."),
 });
@@ -63,5 +53,4 @@ export const declaracionSchema = z.object({
 export type Paso1Input = z.infer<typeof paso1Schema>;
 export type Paso2Input = z.infer<typeof paso2Schema>;
 export type Paso3Input = z.infer<typeof paso3Schema>;
-export type Paso4Input = z.infer<typeof paso4Schema>;
 export type DeclaracionInput = z.infer<typeof declaracionSchema>;

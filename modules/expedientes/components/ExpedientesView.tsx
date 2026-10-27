@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FileText, Plus } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { EstadoBadge } from "@/modules/expedientes/components/EstadoBadge";
@@ -47,7 +48,7 @@ function ExpedienteCard({ expediente: e }: { expediente: ExpedienteListItem }) {
           <dd>{TIPO_TRAMITE_LABELS[e.tipoTramite]}</dd>
           <dt className="text-muted-foreground">Estado</dt>
           <dd>
-            <EstadoBadge estado={e.estado} />
+            {e.pagoPendiente ? <Badge variant="outline">Falta el pago</Badge> : <EstadoBadge estado={e.estado} />}
           </dd>
           <dt className="text-muted-foreground">{esBorrador ? "Actualizado" : "Presentado"}</dt>
           <dd>{fechaFormatter.format(fecha)}</dd>
@@ -58,9 +59,9 @@ function ExpedienteCard({ expediente: e }: { expediente: ExpedienteListItem }) {
           <Link
             href={`${NUEVA_SOLICITUD}?borrador=${e.id}`}
             className={buttonVariants({ variant: "outline", className: "h-11 flex-1" })}
-            aria-label={`Continuar solicitud de ${e.establecimientoNombre}`}
+            aria-label={`${e.pagoPendiente ? "Pagar" : "Continuar"} solicitud de ${e.establecimientoNombre}`}
           >
-            Continuar
+            {e.pagoPendiente ? "Pagar" : "Continuar"}
           </Link>
         </CardFooter>
       )}

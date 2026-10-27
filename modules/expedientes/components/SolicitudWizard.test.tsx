@@ -3,13 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   saveBorradorAction: vi.fn(),
-  enviarSolicitudAction: vi.fn(),
+  iniciarPagoAction: vi.fn(),
 }));
 
-vi.mock("@/modules/expedientes/actions/expediente.actions", () => mocks);
+vi.mock("@/modules/expedientes/actions/expediente.actions", () => ({
+  saveBorradorAction: mocks.saveBorradorAction,
+}));
+vi.mock("@/modules/expedientes/actions/pago.actions", () => ({
+  iniciarPagoAction: mocks.iniciarPagoAction,
+}));
 
 import type { Establecimiento } from "@/modules/establecimientos/types/establecimiento.types";
-import type { Expediente } from "@/modules/expedientes/types/expediente.types";
+import type { Expediente, ExpedienteDocumento } from "@/modules/expedientes/types/expediente.types";
 import { SolicitudWizard } from "./SolicitudWizard";
 
 const EST_ID = "7a1c2d3e-5a4d-4e6f-8b7a-1c2d3e4f5a6b";
@@ -48,7 +53,6 @@ const expediente = {
   solicitanteEmail: null,
   esRepresentante: false,
   razonSocial: null,
-  numeroBoleta: null,
 } as unknown as Expediente;
 
 const defaults = { nombre: "Ana Pérez", documento: "12345678", telefono: "999888777", email: "ana@mail.pe" };
@@ -196,7 +200,7 @@ describe("SolicitudWizard", () => {
       await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO" }, 4);
       expect(screen.getAllByText(/Pendiente/)).toHaveLength(3);
       expect(screen.getByText("Ficha RUC")).toBeTruthy();
-      expect(screen.getByLabelText("Número de boleta")).toBeTruthy();
+      expect(screen.queryByLabelText("Número de boleta")).toBeNull();
       expect(screen.queryByText(AVISO)).toBeNull();
     });
 
@@ -222,6 +226,54 @@ describe("SolicitudWizard", () => {
       await irAlPaso(expediente, 5);
       expect(screen.queryByText("Ficha RUC")).toBeNull();
       expect(screen.queryByText(AVISO)).toBeNull();
+    });
+
+    it("el paso 4 avanza sin llamar a saveBorradorAction", async () => {
+      await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO" }, 4);
+      mocks.saveBorradorAction.mockClear();
+      fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+      await screen.findByText(/Paso 5 de 5/);
+      expect(mocks.saveBorradorAction).not.toHaveBeenCalled();
+    });
+
+    it("el paso 5 muestra la tasa y Aceptar y pagar llama a iniciarPagoAction", async () => {
+      mocks.iniciarPagoAction.mockResolvedValue({
+        ok: false,
+        error: "No se pudo iniciar el pago. Inténtalo de nuevo.",
+      });
+      await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO" }, 5);
+      expect(screen.getByText(/150[.,]00/)).toBeTruthy();
+      expect(screen.queryByText("Número de boleta")).toBeNull();
+      fireEvent.click(screen.getByLabelText("Acepto la declaración jurada"));
+      fireEvent.click(screen.getByRole("button", { name: "Aceptar y pagar" }));
+      await waitFor(() => expect(mocks.iniciarPagoAction).toHaveBeenCalled());
+      expect((await screen.findByRole("alert")).textContent).toContain("No se pudo iniciar el pago");
+    });
+
+    it("un borrador completo abre en el paso 5 y uno incompleto en el paso 1", () => {
+      const completo = {
+        ...expediente,
+        nivelRiesgo: "BAJO",
+        solicitanteNombre: "Ana Pérez",
+        solicitanteDocumento: "12345678",
+        solicitanteTelefono: "999888777",
+        solicitanteEmail: "ana@mail.pe",
+      } as Expediente;
+      const documentos = ["FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"].map((tipo) => ({
+        tipo,
+      })) as unknown as ExpedienteDocumento[];
+      render(
+        <SolicitudWizard
+          establecimientos={establecimientos}
+          borrador={completo}
+          documentos={documentos}
+          defaultsSolicitante={defaults}
+        />,
+      );
+      expect(screen.getByText(/Paso 5 de 5/)).toBeTruthy();
+      cleanup();
+      renderWizard(expediente);
+      expect(screen.getByText(/Paso 1 de 5/)).toBeTruthy();
     });
 
     it("el resumen lista los requeridos del riesgo", async () => {

@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { enviarSolicitudAction } from "@/modules/expedientes/actions/expediente.actions";
+import { iniciarPagoAction } from "@/modules/expedientes/actions/pago.actions";
+import { MONEDA, montoTasa } from "@/modules/expedientes/constants/tasa";
 import type {
   Expediente,
   NivelRiesgo,
@@ -45,34 +45,10 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string | null }) {
 }
 
 export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack }: Props) {
-  const [state, action, pending] = useActionState<
-    ActionResult<{ id: string; numero: string }> | null,
-    FormData
-  >(enviarSolicitudAction.bind(null, expediente.id), null);
-
-  if (state?.ok) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Solicitud presentada</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3" role="status">
-          <p>
-            Tu número de expediente es <strong>{state.data.numero}</strong>.
-          </p>
-          <Badge variant="secondary">Presentado</Badge>
-          <div>
-            <Link
-              href="/mi-cuenta/expedientes"
-              className={buttonVariants({ className: "h-11 px-4" })}
-            >
-              Ir a mis expedientes
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const [state, action, pending] = useActionState<ActionResult<null> | null, FormData>(
+    iniciarPagoAction.bind(null, expediente.id),
+    null,
+  );
 
   const nivel = expediente.nivelRiesgo;
   const tipos = documentosRequeridos(expediente);
@@ -90,7 +66,7 @@ export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack 
     <form action={action} className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Resumen de tu solicitud</CardTitle>
+          <CardTitle>Resumen y pago</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
@@ -108,7 +84,6 @@ export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack 
             <Dato etiqueta="Documento" valor={expediente.solicitanteDocumento} />
             <Dato etiqueta="Teléfono" valor={expediente.solicitanteTelefono} />
             <Dato etiqueta="Correo" valor={expediente.solicitanteEmail} />
-            <Dato etiqueta="Número de boleta" valor={expediente.numeroBoleta} />
           </dl>
         </CardContent>
       </Card>
@@ -140,6 +115,23 @@ export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack 
           )}
         </CardContent>
       </Card>
+
+      {nivel && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Tasa a pagar</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm">
+            <p className="text-2xl font-semibold">
+              {new Intl.NumberFormat("es-PE", {
+                style: "currency",
+                currency: MONEDA.toUpperCase(),
+              }).format(montoTasa(nivel) / 100)}
+            </p>
+            <p className="text-muted-foreground">Monto ficticio, modo de prueba.</p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -186,7 +178,7 @@ export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack 
           Atrás
         </Button>
         <Button type="submit" className="h-11 px-4" disabled={pending}>
-          {pending ? "Presentando…" : "Presentar solicitud"}
+          {pending ? "Redirigiendo a Stripe…" : "Aceptar y pagar"}
         </Button>
       </div>
     </form>

@@ -4,7 +4,6 @@ import {
   paso1Schema,
   paso2Schema,
   paso3Schema,
-  paso4Schema,
 } from "./solicitud.schema";
 
 const uuid = "3f2b8c1e-5a4d-4e6f-9a7b-1c2d3e4f5a6b";
@@ -93,18 +92,6 @@ describe("paso3Schema", () => {
     expect(msg(paso3Schema.safeParse({ ...paso3, solicitanteNombre: "Jo" }))).toBe(
       "Debe tener al menos 3 caracteres.",
     );
-  });
-});
-
-describe("paso4Schema", () => {
-  it("acepta boleta válida con trim", () => {
-    expect(paso4Schema.parse({ numeroBoleta: " B-001234 " }).numeroBoleta).toBe("B-001234");
-  });
-  it("rechaza caracteres inválidos y vacío", () => {
-    expect(msg(paso4Schema.safeParse({ numeroBoleta: "B 001/2" }))).toBe(
-      "Solo se permiten letras, números y guion.",
-    );
-    expect(msg(paso4Schema.safeParse({ numeroBoleta: "  " }))).toBe("Ingresa el número de boleta.");
   });
 });
 

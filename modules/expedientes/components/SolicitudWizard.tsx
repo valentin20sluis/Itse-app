@@ -1,13 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import type { ActionResult } from "@/lib/action-result";
 import type { Establecimiento } from "@/modules/establecimientos/types/establecimiento.types";
-import { saveBorradorAction } from "@/modules/expedientes/actions/expediente.actions";
 import { StepEstablecimiento } from "@/modules/expedientes/components/StepEstablecimiento";
 import { StepResumen } from "@/modules/expedientes/components/StepResumen";
 import { StepRiesgo } from "@/modules/expedientes/components/StepRiesgo";
@@ -17,6 +13,7 @@ import {
 } from "@/modules/expedientes/components/StepSolicitante";
 import { WizardStepper } from "@/modules/expedientes/components/WizardStepper";
 import type { Expediente, ExpedienteDocumento } from "@/modules/expedientes/types/expediente.types";
+import { faltantesBorrador } from "@/modules/expedientes/utils/completitud";
 import {
   DOCUMENTOS,
   documentosRequeridos,
@@ -30,28 +27,19 @@ type Props = {
   defaultsSolicitante: DefaultsSolicitante;
 };
 
-// Fase A: el paso Documentos real (subida) llega en la Fase B.
 function PasoDocumentos({
   expediente,
   establecimiento,
   documentos,
-  onSaved,
+  onNext,
   onBack,
 }: {
   expediente: Expediente;
   establecimiento: Establecimiento;
   documentos: ExpedienteDocumento[];
-  onSaved: (expediente: Expediente) => void;
+  onNext: () => void;
   onBack: () => void;
 }) {
-  const [state, action, pending] = useActionState<ActionResult<Expediente> | null, FormData>(
-    async (prev, formData) => {
-      const res = await saveBorradorAction(4, expediente.id, prev, formData);
-      if (res.ok) onSaved(res.data);
-      return res;
-    },
-    null,
-  );
   const tipos = documentosRequeridos(expediente);
   const requeridos = DOCUMENTOS.filter((d) => tipos.includes(d.tipo));
   const planFisico = planSeguridadFisico({
@@ -60,14 +48,9 @@ function PasoDocumentos({
     tieneSotano: expediente.tieneSotano,
     areaM2: Number(establecimiento.areaM2),
   });
-  const [boleta, setBoleta] = useState(expediente.numeroBoleta ?? "");
-  const fieldErrors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
-  const error = fieldErrors.numeroBoleta?.[0];
-  const generalError =
-    state && !state.ok && Object.keys(fieldErrors).length === 0 ? state.error : null;
 
   return (
-    <form action={action} className="space-y-6" noValidate>
+    <div className="space-y-6">
       <p className="rounded-lg bg-muted p-3 text-sm">
         La subida de documentos estará disponible pronto.
       </p>
@@ -86,39 +69,15 @@ function PasoDocumentos({
           El Plan de seguridad no se sube: el inspector lo revisa en físico durante la diligencia.
         </p>
       )}
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="numeroBoleta">Número de boleta</Label>
-        <Input
-          id="numeroBoleta"
-          name="numeroBoleta"
-          value={boleta}
-          onChange={(e) => setBoleta(e.target.value)}
-          className="h-11"
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? "numeroBoleta-error" : undefined}
-        />
-        {error && (
-          <p id="numeroBoleta-error" className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
-      </div>
-
-      {generalError && (
-        <p role="alert" className="text-sm text-destructive">
-          {generalError}
-        </p>
-      )}
       <div className="flex flex-wrap justify-between gap-2">
-        <Button type="button" variant="outline" className="h-11 px-4" onClick={onBack} disabled={pending}>
+        <Button type="button" variant="outline" className="h-11 px-4" onClick={onBack}>
           Atrás
         </Button>
-        <Button type="submit" className="h-11 px-6" disabled={pending}>
-          {pending ? "Guardando…" : "Siguiente"}
+        <Button type="button" className="h-11 px-6" onClick={onNext}>
+          Siguiente
         </Button>
       </div>
-    </form>
+    </div>
   );
 }
 
@@ -128,7 +87,9 @@ export function SolicitudWizard({
   documentos,
   defaultsSolicitante,
 }: Props) {
-  const [paso, setPaso] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [paso, setPaso] = useState<1 | 2 | 3 | 4 | 5>(
+    borrador && faltantesBorrador(borrador, documentos.map((d) => d.tipo)).length === 0 ? 5 : 1,
+  );
   const [expediente, setExpediente] = useState<Expediente | null>(borrador);
 
   const establecimiento = establecimientos.find((e) => e.id === expediente?.establecimientoId);
@@ -169,7 +130,7 @@ export function SolicitudWizard({
           expediente={expediente}
           establecimiento={establecimiento}
           documentos={documentos}
-          onSaved={siguiente}
+          onNext={() => setPaso(5)}
           onBack={atras}
         />
       )}

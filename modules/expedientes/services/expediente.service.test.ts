@@ -20,6 +20,7 @@ vi.mock("drizzle-orm", async (importOriginal) => {
     ...orig,
     eq: (col: { name: string }, v: unknown): Pred => (r) =>
       typeof v === "object" && v !== null ? true : r[key(col)] === v,
+    inArray: (col: { name: string }, vs: unknown[]): Pred => (r) => vs.includes(r[key(col)]),
     and: (...ps: Pred[]): Pred => (r) => ps.every((p) => p(r)),
     desc: () => "desc",
     sql: (_s: TemplateStringsArray, ...values: unknown[]) => ({ isSql: true, values }),
@@ -124,11 +125,13 @@ vi.mock("@/modules/establecimientos/services/establecimiento.service", () => ({
 
 import {
   createBorrador,
-  enviarExpediente,
   formatNumeroExpediente,
   getAnioLima,
   getExpedienteById,
+  guardarSesionPago,
   listOwnExpedientes,
+  prepararPago,
+  presentarExpediente,
   updateBorrador,
 } from "./expediente.service";
 
@@ -154,13 +157,12 @@ const paso3 = {
   solicitanteTelefono: "987654321",
   solicitanteEmail: "juan@example.com",
 } as const;
-const paso4 = { numeroBoleta: "B-001" };
+const pago = () => ({ stripeSessionId: "cs_test_abc", pagadoAt: new Date() });
 
 async function borradorCompleto(conDocs = true) {
   const e = (await createBorrador(A, paso1))!;
   await updateBorrador(A, e.id, paso2);
   await updateBorrador(A, e.id, paso3);
-  await updateBorrador(A, e.id, paso4);
   if (conDocs) TIPOS.forEach((tipo) => store.documentos.push({ expedienteId: e.id, tipo }));
   return e;
 }
@@ -193,8 +195,10 @@ describe("autorización por rol", () => {
     it(`${rol}: mutaciones y listOwn lanzan No autorizado`, async () => {
       const s = { id: "staff", rol };
       await expect(createBorrador(s, paso1)).rejects.toThrow("No autorizado");
-      await expect(updateBorrador(s, "x", paso4)).rejects.toThrow("No autorizado");
-      await expect(enviarExpediente(s, "x", true)).rejects.toThrow("No autorizado");
+      await expect(updateBorrador(s, "x", paso3)).rejects.toThrow("No autorizado");
+      await expect(prepararPago(s, "x", true)).rejects.toThrow("No autorizado");
+      await expect(presentarExpediente(s, "x", pago())).rejects.toThrow("No autorizado");
+      await expect(guardarSesionPago(s, "x", "cs_test_a")).rejects.toThrow("No autorizado");
       await expect(listOwnExpedientes(s)).rejects.toThrow("No autorizado");
     });
 
@@ -256,7 +260,7 @@ describe("updateBorrador", () => {
   it("null si ya no es BORRADOR", async () => {
     const e = (await createBorrador(A, paso1))!;
     store.expedientes[0].estado = "PRESENTADO";
-    expect(await updateBorrador(A, e.id, paso4)).toBeNull();
+    expect(await updateBorrador(A, e.id, paso3)).toBeNull();
   });
 });
 
@@ -266,13 +270,15 @@ describe("IDOR", () => {
     const before = structuredClone(store);
 
     expect(await getExpedienteById(B, e.id)).toBeNull();
-    expect(await updateBorrador(B, e.id, paso4)).toBeNull();
-    expect(await enviarExpediente(B, e.id, true)).toEqual({ status: "no_encontrado" });
+    expect(await updateBorrador(B, e.id, paso3)).toBeNull();
+    expect(await prepararPago(B, e.id, true)).toEqual({ status: "no_encontrado" });
+    expect(await presentarExpediente(B, e.id, pago())).toEqual({ status: "no_encontrado" });
+    expect(await guardarSesionPago(B, e.id, "cs_test_a")).toBe(false);
     expect(store).toEqual(before);
 
     expect(await getExpedienteById(A, "no-existe")).toBeNull();
-    expect(await updateBorrador(A, "no-existe", paso4)).toBeNull();
-    expect(await enviarExpediente(A, "no-existe", true)).toEqual({ status: "no_encontrado" });
+    expect(await updateBorrador(A, "no-existe", paso3)).toBeNull();
+    expect(await prepararPago(A, "no-existe", true)).toEqual({ status: "no_encontrado" });
   });
 });
 
@@ -285,65 +291,51 @@ describe("listOwnExpedientes", () => {
     expect(lista.map((r) => r.id)).toEqual([e2.id, e1.id]);
     expect(lista[0].establecimientoNombre).toBe("Bodega Ficticia");
   });
+
+  it("pagoPendiente solo en borradores completos", async () => {
+    const completo = await borradorCompleto();
+    const incompleto = (await createBorrador(A, paso1))!;
+    const presentado = await borradorCompleto();
+    await presentarExpediente(A, presentado.id, pago());
+    const lista = await listOwnExpedientes(A);
+    const pend = (id: string) => lista.find((r) => r.id === id)?.pagoPendiente;
+    expect(pend(completo.id)).toBe(true);
+    expect(pend(incompleto.id)).toBe(false);
+    expect(pend(presentado.id)).toBe(false);
+  });
 });
 
-describe("enviarExpediente", () => {
-  it("presenta: número, fecha e historial", async () => {
+describe("prepararPago", () => {
+  it("borrador completo: guarda la declaración y no cambia el estado", async () => {
     const e = await borradorCompleto();
-    const r = await enviarExpediente(A, e.id, true);
+    const r = await prepararPago(A, e.id, true);
     expect(r.status).toBe("ok");
-    const row = store.expedientes[0];
-    expect(row.estado).toBe("PRESENTADO");
-    expect(row.numero).toBe(`EXP-${getAnioLima()}-00001`);
-    expect(row.presentadoAt).toBeInstanceOf(Date);
-    expect(store.historial).toEqual([
-      expect.objectContaining({
-        expedienteId: e.id,
-        estadoAnterior: "BORRADOR",
-        estadoNuevo: "PRESENTADO",
-        usuarioId: "user-a",
-        comentario: "Solicitud presentada",
-      }),
-    ]);
-  });
-
-  it("correlativo sigue al máximo", async () => {
-    const e1 = await borradorCompleto();
-    const e2 = await borradorCompleto();
-    await enviarExpediente(A, e1.id, true);
-    await enviarExpediente(A, e2.id, true);
-    expect(store.expedientes[1].numero).toBe(`EXP-${getAnioLima()}-00002`);
-  });
-
-  it("segundo envío da no_encontrado y no consume número", async () => {
-    const e = await borradorCompleto();
-    await enviarExpediente(A, e.id, true);
-    expect(await enviarExpediente(A, e.id, true)).toEqual({ status: "no_encontrado" });
-    expect(store.historial).toHaveLength(1);
+    expect(store.expedientes[0].declaracionAceptadaAt).toBeInstanceOf(Date);
+    expect(store.expedientes[0].estado).toBe("BORRADOR");
+    expect(store.expedientes[0].numero).toBeNull();
+    expect(store.historial).toHaveLength(0);
   });
 
   it("incompleto sin modificar: declaración no aceptada", async () => {
     const e = await borradorCompleto();
-    const r = await enviarExpediente(A, e.id, false);
-    expect(r).toEqual({ status: "incompleto", faltantes: ["declaracion"] });
-    expect(store.expedientes[0].estado).toBe("BORRADOR");
-    expect(store.historial).toHaveLength(0);
+    expect(await prepararPago(A, e.id, false)).toEqual({
+      status: "incompleto",
+      faltantes: ["declaracion"],
+    });
+    expect(store.expedientes[0].declaracionAceptadaAt).toBeUndefined();
   });
 
   it("incompleto: faltan pasos y documentos", async () => {
     const e = (await createBorrador(A, paso1))!;
-    const r = await enviarExpediente(A, e.id, true);
+    const r = await prepararPago(A, e.id, true);
     expect(r).toMatchObject({ status: "incompleto" });
-    if (r.status === "incompleto") {
-      expect(r.faltantes).toEqual(["paso2", "paso3", "paso4"]);
-    }
-    expect(store.expedientes[0].estado).toBe("BORRADOR");
+    if (r.status === "incompleto") expect(r.faltantes).toEqual(["paso2", "paso3"]);
   });
 
   it("incompleto: falta un documento requerido", async () => {
     const e = await borradorCompleto();
     store.documentos.pop();
-    expect(await enviarExpediente(A, e.id, true)).toEqual({
+    expect(await prepararPago(A, e.id, true)).toEqual({
       status: "incompleto",
       faltantes: ["CAPACITACION_EXTINTORES"],
     });
@@ -352,7 +344,7 @@ describe("enviarExpediente", () => {
   it("riesgo ALTO con solo los básicos: faltan los técnicos y Osinergmin", async () => {
     const e = await borradorCompleto();
     await updateBorrador(A, e.id, { ...paso2, nivelRiesgo: "ALTO" });
-    expect(await enviarExpediente(A, e.id, true)).toEqual({
+    expect(await prepararPago(A, e.id, true)).toEqual({
       status: "incompleto",
       faltantes: ["LICENCIA_OSINERGMIN", ...TECNICOS],
     });
@@ -361,29 +353,87 @@ describe("enviarExpediente", () => {
   it("documentos subidos que ya no son requeridos no bloquean", async () => {
     const e = await borradorCompleto();
     TECNICOS.forEach((tipo) => store.documentos.push({ expedienteId: e.id, tipo }));
-    expect((await enviarExpediente(A, e.id, true)).status).toBe("ok");
+    expect((await prepararPago(A, e.id, true)).status).toBe("ok");
   });
 
   it("incompleto: establecimiento archivado", async () => {
     const e = await borradorCompleto();
     store.establecimientos[0].archivadoAt = new Date();
-    expect(await enviarExpediente(A, e.id, true)).toEqual({
+    expect(await prepararPago(A, e.id, true)).toEqual({
       status: "incompleto",
       faltantes: ["establecimiento"],
     });
   });
 
+  it("no BORRADOR: no_encontrado", async () => {
+    const e = await borradorCompleto();
+    store.expedientes[0].estado = "PRESENTADO";
+    expect(await prepararPago(A, e.id, true)).toEqual({ status: "no_encontrado" });
+  });
+});
+
+describe("guardarSesionPago", () => {
+  it("guarda la sesión en el borrador propio", async () => {
+    const e = (await createBorrador(A, paso1))!;
+    expect(await guardarSesionPago(A, e.id, "cs_test_a")).toBe(true);
+    expect(store.expedientes[0].stripeSessionId).toBe("cs_test_a");
+  });
+
+  it("false si ya no es BORRADOR", async () => {
+    const e = (await createBorrador(A, paso1))!;
+    store.expedientes[0].estado = "PRESENTADO";
+    expect(await guardarSesionPago(A, e.id, "cs_test_a")).toBe(false);
+  });
+});
+
+describe("presentarExpediente", () => {
+  it("presenta: número, pago, fecha e historial", async () => {
+    const e = await borradorCompleto();
+    const r = await presentarExpediente(A, e.id, pago());
+    expect(r.status).toBe("ok");
+    const row = store.expedientes[0];
+    expect(row.estado).toBe("PRESENTADO");
+    expect(row.numero).toBe(`EXP-${getAnioLima()}-00001`);
+    expect(row.stripeSessionId).toBe("cs_test_abc");
+    expect(row.pagadoAt).toBeInstanceOf(Date);
+    expect(row.presentadoAt).toBeInstanceOf(Date);
+    expect(store.historial).toEqual([
+      expect.objectContaining({
+        expedienteId: e.id,
+        estadoAnterior: "BORRADOR",
+        estadoNuevo: "PRESENTADO",
+        usuarioId: "user-a",
+        comentario: "Solicitud presentada con pago en línea",
+      }),
+    ]);
+  });
+
+  it("correlativo sigue al máximo", async () => {
+    const e1 = await borradorCompleto();
+    const e2 = await borradorCompleto();
+    await presentarExpediente(A, e1.id, pago());
+    await presentarExpediente(A, e2.id, pago());
+    expect(store.expedientes[1].numero).toBe(`EXP-${getAnioLima()}-00002`);
+  });
+
+  it("segunda vez da no_encontrado y no consume número", async () => {
+    const e = await borradorCompleto();
+    await presentarExpediente(A, e.id, pago());
+    expect(await presentarExpediente(A, e.id, pago())).toEqual({ status: "no_encontrado" });
+    expect(store.historial).toHaveLength(1);
+  });
+
   it("reintenta ante choque del índice único", async () => {
     const e = await borradorCompleto();
     store.conflictos = 2;
-    expect((await enviarExpediente(A, e.id, true)).status).toBe("ok");
+    expect((await presentarExpediente(A, e.id, pago())).status).toBe("ok");
     expect(store.historial).toHaveLength(1);
   });
 
   it("lanza tras 3 choques", async () => {
     const e = await borradorCompleto();
     store.conflictos = 3;
-    await expect(enviarExpediente(A, e.id, true)).rejects.toThrow("dup");
+    await expect(presentarExpediente(A, e.id, pago())).rejects.toThrow("dup");
     expect(store.expedientes[0].estado).toBe("BORRADOR");
   });
 });
