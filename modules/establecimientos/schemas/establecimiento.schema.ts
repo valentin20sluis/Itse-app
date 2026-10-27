@@ -18,7 +18,7 @@ export const establecimientoSchema = z.object({
     "Usa solo letras, números y guion.",
   ),
   funcion: z.enum(FUNCION_VALUES, { error: "Selecciona la función del establecimiento." }),
-  giro: texto("el giro o actividad", 3, 100),
+  giro: texto("el giro o actividad", 3, 300),
   areaM2: z.coerce
     .number({ error: "Ingresa un área válida en m²." })
     .gt(0, "El área debe ser mayor que 0.")

@@ -55,7 +55,7 @@ describe("establecimientoSchema", () => {
     ["nombreComercial", 3, 100],
     ["direccion", 5, 200],
     ["distrito", 2, 80],
-    ["giro", 3, 100],
+    ["giro", 3, 300],
   ] as const)("%s respeta longitud mínima %i y máxima %i", (campo, min, max) => {
     expect(establecimientoSchema.safeParse({ ...valido, [campo]: "a".repeat(min) }).success).toBe(true);
     expect(establecimientoSchema.safeParse({ ...valido, [campo]: "a".repeat(max) }).success).toBe(true);

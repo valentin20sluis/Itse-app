@@ -44,7 +44,7 @@ Tabla `establecimientos`:
 | `nombre_comercial` | text, no nulo | 3 a 100 caracteres, con trim |
 | `direccion` | text, no nulo | 5 a 200 caracteres |
 | `distrito` | text, no nulo | 2 a 80 caracteres |
-| `giro` | text, no nulo | 3 a 100 caracteres (actividad, p. ej. "Bodega", "Botica") |
+| `giro` | text, no nulo | 3 a 300 caracteres (actividad, p. ej. "Bodega", "Botica") |
 | `area_m2` | numeric(10,2), no nulo | mayor que 0 y hasta 100000 (área techada total) |
 | `numero_pisos` | integer, no nulo | entero de 1 a 50 |
 | `archivado_at` | timestamptz, nulo | nulo = activo |
