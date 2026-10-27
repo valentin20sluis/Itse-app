@@ -29,6 +29,17 @@ export const usuarios = pgTable("usuarios", {
 
 export type Usuario = typeof usuarios.$inferSelect;
 
+export const funcionEstablecimientoEnum = pgEnum("funcion_establecimiento", [
+  "ALMACEN",
+  "COMERCIO",
+  "ENCUENTRO",
+  "EDUCACION",
+  "HOSPEDAJE",
+  "INDUSTRIA",
+  "OFICINAS_ADMINISTRATIVAS",
+  "SALUD",
+]);
+
 export const establecimientos = pgTable(
   "establecimientos",
   {
@@ -39,9 +50,12 @@ export const establecimientos = pgTable(
     nombreComercial: text("nombre_comercial").notNull(),
     direccion: text("direccion").notNull(),
     distrito: text("distrito").notNull(),
+    numeroGiro: text("numero_giro"),
+    funcion: funcionEstablecimientoEnum("funcion"),
     giro: text("giro").notNull(),
     areaM2: numeric("area_m2", { precision: 10, scale: 2 }).notNull(),
     numeroPisos: integer("numero_pisos").notNull(),
+    pisoEstablecimiento: integer("piso_establecimiento"),
     archivadoAt: timestamp("archivado_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

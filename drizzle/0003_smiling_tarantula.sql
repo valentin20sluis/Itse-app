@@ -1,0 +1,1 @@
+ALTER TABLE "establecimientos" ADD COLUMN "numero_giro" text;

@@ -25,9 +25,12 @@ function parseForm(formData: FormData) {
     nombreComercial: formData.get("nombreComercial"),
     direccion: formData.get("direccion"),
     distrito: formData.get("distrito"),
+    numeroGiro: formData.get("numeroGiro"),
+    funcion: formData.get("funcion"),
     giro: formData.get("giro"),
     areaM2: formData.get("areaM2"),
     numeroPisos: formData.get("numeroPisos"),
+    pisoEstablecimiento: formData.get("pisoEstablecimiento"),
   });
 }
 

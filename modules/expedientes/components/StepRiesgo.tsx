@@ -56,7 +56,7 @@ export function StepRiesgo({ establecimiento, expediente, onSaved, onBack }: Pro
     <form action={action} className="space-y-6" noValidate>
       <p className="text-sm text-muted-foreground">
         {establecimiento.nombreComercial}: {establecimiento.areaM2} m² · {establecimiento.numeroPisos}{" "}
-        {establecimiento.numeroPisos === 1 ? "piso" : "pisos"}
+        {establecimiento.numeroPisos === 1 ? "piso" : "pisos"} de la edificación
       </p>
 
       <fieldset className="space-y-2">

@@ -20,9 +20,12 @@ const existente = {
   nombreComercial: "Bodega Don Pepe",
   direccion: "Av. Lima 123",
   distrito: "Miraflores",
+  numeroGiro: "G-123",
+  funcion: "COMERCIO",
   giro: "Bodega",
   areaM2: "120.50",
   numeroPisos: 2,
+  pisoEstablecimiento: 1,
   archivadoAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -31,18 +34,38 @@ const existente = {
 afterEach(cleanup);
 
 describe("EstablecimientoForm", () => {
-  it("renderiza los 6 campos con su label", () => {
+  it("renderiza los 9 campos con su label en el orden esperado", () => {
     render(<EstablecimientoForm open onOpenChange={() => {}} />);
-    for (const label of [
+    const labels = [
       "Nombre comercial",
       "Dirección",
       "Distrito",
+      "Número de giro",
       "Giro o actividad",
+      "Función",
       "Área techada total (m²)",
-      "Número de pisos",
-    ]) {
-      expect(screen.getByLabelText(label)).toBeInTheDocument();
-    }
+      "Número de pisos de la edificación",
+      "Piso donde está el establecimiento",
+    ];
+    const els = labels.map((l) => screen.getByLabelText(l));
+    els.forEach((el, i) => {
+      if (i > 0) {
+        expect(els[i - 1].compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      }
+    });
+    expect(screen.getByLabelText("Número de pisos de la edificación")).toHaveAttribute("inputmode", "numeric");
+    expect(screen.getByLabelText("Piso donde está el establecimiento")).toHaveAttribute("inputmode", "numeric");
+  });
+
+  it("en una fila vieja el piso del establecimiento parte vacío", () => {
+    render(
+      <EstablecimientoForm
+        open
+        onOpenChange={() => {}}
+        establecimiento={{ ...existente, pisoEstablecimiento: null }}
+      />,
+    );
+    expect(screen.getByLabelText("Piso donde está el establecimiento")).toHaveValue("");
   });
 
   it("muestra los errores por campo con aria-invalid", async () => {
@@ -66,6 +89,26 @@ describe("EstablecimientoForm", () => {
     render(<EstablecimientoForm open onOpenChange={() => {}} establecimiento={existente} />);
     expect(screen.getByLabelText("Nombre comercial")).toHaveValue("Bodega Don Pepe");
     expect(screen.getByLabelText("Área techada total (m²)")).toHaveValue("120.50");
-    expect(screen.getByLabelText("Número de pisos")).toHaveValue("2");
+    expect(screen.getByLabelText("Número de pisos de la edificación")).toHaveValue("2");
+    expect(screen.getByLabelText("Piso donde está el establecimiento")).toHaveValue("1");
+    expect(screen.getByLabelText("Número de giro")).toHaveValue("G-123");
+    expect(screen.getByLabelText("Función")).toHaveValue("COMERCIO");
+  });
+
+  it("la función ofrece las 8 opciones con etiqueta y parte vacía en filas viejas", () => {
+    render(
+      <EstablecimientoForm
+        open
+        onOpenChange={() => {}}
+        establecimiento={{ ...existente, funcion: null }}
+      />,
+    );
+    const select = screen.getByLabelText("Función");
+    expect(select).toHaveValue("");
+    expect(screen.getByRole("option", { name: "Selecciona una función" })).toBeDisabled();
+    expect(screen.getByRole("option", { name: "Oficinas administrativas" })).toHaveValue(
+      "OFICINAS_ADMINISTRATIVAS",
+    );
+    expect(select.querySelectorAll("option")).toHaveLength(9);
   });
 });

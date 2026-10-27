@@ -36,9 +36,12 @@ function form(overrides: Record<string, string> = {}) {
     nombreComercial: "Bodega Don Pepe",
     direccion: "Av. Lima 123",
     distrito: "Miraflores",
+    numeroGiro: "G-123",
+    funcion: "COMERCIO",
     giro: "Bodega",
     areaM2: "120.5",
     numeroPisos: "2",
+    pisoEstablecimiento: "1",
     ...overrides,
   };
   for (const [k, v] of Object.entries(base)) fd.set(k, v);
@@ -67,6 +70,61 @@ describe("createEstablecimientoAction", () => {
     }
     expect(mocks.create).not.toHaveBeenCalled();
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("numeroGiro vacío o inválido devuelve fieldErrors y no llama al servicio", async () => {
+    for (const numeroGiro of ["", "12 34"]) {
+      const res = await createEstablecimientoAction(null, form({ numeroGiro }));
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.fieldErrors?.numeroGiro).toBeDefined();
+    }
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("pisoEstablecimiento vacío o mayor que los pisos devuelve fieldErrors; válido pasa al servicio al crear y editar", async () => {
+    for (const pisoEstablecimiento of ["", "3"]) {
+      const res = await createEstablecimientoAction(null, form({ pisoEstablecimiento }));
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.fieldErrors?.pisoEstablecimiento).toBeDefined();
+    }
+    expect(mocks.create).not.toHaveBeenCalled();
+    mocks.create.mockResolvedValue({ id: ID });
+    mocks.update.mockResolvedValue({ id: ID });
+    await createEstablecimientoAction(null, form({ pisoEstablecimiento: "2" }));
+    expect(mocks.create).toHaveBeenCalledWith(usuario, expect.objectContaining({ pisoEstablecimiento: 2 }));
+    await updateEstablecimientoAction(ID, null, form({ pisoEstablecimiento: "2" }));
+    expect(mocks.update).toHaveBeenCalledWith(usuario, ID, expect.objectContaining({ pisoEstablecimiento: 2 }));
+  });
+
+  it("pasa numeroGiro al servicio", async () => {
+    mocks.create.mockResolvedValue({ id: ID });
+    await createEstablecimientoAction(null, form());
+    expect(mocks.create).toHaveBeenCalledWith(
+      usuario,
+      expect.objectContaining({ numeroGiro: "G-123" }),
+    );
+  });
+
+  it("funcion vacía o fuera de la lista devuelve fieldErrors y no llama al servicio", async () => {
+    for (const funcion of ["", "MINERIA"]) {
+      const res = await createEstablecimientoAction(null, form({ funcion }));
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.fieldErrors?.funcion?.[0]).toBe("Selecciona la función del establecimiento.");
+    }
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("pasa funcion al servicio al crear y al editar", async () => {
+    mocks.create.mockResolvedValue({ id: ID });
+    mocks.update.mockResolvedValue({ id: ID });
+    await createEstablecimientoAction(null, form({ funcion: "SALUD" }));
+    expect(mocks.create).toHaveBeenCalledWith(usuario, expect.objectContaining({ funcion: "SALUD" }));
+    await updateEstablecimientoAction(ID, null, form({ funcion: "OFICINAS_ADMINISTRATIVAS" }));
+    expect(mocks.update).toHaveBeenCalledWith(
+      usuario,
+      ID,
+      expect.objectContaining({ funcion: "OFICINAS_ADMINISTRATIVAS" }),
+    );
   });
 
   it("usa el usuario de requireRole aunque el formulario traiga usuarioId, y revalida", async () => {

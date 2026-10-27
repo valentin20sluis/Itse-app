@@ -27,9 +27,12 @@ function toValues(input: EstablecimientoInput) {
     nombreComercial: input.nombreComercial,
     direccion: input.direccion,
     distrito: input.distrito,
+    numeroGiro: input.numeroGiro,
+    funcion: input.funcion,
     giro: input.giro,
     areaM2: String(input.areaM2),
     numeroPisos: input.numeroPisos,
+    pisoEstablecimiento: input.pisoEstablecimiento,
   };
 }
 

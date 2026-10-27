@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { FUNCION_LABELS } from "@/modules/establecimientos/constants/funciones";
 import type { Establecimiento } from "@/modules/establecimientos/types/establecimiento.types";
 
 type Props = {
@@ -20,12 +21,27 @@ export function EstablecimientoCard({ establecimiento: e, onEdit, onArchive }: P
           <dd className="break-words">{e.direccion}</dd>
           <dt className="text-muted-foreground">Distrito</dt>
           <dd className="break-words">{e.distrito}</dd>
+          {e.funcion && (
+            <>
+              <dt className="text-muted-foreground">Función</dt>
+              <dd>{FUNCION_LABELS[e.funcion]}</dd>
+            </>
+          )}
           <dt className="text-muted-foreground">Giro</dt>
-          <dd className="break-words">{e.giro}</dd>
+          <dd className="break-words">
+            {e.giro}
+            {e.numeroGiro && ` (N.° ${e.numeroGiro})`}
+          </dd>
           <dt className="text-muted-foreground">Área</dt>
           <dd>{Number(e.areaM2)} m²</dd>
-          <dt className="text-muted-foreground">Pisos</dt>
+          <dt className="text-muted-foreground">Pisos de la edificación</dt>
           <dd>{e.numeroPisos}</dd>
+          {e.pisoEstablecimiento != null && (
+            <>
+              <dt className="text-muted-foreground">Piso del establecimiento</dt>
+              <dd>{e.pisoEstablecimiento}</dd>
+            </>
+          )}
         </dl>
       </CardContent>
       <CardFooter className="gap-2">

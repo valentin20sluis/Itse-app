@@ -17,15 +17,19 @@ import {
   createEstablecimientoAction,
   updateEstablecimientoAction,
 } from "@/modules/establecimientos/actions/establecimiento.actions";
+import { FUNCION_LABELS, FUNCION_VALUES } from "@/modules/establecimientos/constants/funciones";
 import type { Establecimiento } from "@/modules/establecimientos/types/establecimiento.types";
 
 type FieldName =
   | "nombreComercial"
   | "direccion"
   | "distrito"
+  | "numeroGiro"
+  | "funcion"
   | "giro"
   | "areaM2"
-  | "numeroPisos";
+  | "numeroPisos"
+  | "pisoEstablecimiento";
 
 const FIELDS: {
   name: FieldName;
@@ -37,9 +41,12 @@ const FIELDS: {
   { name: "nombreComercial", label: "Nombre comercial", wide: true },
   { name: "direccion", label: "Dirección", autoComplete: "street-address", wide: true },
   { name: "distrito", label: "Distrito" },
-  { name: "giro", label: "Giro o actividad" },
+  { name: "numeroGiro", label: "Número de giro" },
+  { name: "giro", label: "Giro o actividad", wide: true },
+  { name: "funcion", label: "Función" },
   { name: "areaM2", label: "Área techada total (m²)", inputMode: "decimal" },
-  { name: "numeroPisos", label: "Número de pisos", inputMode: "numeric" },
+  { name: "numeroPisos", label: "Número de pisos de la edificación", inputMode: "numeric" },
+  { name: "pisoEstablecimiento", label: "Piso donde está el establecimiento", inputMode: "numeric" },
 ];
 
 type Props = {
@@ -81,9 +88,13 @@ function FormBody({
     nombreComercial: establecimiento?.nombreComercial ?? "",
     direccion: establecimiento?.direccion ?? "",
     distrito: establecimiento?.distrito ?? "",
+    numeroGiro: establecimiento?.numeroGiro ?? "",
+    funcion: establecimiento?.funcion ?? "",
     giro: establecimiento?.giro ?? "",
     areaM2: establecimiento?.areaM2 ?? "",
     numeroPisos: establecimiento ? String(establecimiento.numeroPisos) : "",
+    pisoEstablecimiento:
+      establecimiento?.pisoEstablecimiento != null ? String(establecimiento.pisoEstablecimiento) : "",
   });
 
   useEffect(() => {
@@ -111,18 +122,40 @@ function FormBody({
           return (
             <div key={f.name} className={`flex flex-col gap-1.5 ${f.wide ? "sm:col-span-2" : ""}`}>
               <Label htmlFor={f.name}>{f.label}</Label>
-              <Input
-                id={f.name}
-                name={f.name}
-                value={values[f.name]}
-                onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-                inputMode={f.inputMode}
-                autoComplete={f.autoComplete}
-                required
-                className="h-11"
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? errorId : undefined}
-              />
+              {f.name === "funcion" ? (
+                <select
+                  id={f.name}
+                  name={f.name}
+                  value={values[f.name]}
+                  onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+                  required
+                  className="h-11 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? errorId : undefined}
+                >
+                  <option value="" disabled className="bg-background text-foreground">
+                    Selecciona una función
+                  </option>
+                  {FUNCION_VALUES.map((v) => (
+                    <option key={v} value={v} className="bg-background text-foreground">
+                      {FUNCION_LABELS[v]}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  id={f.name}
+                  name={f.name}
+                  value={values[f.name]}
+                  onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+                  inputMode={f.inputMode}
+                  autoComplete={f.autoComplete}
+                  required
+                  className="h-11"
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? errorId : undefined}
+                />
+              )}
               {error && (
                 <p id={errorId} className="text-sm text-destructive">
                   {error}

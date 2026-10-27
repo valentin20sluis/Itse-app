@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
+import { FUNCION_VALUES } from "@/modules/establecimientos/constants/funciones";
 import { establecimientoSchema } from "./establecimiento.schema";
 
 const valido = {
   nombreComercial: "Bodega Don Pepe",
   direccion: "Av. Lima 123",
   distrito: "Miraflores",
+  numeroGiro: "G-123",
+  funcion: "COMERCIO",
   giro: "Bodega",
   areaM2: "120.5",
   numeroPisos: "2",
+  pisoEstablecimiento: "1",
 };
 
 const mensaje = (data: Record<string, unknown>, campo: string) => {
@@ -27,7 +31,19 @@ describe("establecimientoSchema", () => {
     expect(r.numeroPisos).toBe(2);
   });
 
-  it.each(["nombreComercial", "direccion", "distrito", "giro"])(
+  it.each(FUNCION_VALUES)("funcion acepta %s", (funcion) => {
+    expect(establecimientoSchema.safeParse({ ...valido, funcion }).success).toBe(true);
+  });
+
+  it("funcion rechaza vacío, ausente o fuera de la lista", () => {
+    const msg = "Selecciona la función del establecimiento.";
+    expect(mensaje({ ...valido, funcion: "" }, "funcion")).toBe(msg);
+    expect(mensaje({ ...valido, funcion: "MINERIA" }, "funcion")).toBe(msg);
+    expect(mensaje({ ...valido, funcion: undefined }, "funcion")).toBe(msg);
+    expect(mensaje({ ...valido, funcion: null }, "funcion")).toBe(msg);
+  });
+
+  it.each(["nombreComercial", "direccion", "distrito", "numeroGiro", "giro"])(
     "rechaza %s vacío o solo espacios",
     (campo) => {
       expect(mensaje({ ...valido, [campo]: "" }, campo)).toMatch(/^Ingresa /);
@@ -47,6 +63,17 @@ describe("establecimientoSchema", () => {
     expect(mensaje({ ...valido, [campo]: "a".repeat(max + 1) }, campo)).toContain("como máximo");
   });
 
+  it("numeroGiro acepta letras, números y guion, y recorta espacios", () => {
+    expect(establecimientoSchema.parse({ ...valido, numeroGiro: "  AB-12  " }).numeroGiro).toBe("AB-12");
+    expect(establecimientoSchema.safeParse({ ...valido, numeroGiro: "a".repeat(20) }).success).toBe(true);
+  });
+
+  it("numeroGiro rechaza caracteres inválidos y más de 20", () => {
+    expect(mensaje({ ...valido, numeroGiro: "12 34" }, "numeroGiro")).toBe("Usa solo letras, números y guion.");
+    expect(mensaje({ ...valido, numeroGiro: "12/34" }, "numeroGiro")).toBe("Usa solo letras, números y guion.");
+    expect(mensaje({ ...valido, numeroGiro: "a".repeat(21) }, "numeroGiro")).toContain("como máximo");
+  });
+
   it("rechaza areaM2 0, negativa, no numérica y mayor a 100000", () => {
     expect(mensaje({ ...valido, areaM2: "0" }, "areaM2")).toBe("El área debe ser mayor que 0.");
     expect(mensaje({ ...valido, areaM2: "-5" }, "areaM2")).toBe("El área debe ser mayor que 0.");
@@ -56,10 +83,35 @@ describe("establecimientoSchema", () => {
   });
 
   it("rechaza numeroPisos 0, 51, decimal y no numérico", () => {
-    expect(mensaje({ ...valido, numeroPisos: "0" }, "numeroPisos")).toBe("Debe tener al menos 1 piso.");
-    expect(mensaje({ ...valido, numeroPisos: "51" }, "numeroPisos")).toBe("No puede tener más de 50 pisos.");
-    expect(mensaje({ ...valido, numeroPisos: "1.5" }, "numeroPisos")).toBe("El número de pisos debe ser un entero.");
-    expect(mensaje({ ...valido, numeroPisos: "abc" }, "numeroPisos")).toBe("Ingresa un número de pisos válido.");
+    expect(mensaje({ ...valido, numeroPisos: "0" }, "numeroPisos")).toBe("La edificación debe tener al menos 1 piso.");
+    expect(mensaje({ ...valido, numeroPisos: "51" }, "numeroPisos")).toBe("La edificación no puede tener más de 50 pisos.");
+    expect(mensaje({ ...valido, numeroPisos: "1.5" }, "numeroPisos")).toBe(
+      "El número de pisos de la edificación debe ser un entero.",
+    );
+    expect(mensaje({ ...valido, numeroPisos: "abc" }, "numeroPisos")).toBe(
+      "Ingresa un número de pisos de la edificación válido.",
+    );
     expect(establecimientoSchema.safeParse({ ...valido, numeroPisos: "50" }).success).toBe(true);
+  });
+
+  it("pisoEstablecimiento válido se convierte a número, también igual a los pisos", () => {
+    expect(establecimientoSchema.parse(valido).pisoEstablecimiento).toBe(1);
+    expect(establecimientoSchema.safeParse({ ...valido, pisoEstablecimiento: "2" }).success).toBe(true);
+  });
+
+  it("pisoEstablecimiento rechaza vacío, 0, 51, decimal y no numérico", () => {
+    expect(mensaje({ ...valido, pisoEstablecimiento: "" }, "pisoEstablecimiento")).toBe("El piso debe ser al menos 1.");
+    expect(mensaje({ ...valido, pisoEstablecimiento: "0" }, "pisoEstablecimiento")).toBe("El piso debe ser al menos 1.");
+    expect(mensaje({ ...valido, pisoEstablecimiento: "51", numeroPisos: "50" }, "pisoEstablecimiento")).toBe(
+      "El piso no puede ser mayor que 50.",
+    );
+    expect(mensaje({ ...valido, pisoEstablecimiento: "1.5" }, "pisoEstablecimiento")).toBe("El piso debe ser un entero.");
+    expect(mensaje({ ...valido, pisoEstablecimiento: "abc" }, "pisoEstablecimiento")).toBe("Ingresa un piso válido.");
+  });
+
+  it("pisoEstablecimiento no puede ser mayor que los pisos de la edificación", () => {
+    expect(mensaje({ ...valido, numeroPisos: "2", pisoEstablecimiento: "3" }, "pisoEstablecimiento")).toBe(
+      "No puede ser mayor que el número de pisos de la edificación.",
+    );
   });
 });

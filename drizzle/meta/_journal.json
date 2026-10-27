@@ -22,6 +22,27 @@
       "when": 1793055398135,
       "tag": "0002_youthful_tana_nile",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793059176494,
+      "tag": "0003_smiling_tarantula",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793060458575,
+      "tag": "0004_premium_wild_pack",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793061532561,
+      "tag": "0005_polite_wasp",
+      "breakpoints": true
     }
   ]
 }

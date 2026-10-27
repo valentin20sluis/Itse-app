@@ -73,7 +73,7 @@ export function StepEstablecimiento({ establecimientos, expediente, onSaved }: P
               <span className="block font-medium">{e.nombreComercial}</span>
               <span className="block break-words text-muted-foreground">{e.direccion}</span>
               <span className="block text-muted-foreground">
-                {e.areaM2} m² · {e.numeroPisos} {e.numeroPisos === 1 ? "piso" : "pisos"}
+                {e.areaM2} m² · {e.numeroPisos} {e.numeroPisos === 1 ? "piso" : "pisos"} de la edificación
               </span>
             </span>
           </label>

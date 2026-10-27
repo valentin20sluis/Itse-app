@@ -1,0 +1,2 @@
+CREATE TYPE "public"."funcion_establecimiento" AS ENUM('ALMACEN', 'COMERCIO', 'ENCUENTRO', 'EDUCACION', 'HOSPEDAJE', 'INDUSTRIA', 'OFICINAS_ADMINISTRATIVAS', 'SALUD');--> statement-breakpoint
+ALTER TABLE "establecimientos" ADD COLUMN "funcion" "funcion_establecimiento";

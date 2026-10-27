@@ -1,0 +1,1 @@
+ALTER TABLE "establecimientos" ADD COLUMN "piso_establecimiento" integer;

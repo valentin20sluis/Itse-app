@@ -74,9 +74,12 @@ const input = {
   nombreComercial: "Bodega Ficticia",
   direccion: "Av. Falsa 123",
   distrito: "Distrito Uno",
+  numeroGiro: "G-123",
+  funcion: "COMERCIO" as const,
   giro: "Bodega",
   areaM2: 120.5,
   numeroPisos: 2,
+  pisoEstablecimiento: 1,
 };
 
 beforeEach(() => {
@@ -109,6 +112,13 @@ describe("create y list", () => {
     const e = await createEstablecimiento(A, { ...input, usuarioId: "user-b" } as typeof input);
     expect(e.usuarioId).toBe("user-a");
     expect(e.areaM2).toBe("120.5");
+  });
+
+  it("guarda pisoEstablecimiento al crear y al editar", async () => {
+    const e = await createEstablecimiento(A, input);
+    expect(e.pisoEstablecimiento).toBe(1);
+    const u = await updateEstablecimiento(A, e.id, { ...input, pisoEstablecimiento: 2 });
+    expect(u?.pisoEstablecimiento).toBe(2);
   });
 
   it("lista solo los propios no archivados, el más reciente primero", async () => {
@@ -179,6 +189,10 @@ describe("update y archive", () => {
     const e = await createEstablecimiento(A, input);
     const u = await updateEstablecimiento(A, e.id, { ...input, giro: "Botica" });
     expect(u?.giro).toBe("Botica");
+    const n = await updateEstablecimiento(A, e.id, { ...input, numeroGiro: "X-9" });
+    expect(n?.numeroGiro).toBe("X-9");
+    const f = await updateEstablecimiento(A, e.id, { ...input, funcion: "SALUD" });
+    expect(f?.funcion).toBe("SALUD");
     expect(u?.updatedAt).toBeInstanceOf(Date);
   });
 

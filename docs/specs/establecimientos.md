@@ -133,3 +133,25 @@ G1: T1, T2 (archivos disjuntos). G2: T3. G3: T4. G4: T5. G5: T6. (T3 necesita lo
 - `solicitud-itse`: el wizard elige un establecimiento propio (usa `getEstablecimientoById`), declara el riesgo con preguntas orientativas; bloquear archivado con expedientes activos.
 - `bandeja-estados`: lectura de establecimientos para staff en el panel (listado para admin/superadmin sobre el mismo servicio).
 - Opcional: ver y restaurar archivados; paginación y búsqueda si un cliente acumula muchos locales.
+
+## Cambio posterior: Número de giro
+
+- `db/schema.ts`: columna `numeroGiro` (`numero_giro`, text) nullable en BD por las filas existentes; migración `drizzle/0003_smiling_tarantula.sql` (solo `ADD COLUMN`).
+- Schema: `numeroGiro` obligatorio en el formulario, trim, 1 a 20 caracteres, solo letras, números y guion.
+- Servicio y acciones lo mapean en crear y editar; al editar una fila antigua el campo parte vacío y se exige.
+- Formulario: orden Nombre comercial, Dirección, Distrito + Número de giro, Giro o actividad (ancho completo), Área + Pisos. La tarjeta muestra el número junto al giro si existe.
+- Tests actualizados y casos nuevos (válido, vacío, inválido, más de 20).
+
+## Cambio posterior: Función
+
+- Nuevo campo `funcion` (enum `funcion_establecimiento`: ALMACEN, COMERCIO, ENCUENTRO, EDUCACION, HOSPEDAJE, INDUSTRIA, OFICINAS_ADMINISTRATIVAS, SALUD), nullable en BD por las filas existentes (migración `0004`), obligatorio en el formulario.
+- Opciones y etiquetas definidas una sola vez en `modules/establecimientos/constants/funciones.ts` (schema zod, formulario y tarjeta).
+- Formulario: `<select>` nativo ancho completo antes de "Giro o actividad". Al editar una fila antigua parte vacío y se exige elegir.
+- `docs/reglas-negocio-itse.md` solo menciona "función" (Comercio) como referencia de la matriz de riesgos y no define lista; se sigue la petición.
+
+## Cambio posterior: pisos y orden del formulario
+
+- "Número de pisos" pasa a llamarse "Número de pisos de la edificación" (mismo dato `numeroPisos`, columna `numero_pisos`, regla de riesgo intacta; solo cambian etiqueta y mensajes).
+- Nuevo campo `pisoEstablecimiento` (`piso_establecimiento`, integer, nullable en BD por filas existentes; migración `0005`, solo `ADD COLUMN`). Obligatorio en el formulario, entero de 1 a 50 y no mayor que `numeroPisos` (error en el campo del piso: "No puede ser mayor que el número de pisos de la edificación."). Al editar una fila antigua parte vacío y se exige.
+- Orden (escritorio): Nombre comercial; Dirección; Distrito + Número de giro; Giro o actividad; Función + Área techada total (m²); Pisos de la edificación + Piso donde está el establecimiento. En móvil, una columna en el mismo orden.
+- La tarjeta muestra "Pisos de la edificación" y, si existe, "Piso del establecimiento".

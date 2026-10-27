@@ -4,6 +4,9 @@ Estado: approved
 
 Depende de `solicitud-itse-datos.md` (servicios) y, para el botón "Continuar", del wizard de `solicitud-itse-wizard.md` (`?borrador=<id>`). Puede implementarse en paralelo al wizard: solo comparten la URL.
 
+## Entrega en dos fases (decisión del usuario)
+Mientras el usuario no tenga cuenta de UploadThing: **Fase A** = T1 y T3 (etiquetas, listado y página). **Fase B** = T2 (descarga protegida, depende de la infraestructura de UploadThing del wizard T1) y el enlace "Ver archivo".
+
 ## Objetivo
 Que el cliente vea en `/mi-cuenta/expedientes` sus solicitudes con número, establecimiento, estado y fecha, retome sus borradores y pueda abrir sus archivos subidos de forma protegida (solo dueño y staff).
 
@@ -48,7 +51,7 @@ Que el cliente vea en `/mi-cuenta/expedientes` sus solicitudes con número, esta
 - Grupo paralelo: G1
 - Cubre: AC-1, AC-7
 - Tests: `estado-labels.test.ts` — cubre cada valor de `estadoExpedienteEnum.enumValues` con etiqueta no vacía. (`EstadoBadge` es presentacional, SETUP.md 3.2.)
-- [ ] Completada
+- [x] Completada
 
 ### T2 — Descarga protegida de documentos
 - Archivos: `app/api/documentos/[id]/route.ts` (crear), `app/api/documentos/[id]/route.test.ts` (crear), `lib/uploadthing-server.ts` (modificar: agregar `getSignedFileUrl`)
@@ -65,7 +68,7 @@ Que el cliente vea en `/mi-cuenta/expedientes` sus solicitudes con número, esta
 - Cubre: AC-2, AC-3, AC-4, AC-7
 - Detalle: la página llama `requireRole("cliente")`, `listOwnExpedientes(usuario)` y compone `ExpedientesView`; sin lógica propia.
 - Tests: `page.test.tsx` (estilo de `app/mi-cuenta/establecimientos/page.test.tsx`) — `requireRole("cliente")` antes de leer datos; con redirect no se llama al servicio; pasa al servicio el usuario devuelto.
-- [ ] Completada
+- [x] Completada (Fase A)
 
 ## Grupos paralelos
 G1: T1, T2 (archivos disjuntos). G2: T3.
