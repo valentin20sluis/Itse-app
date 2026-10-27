@@ -35,6 +35,19 @@ function renderUploader(doc?: ExpedienteDocumento) {
   );
 }
 
+const DNI = "DNI (ambas caras, en un solo PDF)";
+
+function elegirDni(file: File) {
+  render(
+    <ul>
+      <DocumentoUploader expedienteId={EXP_ID} tipo="DNI_AMBAS_CARAS" etiqueta={DNI} obligatorio documento={undefined} />
+    </ul>,
+  );
+  const input = screen.getByLabelText(`Elegir archivo: ${DNI}`);
+  expect(input.getAttribute("accept")).toBe("application/pdf");
+  fireEvent.change(input, { target: { files: [file] } });
+}
+
 function elegir(file: File) {
   fireEvent.change(screen.getByLabelText(/Elegir archivo: Ficha RUC/), { target: { files: [file] } });
 }
@@ -57,6 +70,19 @@ describe("DocumentoUploader", () => {
     elegir(grande);
     expect(screen.getByText("El PDF no puede superar 8 MB.")).toBeTruthy();
     expect(mocks.startUpload).not.toHaveBeenCalled();
+  });
+
+  it("DNI: una imagen muestra el error de solo PDF y no sube", () => {
+    elegirDni(new File(["x"], "dni.jpg", { type: "image/jpeg" }));
+    expect(screen.getByText("Este documento debe ser un PDF.")).toBeTruthy();
+    expect(mocks.startUpload).not.toHaveBeenCalled();
+  });
+
+  it("otro tipo sigue aceptando imágenes", () => {
+    renderUploader();
+    expect(screen.getByLabelText(/Elegir archivo: Ficha RUC/).getAttribute("accept")).toContain("image/jpeg");
+    elegir(new File(["x"], "ruc.jpg", { type: "image/jpeg" }));
+    expect(mocks.startUpload).toHaveBeenCalled();
   });
 
   it("un PDF válido llama a la subida con expedienteId y tipo", () => {

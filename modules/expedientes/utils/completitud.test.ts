@@ -6,6 +6,7 @@ const completo = {
   establecimientoId: uuid,
   tipoTramite: "NUEVA",
   nivelRiesgo: "MEDIO",
+  calidadSolicitante: "PROPIETARIO",
   tieneSotano: false,
   almacenaInflamables: false,
   tieneCocina: false,
@@ -18,12 +19,13 @@ const completo = {
   solicitanteTelefono: "987654321",
   solicitanteEmail: "juan@ejemplo.pe",
 } as const;
-const medioDocs = ["FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"] as const;
+const medioDocs = ["DNI_AMBAS_CARAS", "FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"] as const;
 
 describe("faltantesBorrador", () => {
   it("borrador vacío: pasos 1 a 3 y sin documentos requeridos (nivel nulo)", () => {
     const vacio = {
       nivelRiesgo: null,
+      calidadSolicitante: "PROPIETARIO" as const,
       tieneCocina: false,
       esGrifo: false,
       almacenaInflamables: false,
@@ -33,7 +35,7 @@ describe("faltantesBorrador", () => {
   });
 
   it("incluye los documentos requeridos que faltan", () => {
-    expect(faltantesBorrador(completo, ["FICHA_RUC"])).toEqual([
+    expect(faltantesBorrador(completo, ["DNI_AMBAS_CARAS", "FICHA_RUC"])).toEqual([
       "EXTINTORES_PQS",
       "CAPACITACION_EXTINTORES",
     ]);
@@ -48,5 +50,16 @@ describe("faltantesBorrador", () => {
     expect(faltantesBorrador({ ...completo, numeroPisos: 2 }, [...medioDocs])).toEqual([
       "PLAN_SEGURIDAD",
     ]);
+  });
+});
+
+describe("faltantesBorrador, solicitante", () => {
+  it("sin DNI lo reporta; representante legal exige además la acreditación", () => {
+    expect(faltantesBorrador(completo, ["FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"])).toEqual([
+      "DNI_AMBAS_CARAS",
+    ]);
+    expect(
+      faltantesBorrador({ ...completo, calidadSolicitante: "REPRESENTANTE_LEGAL" }, [...medioDocs]),
+    ).toEqual(["ACREDITACION_REPRESENTACION"]);
   });
 });

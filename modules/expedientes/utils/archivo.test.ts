@@ -41,4 +41,21 @@ describe("validateArchivo", () => {
       error: "El archivo debe tener un nombre.",
     });
   });
+
+  describe("tipos solo PDF", () => {
+    it.each(["DNI_AMBAS_CARAS", "ACREDITACION_REPRESENTACION"] as const)("%s", (tipo) => {
+      for (const t of ["image/jpeg", "image/png", "image/webp"]) {
+        expect(validateArchivo({ ...img(10, t), tipo })).toEqual({
+          ok: false,
+          error: "Este documento debe ser un PDF.",
+        });
+      }
+      expect(validateArchivo({ ...pdf(MAX_PDF_BYTES), tipo })).toEqual({ ok: true });
+      expect(validateArchivo({ ...pdf(MAX_PDF_BYTES + 1), tipo }).ok).toBe(false);
+    });
+    it("sin tipo o con otro tipo la imagen sigue aceptada", () => {
+      expect(validateArchivo(img(10))).toEqual({ ok: true });
+      expect(validateArchivo({ ...img(10), tipo: "FICHA_RUC" })).toEqual({ ok: true });
+    });
+  });
 });

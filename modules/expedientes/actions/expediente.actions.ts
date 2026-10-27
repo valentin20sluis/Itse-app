@@ -56,6 +56,7 @@ function parsePaso(paso: number, formData: FormData) {
         solicitanteDocumento: formData.get("solicitanteDocumento"),
         solicitanteTelefono: formData.get("solicitanteTelefono"),
         solicitanteEmail: formData.get("solicitanteEmail"),
+        calidadSolicitante: formData.get("calidadSolicitante"),
       });
     default:
       return null;

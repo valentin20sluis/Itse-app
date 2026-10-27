@@ -92,6 +92,11 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 - **Opcional en riesgo BAJO y MEDIO:** certificado de pozo a tierra (algunos negocios pequeños no lo tienen). En ALTO/MUY_ALTO es obligatorio.
 - El paso Documentos solo lista los obligatorios y los opcionales del caso; no se muestran documentos que no aplican.
 
+**Solicitante (paso 3):** el cliente declara su calidad: propietario, representante legal o administrador (por defecto propietario).
+- **DNI:** obligatorio siempre, en un solo PDF con ambas caras.
+- **Acreditación de la representación** (poder, designación u otro): obligatoria si es representante legal o administrador; no se pide al propietario.
+- Ambos documentos son solo PDF (no se aceptan imágenes), hasta 8 MB, y se exigen al pagar. Se suben en el paso 3, no en el paso Documentos.
+
 **Plan de seguridad:** se sube como archivo (`PLAN_SEGURIDAD`). Es obligatorio en riesgo ALTO/MUY_ALTO (siempre) y en riesgo MEDIO cuando el edificio tiene 2 o más pisos (con más de 2 pisos el local ya es ALTO). No se pide en MEDIO de 1 piso ni en BAJO. Regla anterior (reemplazada): el plan no se subía y solo se mostraba un aviso porque el inspector lo revisaba en físico.
 
 **Pago de la tasa:** no hay comprobante de pago como archivo ni número de boleta. El cliente paga en línea con Stripe (Checkout hospedado, **modo prueba**, dinero ficticio). El monto lo fija el servidor según el nivel de riesgo y la solicitud solo se presenta cuando Stripe confirma el pago.

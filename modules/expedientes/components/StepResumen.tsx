@@ -11,6 +11,7 @@ import type {
   NivelRiesgo,
   TipoDocumento,
 } from "@/modules/expedientes/types/expediente.types";
+import { CALIDADES } from "@/modules/expedientes/components/StepSolicitante";
 import { declaracionTexto } from "@/modules/expedientes/utils/declaracion";
 import {
   DOCUMENTOS,
@@ -43,14 +44,22 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string | null }) {
   );
 }
 
-export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack }: Props) {
-  const [state, action, pending] = useActionState<ActionResult<null> | null, FormData>(
-    iniciarPagoAction.bind(null, expediente.id),
-    null,
-  );
+export function StepResumen({
+  expediente,
+  establecimiento,
+  tiposSubidos,
+  onBack,
+}: Props) {
+  const [state, action, pending] = useActionState<
+    ActionResult<null> | null,
+    FormData
+  >(iniciarPagoAction.bind(null, expediente.id), null);
 
   const nivel = expediente.nivelRiesgo;
-  const tipos = documentosRequeridos({ ...expediente, numeroPisos: establecimiento.numeroPisos });
+  const tipos = documentosRequeridos({
+    ...expediente,
+    numeroPisos: establecimiento.numeroPisos,
+  });
   const requeridos = DOCUMENTOS.filter((d) => tipos.includes(d.tipo));
   const faltantes = requeridos.filter((d) => !tiposSubidos.includes(d.tipo));
   const errorCampo = !state?.ok ? state?.fieldErrors?.aceptada?.[0] : undefined;
@@ -63,18 +72,42 @@ export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack 
         </CardHeader>
         <CardContent>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <Dato etiqueta="Establecimiento" valor={establecimiento.nombreComercial} />
+            <Dato
+              etiqueta="Establecimiento"
+              valor={establecimiento.nombreComercial}
+            />
             <Dato
               etiqueta="Trámite"
-              valor={expediente.tipoTramite === "NUEVA" ? "ITSE nueva" : "Renovación"}
+              valor={
+                expediente.tipoTramite === "NUEVA" ? "ITSE nueva" : "Renovación"
+              }
             />
-            <Dato etiqueta="Nivel de riesgo" valor={nivel ? NIVELES[nivel] : null} />
+            <Dato
+              etiqueta="Nivel de riesgo"
+              valor={nivel ? NIVELES[nivel] : null}
+            />
             <Dato
               etiqueta="Tipo de ITSE"
-              valor={nivel ? (tipoItsePorRiesgo(nivel) === "PREVIA" ? "Previa" : "Posterior") : null}
+              valor={
+                nivel
+                  ? tipoItsePorRiesgo(nivel) === "PREVIA"
+                    ? "Previa"
+                    : "Posterior"
+                  : null
+              }
+            />
+            <Dato
+              etiqueta="Calidad del solicitante"
+              valor={
+                CALIDADES.find((c) => c.value === expediente.calidadSolicitante)
+                  ?.label ?? null
+              }
             />
             <Dato etiqueta="Solicitante" valor={expediente.solicitanteNombre} />
-            <Dato etiqueta="Documento" valor={expediente.solicitanteDocumento} />
+            <Dato
+              etiqueta="Documento"
+              valor={expediente.solicitanteDocumento}
+            />
             <Dato etiqueta="Teléfono" valor={expediente.solicitanteTelefono} />
             <Dato etiqueta="Correo" valor={expediente.solicitanteEmail} />
           </dl>
@@ -88,17 +121,26 @@ export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack 
         <CardContent className="space-y-3">
           <ul className="space-y-2 text-sm">
             {requeridos.map((d) => (
-              <li key={d.tipo} className="flex flex-wrap items-center justify-between gap-2">
+              <li
+                key={d.tipo}
+                className="flex flex-wrap items-center justify-between gap-2"
+              >
                 <span>{d.etiqueta}</span>
-                <Badge variant={tiposSubidos.includes(d.tipo) ? "secondary" : "outline"}>
+                <Badge
+                  variant={
+                    tiposSubidos.includes(d.tipo) ? "secondary" : "outline"
+                  }
+                >
                   {tiposSubidos.includes(d.tipo) ? "Subido" : "Pendiente"}
                 </Badge>
               </li>
             ))}
           </ul>
           {faltantes.length > 0 && (
-            <p className="text-sm text-destructive">
-              Faltan documentos obligatorios: {faltantes.map((d) => d.etiqueta).join(", ")}.
+            <p id="faltantes-docs" className="text-sm text-destructive">
+              Faltan documentos obligatorios:{" "}
+              {faltantes.map((d) => d.etiqueta).join(", ")}. Súbelos para poder
+              pagar.
             </p>
           )}
         </CardContent>
@@ -116,7 +158,9 @@ export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack 
                 currency: MONEDA.toUpperCase(),
               }).format(montoTasa(nivel) / 100)}
             </p>
-            <p className="text-muted-foreground">Monto ficticio, modo de prueba.</p>
+            <p className="text-muted-foreground">
+              Monto ficticio, modo de prueba.
+            </p>
           </CardContent>
         </Card>
       )}
@@ -162,10 +206,21 @@ export function StepResumen({ expediente, establecimiento, tiposSubidos, onBack 
       </div>
 
       <div className="flex flex-wrap justify-between gap-2">
-        <Button type="button" variant="outline" className="h-11 px-4" onClick={onBack} disabled={pending}>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 px-4"
+          onClick={onBack}
+          disabled={pending}
+        >
           Atrás
         </Button>
-        <Button type="submit" className="h-11 px-4" disabled={pending}>
+        <Button
+          type="submit"
+          className="h-11 px-4"
+          disabled={pending || faltantes.length > 0}
+          aria-describedby={faltantes.length > 0 ? "faltantes-docs" : undefined}
+        >
           {pending ? "Redirigiendo a Stripe…" : "Aceptar y pagar"}
         </Button>
       </div>

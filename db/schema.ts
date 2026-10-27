@@ -107,6 +107,14 @@ export const tipoDocumentoEnum = pgEnum("tipo_documento", [
   "PLANO_ARQUITECTURA_AFORO",
   "PLANOS_ELECTRICOS",
   "MEMORIA_PRUEBAS_EQUIPOS",
+  "DNI_AMBAS_CARAS",
+  "ACREDITACION_REPRESENTACION",
+]);
+
+export const calidadSolicitanteEnum = pgEnum("calidad_solicitante", [
+  "PROPIETARIO",
+  "REPRESENTANTE_LEGAL",
+  "ADMINISTRADOR",
 ]);
 
 export const expedientes = pgTable(
@@ -123,6 +131,7 @@ export const expedientes = pgTable(
     tipoTramite: tipoTramiteEnum("tipo_tramite").notNull(),
     estado: estadoExpedienteEnum("estado").notNull().default("BORRADOR"),
     nivelRiesgo: nivelRiesgoEnum("nivel_riesgo"),
+    calidadSolicitante: calidadSolicitanteEnum("calidad_solicitante").notNull().default("PROPIETARIO"),
     tieneSotano: boolean("tiene_sotano").notNull().default(false),
     almacenaInflamables: boolean("almacena_inflamables").notNull().default(false),
     tieneCocina: boolean("tiene_cocina").notNull().default(false),

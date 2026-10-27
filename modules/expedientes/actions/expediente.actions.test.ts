@@ -41,6 +41,7 @@ const paso3 = {
   solicitanteDocumento: "12345678",
   solicitanteTelefono: "987654321",
   solicitanteEmail: "juan@example.com",
+  calidadSolicitante: "PROPIETARIO",
 };
 
 const paso1 = (extra: Record<string, string> = {}) =>
@@ -119,6 +120,21 @@ describe("saveBorradorAction", () => {
     const res = await saveBorradorAction(3, ID, null, fd({ solicitanteNombre: "" }));
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.fieldErrors?.solicitanteNombre).toBeDefined();
+    expect(mocks.updateBorrador).not.toHaveBeenCalled();
+  });
+
+  it("paso 3 pasa calidadSolicitante al servicio y un valor ajeno da fieldErrors", async () => {
+    mocks.updateBorrador.mockResolvedValue({ id: ID });
+    await saveBorradorAction(3, ID, null, fd({ ...paso3, calidadSolicitante: "ADMINISTRADOR" }));
+    expect(mocks.updateBorrador).toHaveBeenCalledWith(
+      usuario,
+      ID,
+      expect.objectContaining({ calidadSolicitante: "ADMINISTRADOR" }),
+    );
+    mocks.updateBorrador.mockClear();
+    const res = await saveBorradorAction(3, ID, null, fd({ ...paso3, calidadSolicitante: "OTRO" }));
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.fieldErrors?.calidadSolicitante).toBeDefined();
     expect(mocks.updateBorrador).not.toHaveBeenCalled();
   });
 

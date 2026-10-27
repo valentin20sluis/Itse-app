@@ -39,7 +39,9 @@ export const documentoFileRouter = {
       return { usuario, expedienteId: expediente.id, tipo: input.tipo };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      const check = validateArchivo({ name: file.name, type: file.type, size: file.size });
+      const check = validateArchivo({ name: file.name, type: file.type, size: file.size,
+        tipo: metadata.tipo,
+      });
       if (!check.ok) {
         await deleteUploadedFile(file.key);
         throw new UploadThingError(check.error);

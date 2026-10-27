@@ -12,6 +12,7 @@ const paso3 = {
   solicitanteDocumento: "12345678",
   solicitanteTelefono: "987654321",
   solicitanteEmail: "juan@ejemplo.pe",
+  calidadSolicitante: "PROPIETARIO",
 };
 const msg = (r: { success: boolean; error?: { issues: { message: string }[] } }) =>
   r.error?.issues[0]?.message;
@@ -87,6 +88,17 @@ describe("paso3Schema", () => {
     expect(msg(paso3Schema.safeParse({ ...paso3, solicitanteEmail: "no-email" }))).toBe(
       "Ingresa un correo electrónico válido.",
     );
+  });
+  it("acepta cada calidad del solicitante", () => {
+    for (const c of ["PROPIETARIO", "REPRESENTANTE_LEGAL", "ADMINISTRADOR"]) {
+      expect(paso3Schema.safeParse({ ...paso3, calidadSolicitante: c }).success).toBe(true);
+    }
+  });
+  it("rechaza calidad ajena o ausente", () => {
+    const sinCalidad = { ...paso3, calidadSolicitante: undefined };
+    for (const input of [{ ...paso3, calidadSolicitante: "OTRO" }, sinCalidad]) {
+      expect(msg(paso3Schema.safeParse(input))).toBe("Selecciona la calidad del solicitante.");
+    }
   });
   it("nombre demasiado corto", () => {
     expect(msg(paso3Schema.safeParse({ ...paso3, solicitanteNombre: "Jo" }))).toBe(

@@ -140,7 +140,7 @@ import {
 
 const A = { id: "user-a", rol: "cliente" } as const;
 const B = { id: "user-b", rol: "cliente" } as const;
-const TIPOS = ["FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"];
+const TIPOS = ["DNI_AMBAS_CARAS", "FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"];
 const TECNICOS = ["PLANO_ARQUITECTURA_AFORO", "PLANOS_ELECTRICOS", "POZO_TIERRA", "MEMORIA_PRUEBAS_EQUIPOS"];
 const ESTAB = "11111111-1111-4111-8111-111111111111";
 
@@ -159,6 +159,7 @@ const paso3 = {
   solicitanteDocumento: "12345678",
   solicitanteTelefono: "987654321",
   solicitanteEmail: "juan@example.com",
+  calidadSolicitante: "PROPIETARIO",
 } as const;
 const pago = () => ({ stripeSessionId: "cs_test_abc", pagadoAt: new Date() });
 
@@ -254,6 +255,12 @@ describe("updateBorrador", () => {
     expect(u?.esGrifo).toBe(true);
   });
 
+  it("paso 3 persiste calidadSolicitante", async () => {
+    const e = (await createBorrador(A, paso1))!;
+    const u = await updateBorrador(A, e.id, { ...paso3, calidadSolicitante: "ADMINISTRADOR" });
+    expect(u?.calidadSolicitante).toBe("ADMINISTRADOR");
+  });
+
   it("paso1 con establecimiento ajeno da null", async () => {
     const e = (await createBorrador(A, paso1))!;
     store.establecimientos.push({ id: "otro", usuarioId: "user-b", archivadoAt: null });
@@ -342,6 +349,26 @@ describe("prepararPago", () => {
       status: "incompleto",
       faltantes: ["CAPACITACION_EXTINTORES"],
     });
+  });
+
+  it("incompleto: falta el DNI", async () => {
+    const e = await borradorCompleto();
+    store.documentos = store.documentos.filter((d) => d.tipo !== "DNI_AMBAS_CARAS");
+    expect(await prepararPago(A, e.id, true)).toEqual({
+      status: "incompleto",
+      faltantes: ["DNI_AMBAS_CARAS"],
+    });
+  });
+
+  it("representante sin acreditación: incompleto; con acreditación: ok", async () => {
+    const e = await borradorCompleto();
+    await updateBorrador(A, e.id, { ...paso3, calidadSolicitante: "REPRESENTANTE_LEGAL" });
+    expect(await prepararPago(A, e.id, true)).toEqual({
+      status: "incompleto",
+      faltantes: ["ACREDITACION_REPRESENTACION"],
+    });
+    store.documentos.push({ expedienteId: e.id, tipo: "ACREDITACION_REPRESENTACION" });
+    expect((await prepararPago(A, e.id, true)).status).toBe("ok");
   });
 
   it("riesgo ALTO con solo los básicos: faltan el plan y los técnicos", async () => {

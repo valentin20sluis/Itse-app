@@ -68,6 +68,7 @@ export function SolicitudWizard({
         <StepSolicitante
           expediente={expediente}
           defaults={defaultsSolicitante}
+          documentos={documentos}
           onSaved={siguiente}
           onBack={atras}
         />

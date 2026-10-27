@@ -9,6 +9,7 @@ import {
 
 const ctx = (o: Partial<ContextoDocumentos> = {}): ContextoDocumentos => ({
   nivelRiesgo: "MEDIO",
+  calidadSolicitante: "PROPIETARIO",
   tieneCocina: false,
   esGrifo: false,
   almacenaInflamables: false,
@@ -16,7 +17,7 @@ const ctx = (o: Partial<ContextoDocumentos> = {}): ContextoDocumentos => ({
   ...o,
 });
 
-const BASICOS = ["FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"];
+const BASICOS = ["DNI_AMBAS_CARAS", "FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"];
 const TECNICOS = [
   "PLANO_ARQUITECTURA_AFORO",
   "PLANOS_ELECTRICOS",
@@ -29,7 +30,7 @@ describe("documentosRequeridos", () => {
     expect(documentosRequeridos(ctx({ nivelRiesgo: null, tieneCocina: true }))).toEqual([]);
   });
 
-  it.each(["BAJO", "MEDIO"] as const)("%s sin extras pide los 3 básicos", (nivelRiesgo) => {
+  it.each(["BAJO", "MEDIO"] as const)("%s sin extras pide DNI y los 3 básicos", (nivelRiesgo) => {
     expect(documentosRequeridos(ctx({ nivelRiesgo }))).toEqual(BASICOS);
   });
 
@@ -70,15 +71,43 @@ describe("documentosRequeridos", () => {
       ctx({ nivelRiesgo: "MUY_ALTO", tieneCocina: true, esGrifo: true, almacenaInflamables: true }),
     );
     expect(new Set(r).size).toBe(r.length);
-    expect(r).toHaveLength(10);
+    expect(r).toHaveLength(11);
     for (const o of ["PLANO_UBICACION", "PLANO_DISTRIBUCION", "COMPROBANTE_PAGO", "EXTINTORES"])
       expect(r).not.toContain(o);
   });
 });
 
+describe("DNI y acreditación del solicitante", () => {
+  it("el DNI se pide siempre con nivel y nunca con nivel null", () => {
+    for (const nivelRiesgo of ["BAJO", "MEDIO", "ALTO", "MUY_ALTO"] as const)
+      expect(documentosRequeridos(ctx({ nivelRiesgo }))).toContain("DNI_AMBAS_CARAS");
+    expect(documentosRequeridos(ctx({ nivelRiesgo: null }))).not.toContain("DNI_AMBAS_CARAS");
+  });
+  it("la acreditación solo se pide si no es propietario", () => {
+    expect(documentosRequeridos(ctx())).not.toContain("ACREDITACION_REPRESENTACION");
+    for (const calidadSolicitante of ["REPRESENTANTE_LEGAL", "ADMINISTRADOR"] as const)
+      expect(documentosRequeridos(ctx({ calidadSolicitante }))).toContain(
+        "ACREDITACION_REPRESENTACION",
+      );
+  });
+  it("DNI y acreditación van primero, sin duplicados", () => {
+    const r = documentosRequeridos(ctx({ calidadSolicitante: "ADMINISTRADOR" }));
+    expect(r.slice(0, 2)).toEqual(["DNI_AMBAS_CARAS", "ACREDITACION_REPRESENTACION"]);
+    expect(new Set(r).size).toBe(r.length);
+  });
+  it("faltantes: reporta DNI y acreditación; con propietario la acreditación sobrante no bloquea", () => {
+    expect(
+      documentosFaltantes(BASICOS.slice(1) as never, ctx({ calidadSolicitante: "ADMINISTRADOR" })),
+    ).toEqual(["DNI_AMBAS_CARAS", "ACREDITACION_REPRESENTACION"]);
+    expect(documentosFaltantes([...BASICOS, "ACREDITACION_REPRESENTACION"] as never, ctx())).toEqual(
+      [],
+    );
+  });
+});
+
 describe("documentosFaltantes", () => {
   it("devuelve los requeridos no subidos", () => {
-    expect(documentosFaltantes(["FICHA_RUC"], ctx())).toEqual([
+    expect(documentosFaltantes(["DNI_AMBAS_CARAS", "FICHA_RUC"], ctx())).toEqual([
       "EXTINTORES_PQS",
       "CAPACITACION_EXTINTORES",
     ]);
@@ -104,7 +133,7 @@ describe("Plan de seguridad", () => {
       esperado,
     );
   });
-  it("el catálogo tiene 10 tipos", () => {
-    expect(DOCUMENTOS).toHaveLength(10);
+  it("el catálogo tiene 12 tipos", () => {
+    expect(DOCUMENTOS).toHaveLength(12);
   });
 });

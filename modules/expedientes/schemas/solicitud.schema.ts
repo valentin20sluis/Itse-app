@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { nivelRiesgoEnum, tipoTramiteEnum } from "@/db/schema";
+import { calidadSolicitanteEnum, nivelRiesgoEnum, tipoTramiteEnum } from "@/db/schema";
 
 const texto = (campo: string, min: number, max: number) =>
   z
@@ -44,6 +44,9 @@ export const paso3Schema = z.object({
     .string({ error: "Ingresa el correo electrónico." })
     .trim()
     .pipe(z.email("Ingresa un correo electrónico válido.")),
+  calidadSolicitante: z.enum(calidadSolicitanteEnum.enumValues, {
+    error: "Selecciona la calidad del solicitante.",
+  }),
 });
 
 export const declaracionSchema = z.object({

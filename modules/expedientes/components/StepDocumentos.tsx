@@ -6,6 +6,7 @@ import type { Establecimiento } from "@/modules/establecimientos/types/estableci
 import type { Expediente, ExpedienteDocumento } from "@/modules/expedientes/types/expediente.types";
 import {
   DOCUMENTOS,
+  DOCUMENTOS_SOLICITANTE,
   documentosOpcionales,
   documentosRequeridos,
 } from "@/modules/expedientes/utils/documentos";
@@ -25,7 +26,7 @@ export function StepDocumentos({ expediente, establecimiento, documentos, onNext
   const ordenados = [
     ...DOCUMENTOS.filter((d) => requeridos.includes(d.tipo)),
     ...DOCUMENTOS.filter((d) => opcionales.includes(d.tipo)),
-  ];
+  ].filter((d) => !DOCUMENTOS_SOLICITANTE.includes(d.tipo));
 
   return (
     <div className="space-y-6">

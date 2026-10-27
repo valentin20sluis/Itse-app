@@ -57,16 +57,17 @@ const expediente = {
   solicitanteEmail: null,
   esRepresentante: false,
   razonSocial: null,
+  calidadSolicitante: "PROPIETARIO",
 } as unknown as Expediente;
 
 const defaults = { nombre: "Ana Pérez", documento: "12345678", telefono: "999888777", email: "ana@mail.pe" };
 
-function renderWizard(borrador: Expediente | null = null) {
+function renderWizard(borrador: Expediente | null = null, documentos: ExpedienteDocumento[] = []) {
   return render(
     <SolicitudWizard
       establecimientos={establecimientos}
       borrador={borrador}
-      documentos={[]}
+      documentos={documentos}
       defaultsSolicitante={defaults}
     />,
   );
@@ -197,10 +198,42 @@ describe("SolicitudWizard", () => {
     });
   });
 
-  describe("paso 4 y resumen", () => {
-    async function irAlPaso(exp: Expediente, paso: 4 | 5) {
+  describe("paso 3 solicitante", () => {
+    async function irAlPaso3(exp: Expediente) {
       mocks.saveBorradorAction.mockResolvedValue({ ok: true, data: exp });
       renderWizard(exp);
+      for (const p of [1, 2]) {
+        await screen.findByText(new RegExp(`Paso ${p} de 5`));
+        fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+      }
+      await screen.findByText(/Paso 3 de 5/);
+    }
+    const input = (re: RegExp) => screen.getByLabelText(re) as HTMLInputElement;
+
+    it("Propietario preseleccionado, DNI con accept PDF y sin acreditación", async () => {
+      await irAlPaso3(expediente);
+      expect(screen.getByRole("group", { name: "Calidad del solicitante" })).toBeTruthy();
+      expect((screen.getByLabelText("Propietario") as HTMLInputElement).checked).toBe(true);
+      expect(input(/Elegir archivo: DNI/).getAttribute("accept")).toBe("application/pdf");
+      expect(screen.queryByLabelText(/Elegir archivo: Documento que acredita/)).toBeNull();
+    });
+
+    it("elegir Representante legal muestra la acreditación solo PDF y se envía en el formulario", async () => {
+      await irAlPaso3(expediente);
+      fireEvent.click(screen.getByLabelText("Representante legal"));
+      expect(input(/Elegir archivo: Documento que acredita/).getAttribute("accept")).toBe("application/pdf");
+      mocks.saveBorradorAction.mockClear();
+      fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+      await waitFor(() => expect(mocks.saveBorradorAction).toHaveBeenCalled());
+      const formData = mocks.saveBorradorAction.mock.calls[0][3] as FormData;
+      expect(formData.get("calidadSolicitante")).toBe("REPRESENTANTE_LEGAL");
+    });
+  });
+
+  describe("paso 4 y resumen", () => {
+    async function irAlPaso(exp: Expediente, paso: 4 | 5, documentos: ExpedienteDocumento[] = []) {
+      mocks.saveBorradorAction.mockResolvedValue({ ok: true, data: exp });
+      renderWizard(exp, documentos);
       for (let p = 1; p < paso; p++) {
         await screen.findByText(new RegExp(`Paso ${p} de 5`));
         fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
@@ -259,13 +292,22 @@ describe("SolicitudWizard", () => {
         ok: false,
         error: "No se pudo iniciar el pago. Inténtalo de nuevo.",
       });
-      await irAlPaso({ ...expediente, nivelRiesgo: "MEDIO" }, 5);
+      const subidos = ["DNI_AMBAS_CARAS", "FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"].map((tipo) => ({
+        tipo,
+      })) as unknown as ExpedienteDocumento[];
+      await irAlPaso({ ...expediente, nivelRiesgo: "BAJO" }, 5, subidos);
       expect(screen.getByText(/150[.,]00/)).toBeTruthy();
       expect(screen.queryByText("Número de boleta")).toBeNull();
       fireEvent.click(screen.getByLabelText("Acepto la declaración jurada"));
       fireEvent.click(screen.getByRole("button", { name: "Aceptar y pagar" }));
       await waitFor(() => expect(mocks.iniciarPagoAction).toHaveBeenCalled());
       expect((await screen.findByRole("alert")).textContent).toContain("No se pudo iniciar el pago");
+    });
+
+    it("con documentos faltantes el botón Aceptar y pagar está bloqueado", async () => {
+      await irAlPaso({ ...expediente, nivelRiesgo: "BAJO" }, 5);
+      expect(screen.getByText(/Súbelos para poder pagar/)).toBeTruthy();
+      expect((screen.getByRole("button", { name: "Aceptar y pagar" }) as HTMLButtonElement).disabled).toBe(true);
     });
 
     it("un borrador completo abre en el paso 5 y uno incompleto en el paso 1", () => {
@@ -277,7 +319,7 @@ describe("SolicitudWizard", () => {
         solicitanteTelefono: "999888777",
         solicitanteEmail: "ana@mail.pe",
       } as Expediente;
-      const documentos = ["FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"].map((tipo) => ({
+      const documentos = ["DNI_AMBAS_CARAS", "FICHA_RUC", "EXTINTORES_PQS", "CAPACITACION_EXTINTORES"].map((tipo) => ({
         tipo,
       })) as unknown as ExpedienteDocumento[];
       render(
@@ -297,7 +339,25 @@ describe("SolicitudWizard", () => {
     it("el resumen lista los requeridos del riesgo", async () => {
       await irAlPaso({ ...CHICO, nivelRiesgo: "MEDIO" }, 5);
       expect(screen.getByText("Ficha RUC")).toBeTruthy();
-      expect(screen.getAllByText("Pendiente")).toHaveLength(3);
+      expect(screen.getAllByText("Pendiente")).toHaveLength(4);
+      expect(screen.getByText("DNI (ambas caras, en un solo PDF)")).toBeTruthy();
+      expect(screen.getByText("Calidad del solicitante")).toBeTruthy();
+      expect(screen.getByText("Propietario")).toBeTruthy();
+      expect(screen.getByText(/Faltan documentos obligatorios: DNI [(]ambas caras/)).toBeTruthy();
+    });
+
+    it("el resumen de un representante legal lista también la acreditación", async () => {
+      await irAlPaso({ ...CHICO, nivelRiesgo: "MEDIO", calidadSolicitante: "REPRESENTANTE_LEGAL" }, 5);
+      expect(screen.getByText("Representante legal")).toBeTruthy();
+      expect(screen.getAllByText(/Documento que acredita la representación/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Pendiente")).toHaveLength(5);
+    });
+
+    it("el paso 4 no lista el DNI ni la acreditación aunque sean requeridos", async () => {
+      await irAlPaso({ ...CHICO, nivelRiesgo: "MEDIO", calidadSolicitante: "ADMINISTRADOR" }, 4);
+      expect(screen.queryByText(/DNI [(]ambas caras/)).toBeNull();
+      expect(screen.queryByText(/Documento que acredita/)).toBeNull();
+      expect(screen.getByText("Ficha RUC")).toBeTruthy();
     });
   });
 });

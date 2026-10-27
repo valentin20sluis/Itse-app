@@ -70,6 +70,7 @@ function patchToValues(patch: PatchBorrador) {
     solicitanteDocumento: patch.solicitanteDocumento,
     solicitanteTelefono: patch.solicitanteTelefono,
     solicitanteEmail: patch.solicitanteEmail,
+    calidadSolicitante: patch.calidadSolicitante,
   };
 }
 

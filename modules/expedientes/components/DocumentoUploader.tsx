@@ -22,6 +22,7 @@ import type {
   TipoDocumento,
 } from "@/modules/expedientes/types/expediente.types";
 import { validateArchivo } from "@/modules/expedientes/utils/archivo";
+import { TIPOS_SOLO_PDF } from "@/modules/expedientes/utils/documentos";
 
 type Props = {
   expedienteId: string;
@@ -31,6 +32,7 @@ type Props = {
   documento: ExpedienteDocumento | undefined;
 };
 
+const ACCEPT_PDF = "application/pdf";
 const ACCEPT = "application/pdf,image/jpeg,image/png,image/webp";
 const ERROR_SUBIDA = "No se pudo subir el archivo. Inténtalo de nuevo.";
 
@@ -50,7 +52,7 @@ export function DocumentoUploader({ expedienteId, tipo, etiqueta, obligatorio, d
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const check = validateArchivo({ name: file.name, type: file.type, size: file.size });
+    const check = validateArchivo({ name: file.name, type: file.type, size: file.size, tipo });
     if (!check.ok) {
       setError(check.error);
       return;
@@ -91,7 +93,7 @@ export function DocumentoUploader({ expedienteId, tipo, etiqueta, obligatorio, d
         <input
           ref={inputRef}
           type="file"
-          accept={ACCEPT}
+          accept={TIPOS_SOLO_PDF.includes(tipo) ? ACCEPT_PDF : ACCEPT}
           className="hidden"
           aria-label={`Elegir archivo: ${etiqueta}`}
           onChange={onChange}

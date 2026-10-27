@@ -6,7 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ActionResult } from "@/lib/action-result";
 import { saveBorradorAction } from "@/modules/expedientes/actions/expediente.actions";
-import type { Expediente } from "@/modules/expedientes/types/expediente.types";
+import { DocumentoUploader } from "@/modules/expedientes/components/DocumentoUploader";
+import { DOCUMENTOS } from "@/modules/expedientes/utils/documentos";
+import type {
+  Expediente,
+  ExpedienteDocumento,
+} from "@/modules/expedientes/types/expediente.types";
 
 export type DefaultsSolicitante = {
   nombre: string;
@@ -29,27 +34,59 @@ const FIELDS: {
   autoComplete?: string;
 }[] = [
   { name: "solicitanteDocumento", label: "DNI", inputMode: "numeric" },
-  { name: "solicitanteNombre", label: "Nombres y apellidos", autoComplete: "name" },
-  { name: "solicitanteTelefono", label: "Teléfono", type: "tel", inputMode: "tel", autoComplete: "tel" },
-  { name: "solicitanteEmail", label: "Correo electrónico", type: "email", inputMode: "email", autoComplete: "email" },
+  {
+    name: "solicitanteNombre",
+    label: "Nombres y apellidos",
+    autoComplete: "name",
+  },
+  {
+    name: "solicitanteTelefono",
+    label: "Teléfono",
+    type: "tel",
+    inputMode: "tel",
+    autoComplete: "tel",
+  },
+  {
+    name: "solicitanteEmail",
+    label: "Correo electrónico",
+    type: "email",
+    inputMode: "email",
+    autoComplete: "email",
+  },
+];
+
+export const CALIDADES: {
+  value: Expediente["calidadSolicitante"];
+  label: string;
+}[] = [
+  { value: "PROPIETARIO", label: "Propietario" },
+  { value: "REPRESENTANTE_LEGAL", label: "Representante legal" },
+  { value: "ADMINISTRADOR", label: "Administrador" },
 ];
 
 type Props = {
   expediente: Expediente;
+  documentos: ExpedienteDocumento[];
   defaults: DefaultsSolicitante;
   onSaved: (expediente: Expediente) => void;
   onBack: () => void;
 };
 
-export function StepSolicitante({ expediente, defaults, onSaved, onBack }: Props) {
-  const [state, action, pending] = useActionState<ActionResult<Expediente> | null, FormData>(
-    async (prev, formData) => {
-      const res = await saveBorradorAction(3, expediente.id, prev, formData);
-      if (res.ok) onSaved(res.data);
-      return res;
-    },
-    null,
-  );
+export function StepSolicitante({
+  expediente,
+  documentos,
+  defaults,
+  onSaved,
+  onBack,
+}: Props) {
+  const [state, action, pending] = useActionState<
+    ActionResult<Expediente> | null,
+    FormData
+  >(async (prev, formData) => {
+    const res = await saveBorradorAction(3, expediente.id, prev, formData);
+    if (res.ok) onSaved(res.data);
+    return res;
+  }, null);
   const [values, setValues] = useState<Record<FieldName, string>>({
     solicitanteNombre: expediente.solicitanteNombre ?? defaults.nombre,
     solicitanteDocumento: expediente.solicitanteDocumento ?? defaults.documento,
@@ -57,11 +94,20 @@ export function StepSolicitante({ expediente, defaults, onSaved, onBack }: Props
     solicitanteEmail: expediente.solicitanteEmail ?? defaults.email,
   });
 
-  const fieldErrors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
-  const generalError =
-    state && !state.ok && Object.keys(fieldErrors).length === 0 ? state.error : null;
+  const [calidad, setCalidad] = useState(expediente.calidadSolicitante);
 
-  const campo = (name: FieldName, label: string, extra: Partial<(typeof FIELDS)[number]> = {}) => {
+  const fieldErrors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
+  const calidadError = fieldErrors.calidadSolicitante?.[0];
+  const generalError =
+    state && !state.ok && Object.keys(fieldErrors).length === 0
+      ? state.error
+      : null;
+
+  const campo = (
+    name: FieldName,
+    label: string,
+    extra: Partial<(typeof FIELDS)[number]> = {},
+  ) => {
     const error = fieldErrors[name]?.[0];
     return (
       <div key={name} className="flex flex-col gap-1.5">
@@ -87,23 +133,87 @@ export function StepSolicitante({ expediente, defaults, onSaved, onBack }: Props
     );
   };
 
-  return (
-    <form action={action} className="space-y-4" noValidate>
-      {FIELDS.map((f) => campo(f.name, f.label, f))}
+  const uploader = (
+    tipo: "DNI_AMBAS_CARAS" | "ACREDITACION_REPRESENTACION",
+  ) => (
+    <DocumentoUploader
+      expedienteId={expediente.id}
+      tipo={tipo}
+      etiqueta={DOCUMENTOS.find((d) => d.tipo === tipo)?.etiqueta ?? tipo}
+      obligatorio
+      documento={documentos.find((d) => d.tipo === tipo)}
+    />
+  );
 
-      {generalError && (
-        <p role="alert" className="text-sm text-destructive">
-          {generalError}
-        </p>
+  return (
+    <div className="space-y-6">
+      <ul className="space-y-3">{uploader("DNI_AMBAS_CARAS")}</ul>
+      <form id="paso3-form" action={action} className="space-y-4" noValidate>
+        {FIELDS.map((f) => campo(f.name, f.label, f))}
+
+        <fieldset
+          className="flex flex-col gap-1"
+          aria-describedby={
+            calidadError ? "calidadSolicitante-error" : undefined
+          }
+        >
+          <legend className="mb-1 text-sm font-medium">
+            Calidad del solicitante
+          </legend>
+          {CALIDADES.map((c) => (
+            <label
+              key={c.value}
+              className="flex min-h-11 cursor-pointer items-center gap-3 text-sm"
+            >
+              <input
+                type="radio"
+                name="calidadSolicitante"
+                value={c.value}
+                checked={calidad === c.value}
+                onChange={() => setCalidad(c.value)}
+                className="size-5 shrink-0 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              />
+              {c.label}
+            </label>
+          ))}
+          {calidadError && (
+            <p
+              id="calidadSolicitante-error"
+              className="text-sm text-destructive"
+            >
+              {calidadError}
+            </p>
+          )}
+        </fieldset>
+
+        {generalError && (
+          <p role="alert" className="text-sm text-destructive">
+            {generalError}
+          </p>
+        )}
+      </form>
+      {calidad !== "PROPIETARIO" && (
+        <ul className="space-y-3">{uploader("ACREDITACION_REPRESENTACION")}</ul>
       )}
       <div className="flex flex-wrap justify-between gap-2">
-        <Button type="button" variant="outline" className="h-11 px-4" onClick={onBack} disabled={pending}>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 px-4"
+          onClick={onBack}
+          disabled={pending}
+        >
           Atrás
         </Button>
-        <Button type="submit" className="h-11 px-6" disabled={pending}>
+        <Button
+          type="submit"
+          form="paso3-form"
+          className="h-11 px-6"
+          disabled={pending}
+        >
           {pending ? "Guardando…" : "Siguiente"}
         </Button>
       </div>
-    </form>
+    </div>
   );
 }
