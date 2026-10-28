@@ -19,6 +19,12 @@ const MENSAJES = {
   no_permitido: "Esa acción no está disponible para este expediente.",
   fecha_invalida: "Elige una fecha desde hoy, dentro de los próximos 90 días.",
   motivo_requerido: "Escribe un informe de al menos 10 caracteres.",
+  observaciones_requeridas: "Agrega al menos una observación.",
+  observacion_invalida: "Una de las observaciones elegidas no es válida.",
+  observacion_relevante:
+    "Hay observaciones relevantes: en una inspección posterior solo se puede registrar \"No cumple\".",
+  reprogramacion_invalida:
+    "Elige la nueva fecha de inspección: desde hoy y dentro del plazo de subsanación (hasta 20 días hábiles).",
   conflicto: "El expediente cambió de estado. Actualiza la página e inténtalo de nuevo.",
   error: "No se pudo guardar el cambio. Inténtalo de nuevo.",
 } as const;
@@ -71,6 +77,9 @@ export async function registrarResultadoAction(
   const parsed = resultadoDiligenciaSchema.safeParse({
     resultado: formData.get("resultado") ?? "",
     informe: formData.get("informe") ?? "",
+    codigos: formData.getAll("codigo").map(String),
+    libres: String(formData.get("libres") ?? "").split(/\r?\n/),
+    reprogramadaPara: formData.get("reprogramadaPara") ?? undefined,
   });
   if (!parsed.success) return invalido(parsed.error);
   return ejecutar(id, () => registrarResultadoDiligencia(usuario, id, parsed.data));

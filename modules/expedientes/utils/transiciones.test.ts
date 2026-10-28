@@ -7,6 +7,7 @@ import {
   TRANSICIONES,
   puedeTransicionar,
   requiereMotivo,
+  transicionesCliente,
   transicionesGenericas,
   transicionesPermitidas,
 } from "@/modules/expedientes/utils/transiciones";
@@ -17,12 +18,16 @@ const ESPERADAS = new Set<string>([
   "PRESENTADO>EN_REVISION",
   "EN_REVISION>OBSERVADO_REQUISITOS",
   "EN_REVISION>ENVIADO_JEFATURA",
+  "OBSERVADO_REQUISITOS>PRESENTADO",
   "ENVIADO_JEFATURA>APROBADO_JEFATURA",
   "ENVIADO_JEFATURA>EN_REVISION",
   "APROBADO_JEFATURA>INSPECTOR_DESIGNADO",
   "INSPECTOR_DESIGNADO>DILIGENCIA_PROGRAMADA",
+  "DILIGENCIA_PROGRAMADA>EN_SUBSANACION",
   "DILIGENCIA_PROGRAMADA>CUMPLE",
   "DILIGENCIA_PROGRAMADA>NO_CUMPLE",
+  "EN_SUBSANACION>CUMPLE",
+  "EN_SUBSANACION>NO_CUMPLE",
   ...ESTADOS.filter((e) => e !== "BORRADOR" && !ESTADOS_FINALES.includes(e)).map(
     (e) => `${e}>ANULADO`,
   ),
@@ -107,26 +112,42 @@ describe("transiciones", () => {
     expect(puedeTransicionar("PRESENTADO", "EN_REVISION", "cliente")).toBe(false);
   });
 
+  it("transicionesCliente: solo OBSERVADO_REQUISITOS > PRESENTADO", () => {
+    for (const e of ESTADOS) {
+      expect(transicionesCliente(e)).toEqual(e === "OBSERVADO_REQUISITOS" ? ["PRESENTADO"] : []);
+    }
+    for (const rol of ["admin", "superadmin", "cliente"] as const) {
+      expect(puedeTransicionar("OBSERVADO_REQUISITOS", "PRESENTADO", rol)).toBe(false);
+    }
+    expect(transicionesGenericas("OBSERVADO_REQUISITOS", "admin")).toEqual([]);
+    expect(transicionesGenericas("OBSERVADO_REQUISITOS", "superadmin")).toEqual(["ANULADO"]);
+  });
+
   it("no existe EN_REVISION > INSPECTOR_DESIGNADO", () => {
     expect(puedeTransicionar("EN_REVISION", "INSPECTOR_DESIGNADO", "superadmin")).toBe(false);
   });
 
   it("transicionesGenericas excluye los destinos con flujo propio", () => {
     expect([...DESTINOS_CON_FLUJO_PROPIO].sort()).toEqual(
-      ["CUMPLE", "DILIGENCIA_PROGRAMADA", "INSPECTOR_DESIGNADO", "NO_CUMPLE"],
+      ["CUMPLE", "DILIGENCIA_PROGRAMADA", "EN_SUBSANACION", "INSPECTOR_DESIGNADO", "NO_CUMPLE", "PRESENTADO"],
     );
     expect(transicionesGenericas("APROBADO_JEFATURA", "admin")).toEqual([]);
     expect(transicionesGenericas("APROBADO_JEFATURA", "superadmin")).toEqual(["ANULADO"]);
     expect(transicionesGenericas("PRESENTADO", "admin")).toEqual(["EN_REVISION"]);
-    for (const e of ["INSPECTOR_DESIGNADO", "DILIGENCIA_PROGRAMADA", "CUMPLE", "NO_CUMPLE"] as const) {
+    for (const e of ["INSPECTOR_DESIGNADO", "DILIGENCIA_PROGRAMADA", "EN_SUBSANACION", "CUMPLE", "NO_CUMPLE"] as const) {
       expect(transicionesGenericas(e, "admin")).toEqual([]);
       expect(transicionesGenericas(e, "superadmin")).toEqual(["ANULADO"]);
     }
   });
 
-  it("diligencia: programar y resultado; EN_SUBSANACION no es destino", () => {
-    expect(transicionesPermitidas("DILIGENCIA_PROGRAMADA", "admin")).toEqual(["CUMPLE", "NO_CUMPLE"]);
+  it("diligencia: resultado con suspensión; EN_SUBSANACION solo se alcanza desde la diligencia", () => {
+    expect(transicionesPermitidas("DILIGENCIA_PROGRAMADA", "admin")).toEqual([
+      "EN_SUBSANACION",
+      "CUMPLE",
+      "NO_CUMPLE",
+    ]);
     expect(transicionesPermitidas("DILIGENCIA_PROGRAMADA", "superadmin")).toEqual([
+      "EN_SUBSANACION",
       "CUMPLE",
       "NO_CUMPLE",
       "ANULADO",
@@ -135,7 +156,21 @@ describe("transiciones", () => {
       expect(transicionesPermitidas(e, "admin")).toEqual([]);
       expect(transicionesPermitidas(e, "superadmin")).toEqual(["ANULADO"]);
     }
-    for (const e of ESTADOS) expect(TRANSICIONES[e]).not.toContain("EN_SUBSANACION");
+    for (const e of ESTADOS) {
+      expect(TRANSICIONES[e].includes("EN_SUBSANACION")).toBe(e === "DILIGENCIA_PROGRAMADA");
+    }
+  });
+
+  it("EN_SUBSANACION: el admin evalúa; el superadmin además anula; el cliente nada", () => {
+    expect(transicionesPermitidas("EN_SUBSANACION", "admin")).toEqual(["CUMPLE", "NO_CUMPLE"]);
+    expect(transicionesPermitidas("EN_SUBSANACION", "superadmin")).toEqual([
+      "CUMPLE",
+      "NO_CUMPLE",
+      "ANULADO",
+    ]);
+    expect(transicionesPermitidas("EN_SUBSANACION", "cliente")).toEqual([]);
+    expect(transicionesGenericas("EN_SUBSANACION", "admin")).toEqual([]);
+    expect(transicionesGenericas("EN_SUBSANACION", "superadmin")).toEqual(["ANULADO"]);
   });
 
   it("requiereMotivo: OBSERVADO_REQUISITOS, ANULADO y devolución desde Jefatura", () => {

@@ -9,6 +9,9 @@ import {
   cambiarEstado,
   type TransicionResultado,
 } from "@/modules/expedientes/services/transicion.service";
+import { reenviarRequisitos } from "@/modules/expedientes/services/requisitos.service";
+import type { TipoDocumento } from "@/modules/expedientes/types/expediente.types";
+import { DOCUMENTOS } from "@/modules/expedientes/utils/documentos";
 import { requireRole } from "@/modules/usuarios/services/authorization.service";
 
 const MENSAJES = {
@@ -62,6 +65,25 @@ export async function cambiarEstadoAction(
   });
   if (!parsed.success) return invalido(parsed.error);
   return ejecutar(id, () => cambiarEstado(usuario, id, parsed.data));
+}
+
+export async function reenviarRequisitosAction(
+  id: string,
+): Promise<ActionResult<null>> {
+  const usuario = await requireRole("cliente");
+  if (!z.uuid().safeParse(id).success) return { ok: false, error: MENSAJES.no_encontrado };
+  let faltantes: TipoDocumento[] = [];
+  const res = await ejecutar(id, async () => {
+    const r = await reenviarRequisitos(usuario, id);
+    if (r.status === "incompleto") {
+      faltantes = r.faltantes;
+      return { status: "no_permitido" };
+    }
+    return r;
+  });
+  if (faltantes.length === 0) return res;
+  const etiquetas = DOCUMENTOS.filter((d) => faltantes.includes(d.tipo)).map((d) => d.etiqueta);
+  return { ok: false, error: `Faltan documentos obligatorios: ${etiquetas.join(", ")}.` };
 }
 
 export async function actualizarRiesgoAction(

@@ -1,3 +1,4 @@
+import type { EstadoExpediente } from "@/modules/expedientes/constants/estado-labels";
 import type {
   Expediente,
   NivelRiesgo,
@@ -22,11 +23,33 @@ export const DOCUMENTOS: readonly { tipo: TipoDocumento; etiqueta: string }[] = 
   { tipo: "MEMORIA_PRUEBAS_EQUIPOS", etiqueta: "Memoria descriptiva y pruebas de equipos" },
 ];
 
+export const ESTADOS_EDITABLES_CLIENTE: readonly EstadoExpediente[] = [
+  "BORRADOR",
+  "OBSERVADO_REQUISITOS",
+];
+
 export const DOCUMENTOS_SOLICITANTE: readonly TipoDocumento[] = [
   "DNI_AMBAS_CARAS",
   "ACREDITACION_REPRESENTACION",
 ];
-export const TIPOS_SOLO_PDF: readonly TipoDocumento[] = DOCUMENTOS_SOLICITANTE;
+
+// Evidencia de la subsanación de la diligencia (ITSE posterior): no forma parte de la solicitud ni del wizard.
+export const DOCUMENTOS_SUBSANACION: readonly { tipo: TipoDocumento; etiqueta: string }[] = [
+  { tipo: "SUBSANACION_DECLARACION_JURADA", etiqueta: "Declaración jurada de subsanación" },
+  {
+    tipo: "SUBSANACION_PANEL_FOTOGRAFICO",
+    etiqueta: "Panel fotográfico de subsanación (con leyenda)",
+  },
+];
+
+export function esDocumentoSubsanacion(tipo: TipoDocumento): boolean {
+  return DOCUMENTOS_SUBSANACION.some((d) => d.tipo === tipo);
+}
+
+export const TIPOS_SOLO_PDF: readonly TipoDocumento[] = [
+  ...DOCUMENTOS_SOLICITANTE,
+  "SUBSANACION_DECLARACION_JURADA",
+];
 
 export type ContextoDocumentos = {
   nivelRiesgo: NivelRiesgo | null;

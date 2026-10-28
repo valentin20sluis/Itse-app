@@ -111,6 +111,8 @@ export const tipoDocumentoEnum = pgEnum("tipo_documento", [
   "MEMORIA_PRUEBAS_EQUIPOS",
   "DNI_AMBAS_CARAS",
   "ACREDITACION_REPRESENTACION",
+  "SUBSANACION_DECLARACION_JURADA",
+  "SUBSANACION_PANEL_FOTOGRAFICO",
 ]);
 
 export const calidadSolicitanteEnum = pgEnum("calidad_solicitante", [
@@ -153,6 +155,8 @@ export const expedientes = pgTable(
     declaracionAceptadaAt: timestamp("declaracion_aceptada_at", { withTimezone: true }),
     presentadoAt: timestamp("presentado_at", { withTimezone: true }),
     diligenciaProgramadaPara: timestamp("diligencia_programada_para", { withTimezone: true }),
+    subsanacionLimite: timestamp("subsanacion_limite", { withTimezone: true }),
+    subsanacionPresentadaAt: timestamp("subsanacion_presentada_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -250,3 +254,19 @@ export const designaciones = pgTable(
 );
 
 export type Designacion = typeof designaciones.$inferSelect;
+
+export const observacionesDiligencia = pgTable(
+  "observaciones_diligencia",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    expedienteId: uuid("expediente_id")
+      .notNull()
+      .references(() => expedientes.id, { onDelete: "restrict" }),
+    codigo: text("codigo"),
+    descripcion: text("descripcion").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("observaciones_diligencia_expediente_id_idx").on(t.expedienteId)],
+);
+
+export type ObservacionDiligencia = typeof observacionesDiligencia.$inferSelect;

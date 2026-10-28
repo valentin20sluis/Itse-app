@@ -14,6 +14,9 @@ vi.mock("drizzle-orm", () => {
     eq: (col: { name: string }, v: unknown): Pred => (r, o) =>
       r[key(col)] === (isCol(v) ? o?.[key(v)] : v),
     and: (...ps: Pred[]): Pred => (r, o) => ps.every((p) => p(r, o)),
+    inArray: (col: { name: string }, vs: unknown[]): Pred => (r) => vs.includes(r[key(col)]),
+    isNull: (col: { name: string }): Pred => (r) => r[key(col)] == null,
+    gt: (col: { name: string }, v: Date): Pred => (r) => (r[key(col)] as Date | null | undefined) != null && (r[key(col)] as Date) > v,
     exists: (sub: { pred: Pred }): Pred => (r) => store.expedientes.some((e) => sub.pred(e, r)),
   };
 });
@@ -66,6 +69,7 @@ vi.mock("@/db", () => {
 import {
   getDocumentoForDownload,
   listDocumentos,
+  puedeSubirDocumento,
   registerDocumento,
   removeDocumento,
 } from "./documento.service";
@@ -80,10 +84,24 @@ const pdf = {
   tamanoBytes: 1000,
 } as const;
 
+const LIMITE = new Date("2026-11-02T05:00:00.000Z");
+const subsanando = {
+  estado: "EN_SUBSANACION",
+  nivelRiesgo: "BAJO",
+  subsanacionPresentadaAt: null,
+  subsanacionLimite: LIMITE,
+};
+const dj = { ...pdf, tipo: "SUBSANACION_DECLARACION_JURADA" } as const;
+const panel = { ...pdf, tipo: "SUBSANACION_PANEL_FOTOGRAFICO" } as const;
+const AHORA = new Date("2026-10-30T15:00:00.000Z");
+
 beforeEach(() => {
   store.expedientes = [
     { id: "exp-1", usuarioId: "user-a", estado: "BORRADOR" },
     { id: "exp-2", usuarioId: "user-a", estado: "PRESENTADO" },
+    { id: "exp-3", usuarioId: "user-a", estado: "OBSERVADO_REQUISITOS" },
+    { id: "exp-4", usuarioId: "user-a", estado: "EN_REVISION" },
+    { id: "exp-5", usuarioId: "user-a", ...subsanando },
   ];
   store.docs = [];
   store.seq = 0;
@@ -111,9 +129,15 @@ describe("registerDocumento", () => {
     expect(store.docs[0].fileKey).toBe("key-2");
   });
 
-  it("no registra en un expediente presentado", async () => {
+  it("no registra en un expediente presentado ni en revisión", async () => {
     expect(await registerDocumento(A, "exp-2", pdf)).toBeNull();
+    expect(await registerDocumento(A, "exp-4", pdf)).toBeNull();
     expect(store.docs).toHaveLength(0);
+  });
+
+  it("registra en un expediente observado", async () => {
+    expect(await registerDocumento(A, "exp-3", pdf)).toMatchObject({ status: "ok" });
+    expect(store.docs).toHaveLength(1);
   });
 });
 
@@ -142,10 +166,20 @@ describe("removeDocumento", () => {
     expect(store.docs).toHaveLength(0);
   });
 
-  it("no elimina en un expediente presentado", async () => {
-    store.docs = [{ id: "d", expedienteId: "exp-2", tipo: "FICHA_RUC", fileKey: "k" }];
+  it("no elimina en un expediente presentado ni en revisión", async () => {
+    store.docs = [
+      { id: "d", expedienteId: "exp-2", tipo: "FICHA_RUC", fileKey: "k" },
+      { id: "e", expedienteId: "exp-4", tipo: "FICHA_RUC", fileKey: "k" },
+    ];
     expect(await removeDocumento(A, "exp-2", "FICHA_RUC")).toBeNull();
-    expect(store.docs).toHaveLength(1);
+    expect(await removeDocumento(A, "exp-4", "FICHA_RUC")).toBeNull();
+    expect(store.docs).toHaveLength(2);
+  });
+
+  it("elimina en un expediente observado", async () => {
+    store.docs = [{ id: "d", expedienteId: "exp-3", tipo: "FICHA_RUC", fileKey: "k" }];
+    expect((await removeDocumento(A, "exp-3", "FICHA_RUC"))?.fileKey).toBe("k");
+    expect(store.docs).toHaveLength(0);
   });
 });
 
@@ -172,4 +206,67 @@ describe("autorización por rol", () => {
       );
     });
   }
+});
+
+describe("documentos de subsanación", () => {
+  const fila = (id: string, extra: Row) => ({ id, usuarioId: "user-a", ...subsanando, ...extra });
+
+  it("registra y reemplaza en EN_SUBSANACION de posterior, vigente y sin presentar", async () => {
+    expect(await registerDocumento(A, "exp-5", dj, AHORA)).toMatchObject({ status: "ok" });
+    expect(await registerDocumento(A, "exp-5", panel, AHORA)).toMatchObject({ status: "ok" });
+    expect(
+      await registerDocumento(A, "exp-5", { ...dj, fileKey: "k2" }, AHORA),
+    ).toMatchObject({ status: "ok", previousFileKey: "key-1" });
+    expect(store.docs).toHaveLength(2);
+  });
+
+  it.each([
+    ["otro estado", { estado: "PRESENTADO" }],
+    ["riesgo alto", { nivelRiesgo: "ALTO" }],
+    ["riesgo muy alto", { nivelRiesgo: "MUY_ALTO" }],
+    ["riesgo nulo", { nivelRiesgo: null }],
+    ["ya presentada", { subsanacionPresentadaAt: new Date("2026-10-29T15:00:00.000Z") }],
+    ["sin límite", { subsanacionLimite: null }],
+    ["vencida (límite + 1 día)", { subsanacionLimite: new Date("2026-10-29T05:00:00.000Z") }],
+  ])("rechaza sin escribir: %s", async (_n, extra) => {
+    store.expedientes = [fila("exp-x", extra)];
+    store.docs = [{ id: "d", expedienteId: "exp-x", tipo: dj.tipo, fileKey: "k" }];
+    expect(await puedeSubirDocumento(A, "exp-x", dj.tipo, AHORA)).toBe(false);
+    expect(await registerDocumento(A, "exp-x", dj, AHORA)).toBeNull();
+    expect(await removeDocumento(A, "exp-x", dj.tipo, AHORA)).toBeNull();
+    expect(store.docs).toHaveLength(1);
+  });
+
+  it("el último día del plazo todavía vale completo", async () => {
+    const finDelDia = new Date("2026-11-03T04:59:00.000Z");
+    expect(await puedeSubirDocumento(A, "exp-5", dj.tipo, finDelDia)).toBe(true);
+    expect(await puedeSubirDocumento(A, "exp-5", dj.tipo, new Date("2026-11-03T05:00:00.000Z"))).toBe(
+      false,
+    );
+  });
+
+  it("quita el archivo mientras no esté presentada", async () => {
+    store.docs = [{ id: "d", expedienteId: "exp-5", tipo: dj.tipo, fileKey: "k" }];
+    expect((await removeDocumento(A, "exp-5", dj.tipo, AHORA))?.fileKey).toBe("k");
+  });
+
+  it("los tipos de requisitos no se suben en EN_SUBSANACION, ni los de subsanación en BORRADOR", async () => {
+    expect(await registerDocumento(A, "exp-5", pdf, AHORA)).toBeNull();
+    expect(await registerDocumento(A, "exp-1", dj, AHORA)).toBeNull();
+    expect(await registerDocumento(A, "exp-3", panel, AHORA)).toBeNull();
+    expect(store.docs).toHaveLength(0);
+  });
+
+  it("otro cliente no sube ni quita; el personal lanza No autorizado", async () => {
+    store.docs = [{ id: "d", expedienteId: "exp-5", tipo: dj.tipo, fileKey: "k" }];
+    expect(await registerDocumento(B, "exp-5", dj, AHORA)).toBeNull();
+    expect(await removeDocumento(B, "exp-5", dj.tipo, AHORA)).toBeNull();
+    expect(await puedeSubirDocumento(B, "exp-5", dj.tipo, AHORA)).toBe(false);
+    for (const rol of ["admin", "superadmin"] as const) {
+      await expect(puedeSubirDocumento({ id: "s", rol }, "exp-5", dj.tipo, AHORA)).rejects.toThrow(
+        "No autorizado",
+      );
+    }
+    expect(store.docs).toHaveLength(1);
+  });
 });

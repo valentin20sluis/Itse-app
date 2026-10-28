@@ -4,6 +4,7 @@ import { z } from "zod";
 import { ExpedienteDetalleCliente } from "@/modules/expedientes/components/ExpedienteDetalleCliente";
 import { getExpedienteDetalle } from "@/modules/expedientes/services/bandeja.service";
 import { getResumenInspeccion } from "@/modules/inspecciones/services/designacion.service";
+import { getResumenSubsanacion } from "@/modules/inspecciones/services/diligencia.service";
 import { requireRole } from "@/modules/usuarios/services/authorization.service";
 
 export default async function ExpedienteDetallePage({
@@ -18,7 +19,12 @@ export default async function ExpedienteDetallePage({
   const detalle = await getExpedienteDetalle(usuario, id);
   if (!detalle) notFound();
 
-  const inspeccion = await getResumenInspeccion(usuario, id);
+  const [inspeccion, subsanacion] = await Promise.all([
+    getResumenInspeccion(usuario, id),
+    getResumenSubsanacion(usuario, id),
+  ]);
 
-  return <ExpedienteDetalleCliente detalle={detalle} inspeccion={inspeccion} />;
+  return (
+    <ExpedienteDetalleCliente detalle={detalle} inspeccion={inspeccion} subsanacion={subsanacion} />
+  );
 }

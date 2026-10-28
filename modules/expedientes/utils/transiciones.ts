@@ -12,19 +12,26 @@ const ESTADOS = Object.keys(ESTADO_LABELS) as EstadoExpediente[];
 const FLUJO: Partial<Record<EstadoExpediente, EstadoExpediente[]>> = {
   PRESENTADO: ["EN_REVISION"],
   EN_REVISION: ["OBSERVADO_REQUISITOS", "ENVIADO_JEFATURA"],
+  OBSERVADO_REQUISITOS: ["PRESENTADO"],
   ENVIADO_JEFATURA: ["APROBADO_JEFATURA", "EN_REVISION"],
   APROBADO_JEFATURA: ["INSPECTOR_DESIGNADO"],
   INSPECTOR_DESIGNADO: ["DILIGENCIA_PROGRAMADA"],
-  DILIGENCIA_PROGRAMADA: ["CUMPLE", "NO_CUMPLE"],
+  DILIGENCIA_PROGRAMADA: ["EN_SUBSANACION", "CUMPLE", "NO_CUMPLE"],
+  EN_SUBSANACION: ["CUMPLE", "NO_CUMPLE"],
 };
 
 // Destinos que exigen datos propios (inspectores, fecha, informe): no se alcanzan con el cambio de estado genérico.
 export const DESTINOS_CON_FLUJO_PROPIO: readonly EstadoExpediente[] = [
+  "PRESENTADO",
   "INSPECTOR_DESIGNADO",
   "DILIGENCIA_PROGRAMADA",
+  "EN_SUBSANACION",
   "CUMPLE",
   "NO_CUMPLE",
 ];
+
+const SOLO_CLIENTE = (desde: EstadoExpediente, hasta: EstadoExpediente) =>
+  desde === "OBSERVADO_REQUISITOS" && hasta === "PRESENTADO";
 
 const SOLO_SUPERADMIN = (desde: EstadoExpediente, hasta: EstadoExpediente) =>
   hasta === "ANULADO" ||
@@ -41,8 +48,13 @@ export const TRANSICIONES: Record<EstadoExpediente, EstadoExpediente[]> = Object
 export function transicionesPermitidas(estado: EstadoExpediente, rol: Role): EstadoExpediente[] {
   if (rol === "cliente") return [];
   return TRANSICIONES[estado].filter(
-    (hasta) => rol === "superadmin" || !SOLO_SUPERADMIN(estado, hasta),
+    (hasta) =>
+      !SOLO_CLIENTE(estado, hasta) && (rol === "superadmin" || !SOLO_SUPERADMIN(estado, hasta)),
   );
+}
+
+export function transicionesCliente(estado: EstadoExpediente): EstadoExpediente[] {
+  return TRANSICIONES[estado].filter((hasta) => SOLO_CLIENTE(estado, hasta));
 }
 
 export function transicionesGenericas(estado: EstadoExpediente, rol: Role): EstadoExpediente[] {

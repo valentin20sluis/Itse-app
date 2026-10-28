@@ -112,8 +112,8 @@ describe("registrarResultadoAction", () => {
     expect(mocks.registrarResultadoDiligencia).not.toHaveBeenCalled();
   });
 
-  it("resultado fuera de CUMPLE/NO_CUMPLE o informe corto: fieldErrors, sin servicio", async () => {
-    const a = await registrarResultadoAction(ID, null, fd({ resultado: "EN_SUBSANACION", informe: INFORME }));
+  it("resultado inválido o informe corto: fieldErrors, sin servicio", async () => {
+    const a = await registrarResultadoAction(ID, null, fd({ resultado: "ANULADO", informe: INFORME }));
     expect(!a.ok && a.fieldErrors?.resultado).toBeDefined();
     const b = await registrarResultadoAction(ID, null, fd({ resultado: "CUMPLE", informe: "corto" }));
     expect(!b.ok && b.fieldErrors?.informe).toBeDefined();
@@ -123,6 +123,16 @@ describe("registrarResultadoAction", () => {
   it.each([
     ...MENSAJES,
     ["motivo_requerido", "Escribe un informe de al menos 10 caracteres."],
+    ["observaciones_requeridas", "Agrega al menos una observación."],
+    ["observacion_invalida", "Una de las observaciones elegidas no es válida."],
+    [
+      "observacion_relevante",
+      "Hay observaciones relevantes: en una inspección posterior solo se puede registrar \"No cumple\".",
+    ],
+    [
+      "reprogramacion_invalida",
+      "Elige la nueva fecha de inspección: desde hoy y dentro del plazo de subsanación (hasta 20 días hábiles).",
+    ],
   ])("%s: mensaje y sin revalidar", async (status, error) => {
     mocks.registrarResultadoDiligencia.mockResolvedValue({ status });
     expect(await registrarResultadoAction(ID, null, form)).toEqual({ ok: false, error });
@@ -146,7 +156,35 @@ describe("registrarResultadoAction", () => {
     expect(mocks.registrarResultadoDiligencia).toHaveBeenCalledWith(usuario, ID, {
       resultado: "NO_CUMPLE",
       informe: INFORME,
+      codigos: [],
+      libres: [],
+      reprogramadaPara: undefined,
     });
     expect(mocks.revalidatePath).toHaveBeenCalledTimes(4);
+  });
+
+  it("suspensión: lee codigo con getAll, libres por línea y la fecha de Lima", async () => {
+    mocks.registrarResultadoDiligencia.mockResolvedValue({ status: "ok" });
+    const f = new FormData();
+    f.append("resultado", "EN_SUBSANACION");
+    f.append("informe", INFORME);
+    f.append("codigo", "EXTINTORES");
+    f.append("codigo", "COLOCAR_SENALIZACION");
+    f.append("libres", "Grieta en la columna\r\n\n  Humedad en el techo  ");
+    f.append("reprogramadaPara", "2026-11-10");
+    expect(await registrarResultadoAction(ID, null, f)).toEqual({ ok: true, data: null });
+    const [, , input] = mocks.registrarResultadoDiligencia.mock.calls[0];
+    expect(input).toMatchObject({
+      resultado: "EN_SUBSANACION",
+      codigos: ["EXTINTORES", "COLOCAR_SENALIZACION"],
+      libres: ["Grieta en la columna", "Humedad en el techo"],
+    });
+    expect(input.reprogramadaPara.toISOString()).toBe("2026-11-10T05:00:00.000Z");
+  });
+
+  it("suspensión sin observaciones: error de campo, sin servicio", async () => {
+    const r = await registrarResultadoAction(ID, null, fd({ resultado: "EN_SUBSANACION", informe: INFORME }));
+    expect(!r.ok && r.fieldErrors?.codigos).toBeDefined();
+    expect(mocks.registrarResultadoDiligencia).not.toHaveBeenCalled();
   });
 });

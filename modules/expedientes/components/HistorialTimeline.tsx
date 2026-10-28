@@ -18,7 +18,11 @@ export function HistorialTimeline({ historial }: { historial: HistorialItem[] })
               className="absolute -left-[1.3rem] top-1.5 size-2 rounded-full bg-primary"
             />
             <p className="text-sm font-medium text-foreground">
-              {esNota ? "Nivel de riesgo actualizado" : ESTADO_LABELS[h.estadoNuevo].label}
+              {esNota
+                ? h.estadoNuevo === "EN_SUBSANACION"
+                  ? "Seguimiento de la subsanación"
+                  : "Nivel de riesgo actualizado"
+                : ESTADO_LABELS[h.estadoNuevo].label}
             </p>
             <p className="text-xs text-muted-foreground">
               <time dateTime={h.createdAt.toISOString()}>{formatFechaHora(h.createdAt)}</time>

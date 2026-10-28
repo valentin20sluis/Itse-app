@@ -5,6 +5,10 @@ const mocks = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   cambiarEstado: vi.fn(),
   actualizarRiesgo: vi.fn(),
+  reenviarRequisitos: vi.fn(),
+}));
+vi.mock("@/modules/expedientes/services/requisitos.service", () => ({
+  reenviarRequisitos: mocks.reenviarRequisitos,
 }));
 
 vi.mock("@/modules/usuarios/services/authorization.service", () => ({ requireRole: mocks.requireRole }));
@@ -14,7 +18,7 @@ vi.mock("@/modules/expedientes/services/transicion.service", () => ({
   actualizarRiesgo: mocks.actualizarRiesgo,
 }));
 
-import { actualizarRiesgoAction, cambiarEstadoAction } from "./transicion.actions";
+import { actualizarRiesgoAction, cambiarEstadoAction, reenviarRequisitosAction } from "./transicion.actions";
 
 const usuario = { id: "u-1", rol: "admin" };
 const ID = "3f2b8c1e-5a4d-4e6f-8b7a-1c2d3e4f5a6b";
@@ -97,5 +101,64 @@ describe("cambiarEstadoAction: Jefatura", () => {
     expect(res).toEqual({ ok: false, error: "Esa acción no está disponible para este expediente." });
     expect(mocks.cambiarEstado.mock.calls[0][0]).toBe(usuario);
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("reenviarRequisitosAction", () => {
+  const cliente = { id: "c-1", rol: "cliente" };
+  const llamar = () => reenviarRequisitosAction(ID);
+
+  beforeEach(() => {
+    mocks.requireRole.mockResolvedValue(cliente);
+  });
+
+  it("requireRole('cliente') primero; si redirige no toca el servicio", async () => {
+    mocks.requireRole.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(llamar()).rejects.toThrow("NEXT_REDIRECT");
+    expect(mocks.requireRole).toHaveBeenCalledWith("cliente");
+    expect(mocks.reenviarRequisitos).not.toHaveBeenCalled();
+  });
+
+  it("id no uuid", async () => {
+    expect(await reenviarRequisitosAction("x")).toEqual(NO_EXP);
+    expect(mocks.reenviarRequisitos).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["no_encontrado", "No se encontró el expediente."],
+    ["no_permitido", "Esa acción no está disponible para este expediente."],
+    ["conflicto", "El expediente cambió de estado. Actualiza la página e inténtalo de nuevo."],
+  ])("mapea %s sin revalidar", async (status, error) => {
+    mocks.reenviarRequisitos.mockResolvedValue({ status });
+    expect(await llamar()).toEqual({ ok: false, error });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("incompleto: lista las etiquetas sin revalidar", async () => {
+    mocks.reenviarRequisitos.mockResolvedValue({
+      status: "incompleto",
+      faltantes: ["FICHA_RUC", "EXTINTORES_PQS"],
+    });
+    expect(await llamar()).toEqual({
+      ok: false,
+      error: "Faltan documentos obligatorios: Ficha RUC, Certificado de extintores PQS.",
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("error inesperado: mensaje genérico", async () => {
+    mocks.reenviarRequisitos.mockRejectedValue(new Error("db boom"));
+    expect(await llamar()).toEqual({
+      ok: false,
+      error: "No se pudo guardar el cambio. Inténtalo de nuevo.",
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("éxito: usuario de requireRole y revalida 4 rutas", async () => {
+    mocks.reenviarRequisitos.mockResolvedValue({ status: "ok" });
+    expect(await llamar()).toEqual({ ok: true, data: null });
+    expect(mocks.reenviarRequisitos).toHaveBeenCalledWith(cliente, ID);
+    expect(mocks.revalidatePath).toHaveBeenCalledTimes(4);
   });
 });

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { validateArchivo } from "./archivo";
 import {
   DOCUMENTOS,
+  DOCUMENTOS_SUBSANACION,
+  TIPOS_SOLO_PDF,
+  esDocumentoSubsanacion,
+  ESTADOS_EDITABLES_CLIENTE,
   documentosFaltantes,
   documentosOpcionales,
   documentosRequeridos,
@@ -24,6 +29,12 @@ const TECNICOS = [
   "POZO_TIERRA",
   "MEMORIA_PRUEBAS_EQUIPOS",
 ];
+
+describe("ESTADOS_EDITABLES_CLIENTE", () => {
+  it("son BORRADOR y OBSERVADO_REQUISITOS", () => {
+    expect(ESTADOS_EDITABLES_CLIENTE).toEqual(["BORRADOR", "OBSERVADO_REQUISITOS"]);
+  });
+});
 
 describe("documentosRequeridos", () => {
   it("nivel null no requiere nada", () => {
@@ -135,5 +146,41 @@ describe("Plan de seguridad", () => {
   });
   it("el catálogo tiene 12 tipos", () => {
     expect(DOCUMENTOS).toHaveLength(12);
+  });
+});
+
+describe("documentos de subsanación", () => {
+  it("lista los 2 tipos con su etiqueta y no están en la solicitud", () => {
+    expect(DOCUMENTOS_SUBSANACION).toEqual([
+      { tipo: "SUBSANACION_DECLARACION_JURADA", etiqueta: "Declaración jurada de subsanación" },
+      {
+        tipo: "SUBSANACION_PANEL_FOTOGRAFICO",
+        etiqueta: "Panel fotográfico de subsanación (con leyenda)",
+      },
+    ]);
+    for (const d of DOCUMENTOS_SUBSANACION) {
+      expect(DOCUMENTOS.some((x) => x.tipo === d.tipo)).toBe(false);
+      expect(esDocumentoSubsanacion(d.tipo)).toBe(true);
+    }
+    expect(esDocumentoSubsanacion("FICHA_RUC")).toBe(false);
+    const todos = documentosRequeridos(ctx({ nivelRiesgo: "MUY_ALTO", tieneCocina: true, esGrifo: true }));
+    expect(todos.some(esDocumentoSubsanacion)).toBe(false);
+  });
+
+  it("solo la declaración jurada es solo PDF", () => {
+    expect(TIPOS_SOLO_PDF).toContain("SUBSANACION_DECLARACION_JURADA");
+    expect(TIPOS_SOLO_PDF).not.toContain("SUBSANACION_PANEL_FOTOGRAFICO");
+  });
+
+  it("validateArchivo: la declaración rechaza imagen; el panel acepta imagen o PDF", () => {
+    const archivo = (type: string, tipo: "SUBSANACION_DECLARACION_JURADA" | "SUBSANACION_PANEL_FOTOGRAFICO") =>
+      validateArchivo({ name: "a", type, size: 1000, tipo });
+    expect(archivo("image/jpeg", "SUBSANACION_DECLARACION_JURADA")).toEqual({
+      ok: false,
+      error: "Este documento debe ser un PDF.",
+    });
+    expect(archivo("application/pdf", "SUBSANACION_DECLARACION_JURADA")).toEqual({ ok: true });
+    expect(archivo("image/png", "SUBSANACION_PANEL_FOTOGRAFICO")).toEqual({ ok: true });
+    expect(archivo("application/pdf", "SUBSANACION_PANEL_FOTOGRAFICO")).toEqual({ ok: true });
   });
 });

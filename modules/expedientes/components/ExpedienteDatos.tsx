@@ -7,7 +7,7 @@ import {
   TIPO_TRAMITE_LABELS,
 } from "@/modules/expedientes/constants/expediente-labels";
 import type { ExpedienteDetalle } from "@/modules/expedientes/types/bandeja.types";
-import { DOCUMENTOS } from "@/modules/expedientes/utils/documentos";
+import { DOCUMENTOS, DOCUMENTOS_SUBSANACION } from "@/modules/expedientes/utils/documentos";
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
 
 function Seccion({
@@ -103,7 +103,7 @@ export function ExpedienteDatos({ detalle }: { detalle: ExpedienteDetalle }) {
           <ul className="flex flex-col gap-2">
             {documentos.map((d) => {
               const etiqueta =
-                DOCUMENTOS.find((x) => x.tipo === d.tipo)?.etiqueta ??
+                [...DOCUMENTOS, ...DOCUMENTOS_SUBSANACION].find((x) => x.tipo === d.tipo)?.etiqueta ??
                 "Documento adjunto";
               return (
                 <li key={d.id}>

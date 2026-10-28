@@ -1,9 +1,13 @@
-import { and, eq, exists } from "drizzle-orm";
+import { and, eq, exists, gt, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { expedienteDocumentos, expedientes } from "@/db/schema";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
 import type { ExpedienteDocumento, TipoDocumento } from "@/modules/expedientes/types/expediente.types";
 import { validateArchivo } from "@/modules/expedientes/utils/archivo";
+import {
+  ESTADOS_EDITABLES_CLIENTE,
+  esDocumentoSubsanacion,
+} from "@/modules/expedientes/utils/documentos";
 
 export type RegisterDocumentoInput = {
   tipo: TipoDocumento;
@@ -21,11 +25,22 @@ function assertCliente(actor: Actor) {
   if (actor.rol !== "cliente") throw new Error("No autorizado");
 }
 
-const ownDraft = (actor: Actor, expedienteId: string) =>
+const DIA_MS = 86_400_000;
+
+// Requisitos: solo en estados editables. Subsanación: solo en EN_SUBSANACION de ITSE posterior, sin
+// presentar y dentro del plazo; el último día vale completo (subsanacion_limite + 1 día > ahora).
+const ownEditable = (actor: Actor, expedienteId: string, tipo: TipoDocumento, ahora: Date) =>
   and(
     eq(expedientes.id, expedienteId),
     eq(expedientes.usuarioId, actor.id),
-    eq(expedientes.estado, "BORRADOR"),
+    esDocumentoSubsanacion(tipo)
+      ? and(
+          eq(expedientes.estado, "EN_SUBSANACION"),
+          inArray(expedientes.nivelRiesgo, ["BAJO", "MEDIO"]),
+          isNull(expedientes.subsanacionPresentadaAt),
+          gt(expedientes.subsanacionLimite, new Date(ahora.getTime() - DIA_MS)),
+        )
+      : inArray(expedientes.estado, [...ESTADOS_EDITABLES_CLIENTE]),
   );
 
 const visible = (actor: Actor, expedienteId: string) =>
@@ -70,18 +85,28 @@ export async function getDocumentoForDownload(
   return row ?? null;
 }
 
-export async function registerDocumento(
+export async function puedeSubirDocumento(
   actor: Actor,
   expedienteId: string,
-  input: RegisterDocumentoInput,
-): Promise<RegisterDocumentoResult | null> {
+  tipo: TipoDocumento,
+  ahora: Date = new Date(),
+): Promise<boolean> {
   assertCliente(actor);
   const [own] = await db
     .select({ id: expedientes.id })
     .from(expedientes)
-    .where(ownDraft(actor, expedienteId))
+    .where(ownEditable(actor, expedienteId, tipo, ahora))
     .limit(1);
-  if (!own) return null;
+  return Boolean(own);
+}
+
+export async function registerDocumento(
+  actor: Actor,
+  expedienteId: string,
+  input: RegisterDocumentoInput,
+  ahora: Date = new Date(),
+): Promise<RegisterDocumentoResult | null> {
+  if (!(await puedeSubirDocumento(actor, expedienteId, input.tipo, ahora))) return null;
 
   const check = validateArchivo({
     name: input.nombreOriginal,
@@ -117,6 +142,7 @@ export async function removeDocumento(
   actor: Actor,
   expedienteId: string,
   tipo: TipoDocumento,
+  ahora: Date = new Date(),
 ): Promise<ExpedienteDocumento | null> {
   assertCliente(actor);
   const [row] = await db
@@ -129,7 +155,7 @@ export async function removeDocumento(
             .select({ id: expedientes.id })
             .from(expedientes)
             .where(
-              and(ownDraft(actor, expedienteId), eq(expedientes.id, expedienteDocumentos.expedienteId)),
+              and(ownEditable(actor, expedienteId, tipo, ahora), eq(expedientes.id, expedienteDocumentos.expedienteId)),
             ),
         ),
       ),

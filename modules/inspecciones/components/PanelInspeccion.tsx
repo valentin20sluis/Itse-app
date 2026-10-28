@@ -1,16 +1,25 @@
 import { buttonVariants } from "@/components/ui/button";
 import type { Establecimiento } from "@/db/schema";
+import type { EstadoExpediente } from "@/modules/expedientes/constants/estado-labels";
 import type { Expediente } from "@/modules/expedientes/types/expediente.types";
-import { inspectoresRequeridos } from "@/modules/expedientes/utils/riesgo";
+import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
+import { inspectoresRequeridos, tipoItsePorRiesgo } from "@/modules/expedientes/utils/riesgo";
 import { DesignarInspectoresForm } from "@/modules/inspecciones/components/DesignarInspectoresForm";
+import { EvaluarSubsanacionForm } from "@/modules/inspecciones/components/EvaluarSubsanacionForm";
 import { InspeccionResumen } from "@/modules/inspecciones/components/InspeccionResumen";
+import { ObservacionesLista } from "@/modules/inspecciones/components/ObservacionesLista";
+import { PlazoSubsanacion } from "@/modules/inspecciones/components/PlazoSubsanacion";
 import { ProgramarDiligenciaForm } from "@/modules/inspecciones/components/ProgramarDiligenciaForm";
 import { ResultadoDiligenciaForm } from "@/modules/inspecciones/components/ResultadoDiligenciaForm";
 import {
   getResumenInspeccion,
   listInspectoresElegibles,
 } from "@/modules/inspecciones/services/designacion.service";
+import { getResumenSubsanacion } from "@/modules/inspecciones/services/diligencia.service";
+import { estadoPlazo } from "@/modules/inspecciones/utils/dias-habiles";
 import { aInputLima, MAX_DIAS } from "@/modules/inspecciones/utils/fecha-diligencia";
+import { calcularLimiteSubsanacion } from "@/modules/inspecciones/utils/plazo-subsanacion";
+import { opcionesEvaluacion } from "@/modules/inspecciones/utils/subsanacion";
 import type { Usuario } from "@/modules/usuarios/types/user.types";
 
 type Props = {
@@ -18,6 +27,8 @@ type Props = {
   expediente: Expediente;
   establecimiento: Establecimiento;
 };
+
+const ESTADOS_CON_OBSERVACIONES: EstadoExpediente[] = ["EN_SUBSANACION", "CUMPLE", "NO_CUMPLE"];
 
 export async function PanelInspeccion({ usuario, expediente, establecimiento }: Props) {
   if (expediente.estado === "APROBADO_JEFATURA") {
@@ -68,10 +79,45 @@ export async function PanelInspeccion({ usuario, expediente, establecimiento }: 
     );
   }
   if (expediente.estado === "DILIGENCIA_PROGRAMADA") {
+    const ahora = new Date();
     return (
       <>
         {resumenVista}
-        <ResultadoDiligenciaForm expedienteId={expediente.id} />
+        <ResultadoDiligenciaForm
+          expedienteId={expediente.id}
+          tipoItse={expediente.nivelRiesgo ? tipoItsePorRiesgo(expediente.nivelRiesgo) : null}
+          min={aInputLima(ahora)}
+          max={aInputLima(calcularLimiteSubsanacion("PREVIA", ahora))}
+        />
+      </>
+    );
+  }
+  if (ESTADOS_CON_OBSERVACIONES.includes(expediente.estado)) {
+    const subsanacion = await getResumenSubsanacion(usuario, expediente.id);
+    return (
+      <>
+        {resumenVista}
+        <ObservacionesLista observaciones={subsanacion.observaciones} />
+        {expediente.estado === "EN_SUBSANACION" && subsanacion.limite && subsanacion.tipoItse && (
+          <>
+            <PlazoSubsanacion limite={subsanacion.limite} />
+            <p className="text-sm">
+              {subsanacion.tipoItse === "PREVIA"
+                ? "Los inspectores vuelven en la fecha reprogramada: el solicitante no sube archivos."
+                : expediente.subsanacionPresentadaAt
+                  ? `Evidencia presentada el ${formatFecha(expediente.subsanacionPresentadaAt)}.`
+                  : "Evidencia aún no presentada."}
+            </p>
+            <EvaluarSubsanacionForm
+              expedienteId={expediente.id}
+              opciones={opcionesEvaluacion({
+                tipoItse: subsanacion.tipoItse,
+                presentada: expediente.subsanacionPresentadaAt !== null,
+                vencido: estadoPlazo(subsanacion.limite, new Date()).vencido,
+              })}
+            />
+          </>
+        )}
       </>
     );
   }

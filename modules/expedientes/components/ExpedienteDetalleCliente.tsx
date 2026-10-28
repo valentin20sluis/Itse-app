@@ -6,8 +6,15 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EstadoBadge } from "@/modules/expedientes/components/EstadoBadge";
 import { ExpedienteDatos } from "@/modules/expedientes/components/ExpedienteDatos";
+import { SubsanacionRequisitos } from "@/modules/expedientes/components/SubsanacionRequisitos";
 import { InspeccionResumen } from "@/modules/inspecciones/components/InspeccionResumen";
+import { ObservacionesLista } from "@/modules/inspecciones/components/ObservacionesLista";
+import { PlazoSubsanacion } from "@/modules/inspecciones/components/PlazoSubsanacion";
+import { SubsanacionCliente } from "@/modules/inspecciones/components/SubsanacionCliente";
+import { estadoPlazo } from "@/modules/inspecciones/utils/dias-habiles";
+import { puedeSubirEvidencia } from "@/modules/inspecciones/utils/subsanacion";
 import type { ResumenInspeccion } from "@/modules/inspecciones/services/designacion.service";
+import type { ResumenSubsanacion } from "@/modules/inspecciones/services/diligencia.service";
 import { HistorialTimeline } from "@/modules/expedientes/components/HistorialTimeline";
 import type { ExpedienteDetalle } from "@/modules/expedientes/types/bandeja.types";
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
@@ -15,11 +22,15 @@ import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
 export function ExpedienteDetalleCliente({
   detalle,
   inspeccion,
+  subsanacion,
 }: {
   detalle: ExpedienteDetalle;
   inspeccion: ResumenInspeccion;
+  subsanacion: ResumenSubsanacion;
 }) {
   const { expediente: e, historial } = detalle;
+  const vencido = subsanacion.limite ? estadoPlazo(subsanacion.limite, new Date()).vencido : true;
+  const presentadaAt = e.subsanacionPresentadaAt;
 
   return (
     <div className="min-w-0">
@@ -41,6 +52,21 @@ export function ExpedienteDetalleCliente({
       </div>
 
       <div className="flex flex-col gap-4">
+        {e.estado === "OBSERVADO_REQUISITOS" && <SubsanacionRequisitos detalle={detalle} />}
+        {e.estado === "EN_SUBSANACION" && subsanacion.tipoItse && (
+          <SubsanacionCliente
+            expedienteId={e.id}
+            tipoItse={subsanacion.tipoItse}
+            documentos={detalle.documentos}
+            presentadaAt={presentadaAt}
+            puedeSubir={puedeSubirEvidencia({
+              tipoItse: subsanacion.tipoItse,
+              presentada: presentadaAt !== null,
+              vencido,
+            })}
+            reprogramadaPara={e.diligenciaProgramadaPara}
+          />
+        )}
         <ExpedienteDatos detalle={detalle} />
         <InspeccionResumen
           total={inspeccion.total}
@@ -53,6 +79,10 @@ export function ExpedienteDetalleCliente({
           programadaPara={e.diligenciaProgramadaPara}
           lugar={detalle.establecimiento.direccion}
         />
+        <ObservacionesLista observaciones={subsanacion.observaciones} />
+        {e.estado === "EN_SUBSANACION" && subsanacion.limite && (
+          <PlazoSubsanacion limite={subsanacion.limite} />
+        )}
         <Card>
           <CardHeader>
             <h2 className="font-heading text-base font-medium">Historial</h2>

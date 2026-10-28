@@ -3,10 +3,12 @@ import { UploadThingError } from "uploadthing/server";
 import { z } from "zod";
 import { tipoDocumentoEnum } from "@/db/schema";
 import { deleteUploadedFile } from "@/lib/uploadthing-server";
-import { registerDocumento } from "@/modules/expedientes/services/documento.service";
-import { getExpedienteById } from "@/modules/expedientes/services/expediente.service";
+import {
+  puedeSubirDocumento,
+  registerDocumento,
+} from "@/modules/expedientes/services/documento.service";
 import { validateArchivo } from "@/modules/expedientes/utils/archivo";
-import { DOCUMENTOS } from "@/modules/expedientes/utils/documentos";
+import { DOCUMENTOS, esDocumentoSubsanacion } from "@/modules/expedientes/utils/documentos";
 import { getOrCreateUser } from "@/modules/usuarios/services/user.service";
 
 const f = createUploadthing();
@@ -29,14 +31,13 @@ export const documentoFileRouter = {
       if (!usuario || !usuario.activo || usuario.rol !== "cliente") {
         throw new UploadThingError("No tienes permiso para subir archivos.");
       }
-      if (!DOCUMENTOS.some((d) => d.tipo === input.tipo)) {
+      if (!DOCUMENTOS.some((d) => d.tipo === input.tipo) && !esDocumentoSubsanacion(input.tipo)) {
         throw new UploadThingError("Tipo de documento no válido.");
       }
-      const expediente = await getExpedienteById(usuario, input.expedienteId);
-      if (!expediente || expediente.estado !== "BORRADOR") {
+      if (!(await puedeSubirDocumento(usuario, input.expedienteId, input.tipo))) {
         throw new UploadThingError("No se encontró la solicitud.");
       }
-      return { usuario, expedienteId: expediente.id, tipo: input.tipo };
+      return { usuario, expedienteId: input.expedienteId, tipo: input.tipo };
     })
     .onUploadComplete(async ({ metadata, file }) => {
       const check = validateArchivo({ name: file.name, type: file.type, size: file.size,

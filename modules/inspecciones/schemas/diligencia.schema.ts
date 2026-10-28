@@ -8,13 +8,42 @@ export const programacionSchema = z.object({
     .transform((v) => parseFechaLima(v) as Date),
 });
 
-export const resultadoDiligenciaSchema = z.object({
-  resultado: z.enum(["CUMPLE", "NO_CUMPLE"], { error: "Elige el resultado." }),
-  informe: z
-    .string()
-    .trim()
-    .min(10, "Escribe un informe de al menos 10 caracteres.")
-    .max(1000, "El informe no puede superar los 1000 caracteres."),
-});
-
-export type ResultadoDiligenciaInput = z.infer<typeof resultadoDiligenciaSchema>;
+export const resultadoDiligenciaSchema = z
+  .object({
+    resultado: z.enum(["CUMPLE", "NO_CUMPLE", "EN_SUBSANACION"], { error: "Elige el resultado." }),
+    informe: z
+      .string()
+      .trim()
+      .min(10, "Escribe un informe de al menos 10 caracteres.")
+      .max(1000, "El informe no puede superar los 1000 caracteres."),
+    codigos: z.array(z.string()).max(6, "Elige como máximo 6 observaciones del listado.").default([]),
+    libres: z
+      .array(z.string())
+      .default([])
+      .transform((lineas) => lineas.map((l) => l.trim()).filter(Boolean))
+      .pipe(
+        z
+          .array(
+            z
+              .string()
+              .min(5, "Cada observación debe tener al menos 5 caracteres.")
+              .max(300, "Cada observación puede tener como máximo 300 caracteres."),
+          )
+          .max(20, "Escribe como máximo 20 observaciones."),
+      ),
+    reprogramadaPara: z
+      .string()
+      .optional()
+      .transform((v) => v || undefined)
+      .refine((v) => v === undefined || parseFechaLima(v) !== null, "Elige una fecha válida.")
+      .transform((v) => (v ? (parseFechaLima(v) as Date) : undefined)),
+  })
+  .superRefine((d, ctx) => {
+    const hay = d.codigos.length > 0 || d.libres.length > 0;
+    if (d.resultado === "CUMPLE" && hay) {
+      ctx.addIssue({ code: "custom", path: ["codigos"], message: "Con «Cumple» no se registran observaciones." });
+    }
+    if (d.resultado === "EN_SUBSANACION" && !hay) {
+      ctx.addIssue({ code: "custom", path: ["codigos"], message: "Agrega al menos una observación." });
+    }
+  });
