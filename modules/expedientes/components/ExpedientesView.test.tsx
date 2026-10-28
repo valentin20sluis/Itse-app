@@ -24,6 +24,30 @@ beforeEach(() => {
   vi.resetAllMocks();
 });
 
+describe("ExpedientesView: pagado y ver detalle", () => {
+  const presentado = {
+    ...base,
+    id: "e9",
+    numero: "EXP-2026-00001",
+    estado: "PRESENTADO",
+    pagadoAt: new Date("2026-03-15T17:00:00Z"),
+  } as unknown as ExpedienteListItem;
+
+  it("muestra Pagado con fecha y Ver detalle en un expediente presentado", () => {
+    render(<ExpedientesView expedientes={[presentado]} />);
+    expect(screen.getByText("Pagado")).toBeInTheDocument();
+    expect(screen.getByText("Pagado el 15/03/2026")).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Ver detalle del expediente EXP-2026-00001" });
+    expect(link).toHaveAttribute("href", "/mi-cuenta/expedientes/e9");
+  });
+
+  it("un borrador no muestra Pagado ni Ver detalle", () => {
+    render(<ExpedientesView expedientes={[{ ...base, pagadoAt: null } as unknown as ExpedienteListItem]} />);
+    expect(screen.queryByText(/Pagado/)).toBeNull();
+    expect(screen.queryByRole("link", { name: /Ver detalle/ })).toBeNull();
+  });
+});
+
 describe("ExpedientesView: anular borrador", () => {
   it("muestra Continuar y Anular en BORRADOR (con o sin falta de pago)", () => {
     render(<ExpedientesView expedientes={[base, { ...base, id: "e2", pagoPendiente: true }]} />);

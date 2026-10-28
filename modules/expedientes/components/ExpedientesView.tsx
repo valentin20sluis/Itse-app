@@ -7,21 +7,11 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnularBorradorButton } from "@/modules/expedientes/components/AnularBorradorButton";
 import { EstadoBadge } from "@/modules/expedientes/components/EstadoBadge";
-import type { ExpedienteListItem, TipoTramite } from "@/modules/expedientes/types/expediente.types";
+import { TIPO_TRAMITE_LABELS } from "@/modules/expedientes/constants/expediente-labels";
+import type { ExpedienteListItem } from "@/modules/expedientes/types/expediente.types";
+import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
 
 const NUEVA_SOLICITUD = "/mi-cuenta/nueva-solicitud";
-
-const TIPO_TRAMITE_LABELS: Record<TipoTramite, string> = {
-  NUEVA: "Nueva inspección",
-  RENOVACION: "Renovación",
-};
-
-const fechaFormatter = new Intl.DateTimeFormat("es-PE", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  timeZone: "America/Lima",
-});
 
 function nuevaSolicitudButton() {
   return (
@@ -52,9 +42,29 @@ function ExpedienteCard({ expediente: e }: { expediente: ExpedienteListItem }) {
             {e.pagoPendiente ? <Badge variant="outline">Falta el pago</Badge> : <EstadoBadge estado={e.estado} />}
           </dd>
           <dt className="text-muted-foreground">{esBorrador ? "Actualizado" : "Presentado"}</dt>
-          <dd>{fechaFormatter.format(fecha)}</dd>
+          <dd>{formatFecha(fecha)}</dd>
+          {e.pagadoAt && (
+            <>
+              <dt className="text-muted-foreground">Pago</dt>
+              <dd className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">Pagado</Badge>
+                <span>Pagado el {formatFecha(e.pagadoAt)}</span>
+              </dd>
+            </>
+          )}
         </dl>
       </CardContent>
+      {e.numero && (
+        <CardFooter>
+          <Link
+            href={`/mi-cuenta/expedientes/${e.id}`}
+            className={buttonVariants({ variant: "outline", className: "h-11 flex-1" })}
+            aria-label={`Ver detalle del expediente ${e.numero}`}
+          >
+            Ver detalle
+          </Link>
+        </CardFooter>
+      )}
       {esBorrador && (
         <CardFooter className="flex gap-2">
           <Link
