@@ -16,31 +16,18 @@ describe("programacionSchema", () => {
 });
 
 describe("resultadoDiligenciaSchema", () => {
-  const ok = (informe: string) => resultadoDiligenciaSchema.safeParse({ resultado: "CUMPLE", informe });
-
-  it("informe: límites 9/10/1000/1001 y espacios", () => {
-    expect(ok("x".repeat(9)).success).toBe(false);
-    expect(ok("x".repeat(10)).success).toBe(true);
-    expect(ok("x".repeat(1000)).success).toBe(true);
-    expect(ok("x".repeat(1001)).success).toBe(false);
-    expect(ok("   " + "x".repeat(9) + "   ").success).toBe(false);
-    const r = ok("  " + "x".repeat(10) + "  ");
-    expect(r.success && r.data.informe).toBe("x".repeat(10));
-  });
-
   it("resultado: CUMPLE, NO_CUMPLE o EN_SUBSANACION", () => {
-    const informe = "x".repeat(10);
-    expect(resultadoDiligenciaSchema.safeParse({ resultado: "NO_CUMPLE", informe }).success).toBe(true);
+    expect(resultadoDiligenciaSchema.safeParse({ resultado: "NO_CUMPLE" }).success).toBe(true);
     expect(
-      resultadoDiligenciaSchema.safeParse({ resultado: "EN_SUBSANACION", informe, codigos: ["A"] }).success,
+      resultadoDiligenciaSchema.safeParse({ resultado: "EN_SUBSANACION", codigos: ["A"] }).success,
     ).toBe(true);
     for (const resultado of ["ANULADO", "", undefined]) {
-      expect(resultadoDiligenciaSchema.safeParse({ resultado, informe }).success).toBe(false);
+      expect(resultadoDiligenciaSchema.safeParse({ resultado }).success).toBe(false);
     }
   });
 
   it("CUMPLE solo sin observaciones", () => {
-    const base = { resultado: "CUMPLE", informe: "x".repeat(10) };
+    const base = { resultado: "CUMPLE" };
     expect(resultadoDiligenciaSchema.safeParse(base).success).toBe(true);
     for (const extra of [{ codigos: ["A"] }, { libres: ["Grieta en la pared"] }]) {
       const r = resultadoDiligenciaSchema.safeParse({ ...base, ...extra });
@@ -49,7 +36,7 @@ describe("resultadoDiligenciaSchema", () => {
   });
 
   it("EN_SUBSANACION exige al menos una observación; líneas vacías no cuentan", () => {
-    const base = { resultado: "EN_SUBSANACION", informe: "x".repeat(10) };
+    const base = { resultado: "EN_SUBSANACION", };
     for (const extra of [{}, { libres: ["", "   "] }]) {
       const r = resultadoDiligenciaSchema.safeParse({ ...base, ...extra });
       expect(!r.success && r.error.issues[0].message).toBe("Agrega al menos una observación.");
@@ -58,7 +45,7 @@ describe("resultadoDiligenciaSchema", () => {
 
   it("libres: 4/5/300/301 caracteres, recorta y descarta vacías", () => {
     const libres = (l: string[]) =>
-      resultadoDiligenciaSchema.safeParse({ resultado: "NO_CUMPLE", informe: "x".repeat(10), libres: l });
+      resultadoDiligenciaSchema.safeParse({ resultado: "NO_CUMPLE", libres: l });
     expect(libres(["x".repeat(4)]).success).toBe(false);
     expect(libres(["x".repeat(5)]).success).toBe(true);
     expect(libres(["x".repeat(300)]).success).toBe(true);
@@ -69,7 +56,7 @@ describe("resultadoDiligenciaSchema", () => {
   });
 
   it("codigos: hasta 6 y por defecto vacío", () => {
-    const base = { resultado: "NO_CUMPLE", informe: "x".repeat(10) };
+    const base = { resultado: "NO_CUMPLE", };
     const r = resultadoDiligenciaSchema.safeParse(base);
     expect(r.success && r.data).toMatchObject({ codigos: [], libres: [] });
     expect(
@@ -78,7 +65,7 @@ describe("resultadoDiligenciaSchema", () => {
   });
 
   it("reprogramadaPara: fecha de Lima, vacío es ausente, imposible rechaza", () => {
-    const base = { resultado: "EN_SUBSANACION", informe: "x".repeat(10), codigos: ["A"] };
+    const base = { resultado: "EN_SUBSANACION", codigos: ["A"] };
     const ok = resultadoDiligenciaSchema.safeParse({ ...base, reprogramadaPara: "2026-11-10" });
     expect(ok.success && ok.data.reprogramadaPara?.toISOString()).toBe("2026-11-10T05:00:00.000Z");
     const vacio = resultadoDiligenciaSchema.safeParse({ ...base, reprogramadaPara: "" });

@@ -114,13 +114,13 @@ describe("programarDiligencia", () => {
 describe("registrarResultadoDiligencia", () => {
   it("lanza para cliente", async () => {
     await expect(
-      registrarResultadoDiligencia(cliente, "e", { resultado: "CUMPLE", informe }),
+      registrarResultadoDiligencia(cliente, "e", { resultado: "CUMPLE" }),
     ).rejects.toThrow("No autorizado");
   });
 
   it("no_encontrado", async () => {
     h.lecturas = [[]];
-    expect(await registrarResultadoDiligencia(admin, "e", { resultado: "CUMPLE", informe })).toEqual({
+    expect(await registrarResultadoDiligencia(admin, "e", { resultado: "CUMPLE" })).toEqual({
       status: "no_encontrado",
     });
   });
@@ -129,7 +129,7 @@ describe("registrarResultadoDiligencia", () => {
     "no_permitido desde %s, sin batch",
     async (estado) => {
       h.lecturas = [exp(estado)];
-      expect(await registrarResultadoDiligencia(admin, "e", { resultado: "CUMPLE", informe })).toEqual({
+      expect(await registrarResultadoDiligencia(admin, "e", { resultado: "CUMPLE" })).toEqual({
         status: "no_permitido",
       });
       expect(h.batch).not.toHaveBeenCalled();
@@ -140,35 +140,27 @@ describe("registrarResultadoDiligencia", () => {
     h.lecturas = [exp("DILIGENCIA_PROGRAMADA")];
     const r = await registrarResultadoDiligencia(superadmin, "e", {
       resultado: "ANULADO" as never,
-      informe,
     });
     expect(r).toEqual({ status: "no_permitido" });
     expect(h.batch).not.toHaveBeenCalled();
   });
 
-  it("motivo_requerido: informe corto tras recortar", async () => {
+  it("ok: un solo batch con el comentario automático", async () => {
     h.lecturas = [exp("DILIGENCIA_PROGRAMADA")];
-    const r = await registrarResultadoDiligencia(admin, "e", { resultado: "CUMPLE", informe: "  corto   " });
-    expect(r).toEqual({ status: "motivo_requerido" });
-    expect(h.batch).not.toHaveBeenCalled();
-  });
-
-  it("ok: un solo batch con el informe recortado como comentario", async () => {
-    h.lecturas = [exp("DILIGENCIA_PROGRAMADA")];
-    const r = await registrarResultadoDiligencia(admin, "e", { resultado: "NO_CUMPLE", informe: `  ${informe}  ` });
+    const r = await registrarResultadoDiligencia(admin, "e", { resultado: "NO_CUMPLE" });
     expect(r).toEqual({ status: "ok" });
     expect(h.batch).toHaveBeenCalledTimes(1);
     const [sentencias] = h.batch.mock.calls[0];
     const historial = new PgDialect().sqlToQuery(sentencias[1].q);
     expect(historial.params).toEqual(
-      expect.arrayContaining(["DILIGENCIA_PROGRAMADA", "NO_CUMPLE", "u1", informe]),
+      expect.arrayContaining(["DILIGENCIA_PROGRAMADA", "NO_CUMPLE", "u1", "Resultado de la inspección: No cumple."]),
     );
   });
 
   it("conflicto: el UPDATE afecta 0 filas", async () => {
     h.lecturas = [exp("DILIGENCIA_PROGRAMADA")];
     h.actualizados = [];
-    expect(await registrarResultadoDiligencia(admin, "e", { resultado: "CUMPLE", informe })).toEqual({
+    expect(await registrarResultadoDiligencia(admin, "e", { resultado: "CUMPLE" })).toEqual({
       status: "conflicto",
     });
   });
@@ -179,12 +171,12 @@ describe("registrarResultadoDiligencia: suspensión con observaciones", () => {
   const ahoraSub = new Date("2026-10-28T15:00:00.000Z");
   const hoy = new Date("2026-10-28T05:00:00.000Z");
   const suspender = (extra: Record<string, unknown>) =>
-    registrarResultadoDiligencia(admin, "e", { resultado: "EN_SUBSANACION", informe, ...extra }, ahoraSub);
+    registrarResultadoDiligencia(admin, "e", { resultado: "EN_SUBSANACION", ...extra }, ahoraSub);
   const params = (q: unknown) => new PgDialect().sqlToQuery(q as never).params;
 
   it("lanza para cliente", async () => {
     await expect(
-      registrarResultadoDiligencia(cliente, "e", { resultado: "EN_SUBSANACION", informe }),
+      registrarResultadoDiligencia(cliente, "e", { resultado: "EN_SUBSANACION" }),
     ).rejects.toThrow("No autorizado");
   });
 
@@ -194,11 +186,6 @@ describe("registrarResultadoDiligencia: suspensión con observaciones", () => {
     h.lecturas = [exp("DILIGENCIA_PROGRAMADA", "EXP-1", null)];
     expect(await suspender({ codigos: [c1.codigo] })).toEqual({ status: "no_permitido" });
     expect(h.batch).not.toHaveBeenCalled();
-  });
-
-  it("motivo_requerido antes que observaciones", async () => {
-    h.lecturas = [exp("DILIGENCIA_PROGRAMADA")];
-    expect(await suspender({ informe: "corto" })).toEqual({ status: "motivo_requerido" });
   });
 
   it.each([
@@ -240,7 +227,7 @@ describe("registrarResultadoDiligencia: suspensión con observaciones", () => {
         "DILIGENCIA_PROGRAMADA",
         "EN_SUBSANACION",
         "u1",
-        `${informe} Plazo para subsanar: hasta el 02/11/2026.`,
+        `Resultado de la inspección: Observaciones subsanables. Plazo para subsanar: hasta el 02/11/2026.`,
       ]),
     );
     expect(params(sentencias[2].q)).toEqual(expect.arrayContaining([c1.codigo, c1.descripcion]));
@@ -276,7 +263,7 @@ describe("registrarResultadoDiligencia: suspensión con observaciones", () => {
     const [sentencias] = h.batch.mock.calls[0];
     expect(sentencias).toHaveLength(4);
     const comentario = params(sentencias[1].q).find(
-      (x) => typeof x === "string" && x.startsWith(informe),
+      (x) => typeof x === "string" && x.startsWith("Resultado de la inspección: Observaciones subsanables."),
     );
     expect(comentario).toMatch(/ Nueva inspección: 10\/11\/2026\.$/);
     expect(comentario).toMatch(/ Plazo para subsanar: hasta el \d{2}\/\d{2}\/2026\./);
@@ -293,7 +280,6 @@ describe("registrarResultadoDiligencia: suspensión con observaciones", () => {
     h.lecturas = [exp("DILIGENCIA_PROGRAMADA")];
     const r = await registrarResultadoDiligencia(admin, "e", {
       resultado: "NO_CUMPLE",
-      informe,
       codigos: [c1.codigo],
       libres: ["Grieta en la columna"],
     });
@@ -309,13 +295,12 @@ describe("registrarResultadoDiligencia: suspensión con observaciones", () => {
 
   it("NO_CUMPLE sin observaciones solo hace update e historial; código inexistente es observacion_invalida", async () => {
     h.lecturas = [exp("DILIGENCIA_PROGRAMADA")];
-    await registrarResultadoDiligencia(admin, "e", { resultado: "NO_CUMPLE", informe });
+    await registrarResultadoDiligencia(admin, "e", { resultado: "NO_CUMPLE" });
     expect(h.batch.mock.calls[0][0]).toHaveLength(2);
     h.batch.mockClear();
     h.lecturas = [exp("DILIGENCIA_PROGRAMADA")];
     const r = await registrarResultadoDiligencia(admin, "e", {
       resultado: "NO_CUMPLE",
-      informe,
       codigos: ["x"],
     });
     expect(r).toEqual({ status: "observacion_invalida" });
@@ -326,7 +311,6 @@ describe("registrarResultadoDiligencia: suspensión con observaciones", () => {
     h.lecturas = [exp("DILIGENCIA_PROGRAMADA")];
     const r = await registrarResultadoDiligencia(admin, "e", {
       resultado: "CUMPLE",
-      informe,
       libres: ["Algo largo"],
     });
     expect(r).toEqual({ status: "no_permitido" });

@@ -181,26 +181,6 @@ export function ResultadoDiligenciaForm({ expedienteId, tipoItse, min, max }: Pr
         </div>
       )}
 
-      <div className="space-y-1.5">
-        <Label htmlFor={`${uid}-informe`}>Informe</Label>
-        <Textarea
-          id={`${uid}-informe`}
-          name="informe"
-          required
-          aria-required
-          minLength={10}
-          maxLength={1000}
-          aria-invalid={err("informe") ? true : undefined}
-          aria-describedby={err("informe") ? `${uid}-informe-err` : undefined}
-          className="min-h-28"
-        />
-        {err("informe") && (
-          <p id={`${uid}-informe-err`} className="text-sm text-destructive">
-            {err("informe")}
-          </p>
-        )}
-        <p className="text-sm text-muted-foreground">El solicitante verá este informe.</p>
-      </div>
       <p role="alert" className="text-sm text-destructive">
         {state && !state.ok ? state.error : null}
       </p>
@@ -220,8 +200,8 @@ export function ResultadoDiligenciaForm({ expedienteId, tipoItse, min, max }: Pr
             </AlertDialogTitle>
             <AlertDialogDescription>
               {suspende
-                ? `La inspección quedará suspendida y el solicitante tendrá hasta ${dias} días hábiles para subsanar. Verá las observaciones, el informe y la fecha límite. Esta acción no se puede deshacer.`
-                : "Esta acción no se puede deshacer. El solicitante verá el resultado y el informe."}
+                ? `La inspección quedará suspendida y el solicitante tendrá hasta ${dias} días hábiles para subsanar. Verá las observaciones y la fecha límite. Esta acción no se puede deshacer.`
+                : "Esta acción no se puede deshacer. El solicitante verá el resultado."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

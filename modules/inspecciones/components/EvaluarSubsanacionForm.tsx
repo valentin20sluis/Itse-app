@@ -11,8 +11,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import type { ActionResult } from "@/lib/action-result";
 import { evaluarSubsanacionAction } from "@/modules/inspecciones/actions/subsanacion.actions";
 import type { OpcionEvaluacion } from "@/modules/inspecciones/utils/subsanacion";
@@ -72,26 +70,6 @@ export function EvaluarSubsanacionForm({ expedienteId, opciones }: Props) {
           </p>
         )}
       </fieldset>
-      <div className="space-y-1.5">
-        <Label htmlFor={`${uid}-informe`}>Informe</Label>
-        <Textarea
-          id={`${uid}-informe`}
-          name="informe"
-          required
-          aria-required
-          minLength={10}
-          maxLength={1000}
-          aria-invalid={err("informe") ? true : undefined}
-          aria-describedby={err("informe") ? `${uid}-informe-err` : undefined}
-          className="min-h-28"
-        />
-        {err("informe") && (
-          <p id={`${uid}-informe-err`} className="text-sm text-destructive">
-            {err("informe")}
-          </p>
-        )}
-        <p className="text-sm text-muted-foreground">El solicitante verá este informe.</p>
-      </div>
       <p role="alert" className="text-sm text-destructive">
         {state && !state.ok ? state.error : null}
       </p>
@@ -108,7 +86,7 @@ export function EvaluarSubsanacionForm({ expedienteId, opciones }: Props) {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Registrar la evaluación?</AlertDialogTitle>
             <AlertDialogDescription>
-              El solicitante verá el resultado y el informe. «Cumple» y «No cumple» no se pueden deshacer.
+              El solicitante verá el resultado. «Cumple» y «No cumple» no se pueden deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

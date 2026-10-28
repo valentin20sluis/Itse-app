@@ -18,7 +18,7 @@ const MENSAJES = {
   incompleto: "Sube la declaración jurada y el panel fotográfico antes de presentar.",
   sin_evidencia: "El solicitante aún no presentó la subsanación.",
   plazo_vencido: 'El plazo venció: solo puedes registrar "Cumple" o "No cumple".',
-  motivo_requerido: "Escribe un informe de al menos 10 caracteres.",
+  motivo_requerido: "No se pudo guardar el cambio. Inténtalo de nuevo.",
   conflicto: "El expediente cambió de estado. Actualiza la página e inténtalo de nuevo.",
   error: "No se pudo guardar el cambio. Inténtalo de nuevo.",
 } as const;
@@ -56,7 +56,6 @@ export async function evaluarSubsanacionAction(
   if (!z.uuid().safeParse(id).success) return { ok: false, error: MENSAJES.no_encontrado };
   const parsed = evaluacionSubsanacionSchema.safeParse({
     resultado: formData.get("resultado") ?? "",
-    informe: formData.get("informe") ?? "",
   });
   if (!parsed.success) {
     return {

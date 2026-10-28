@@ -21,6 +21,12 @@ export type SubsanacionResultado =
 
 const DIA_MS = 86_400_000;
 
+const ETIQUETAS: Record<OpcionEvaluacion, string> = {
+  CUMPLE: "Cumple",
+  SIGUE_EN_SUBSANACION: "Sigue en subsanación",
+  NO_CUMPLE: "No cumple",
+};
+
 function assertCliente(actor: Actor) {
   if (actor.rol !== "cliente") throw new Error("No autorizado");
 }
@@ -90,7 +96,7 @@ export async function presentarSubsanacion(
 export async function evaluarSubsanacion(
   actor: Actor,
   id: string,
-  input: { resultado: OpcionEvaluacion; informe: string },
+  input: { resultado: OpcionEvaluacion },
   ahora: Date = new Date(),
 ): Promise<SubsanacionResultado> {
   assertPersonal(actor);
@@ -108,8 +114,7 @@ export async function evaluarSubsanacion(
   ) {
     return { status: "no_permitido" };
   }
-  const informe = input.informe.trim();
-  if (informe.length < 10) return { status: "motivo_requerido" };
+  const informe = `Evaluación de la subsanación: ${ETIQUETAS[resultado]}.`;
 
   const presentada = exp.presentadaAt !== null;
   const vencido = exp.limite ? estadoPlazo(exp.limite, ahora).vencido : true;

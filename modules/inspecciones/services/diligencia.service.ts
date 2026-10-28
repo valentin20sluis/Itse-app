@@ -25,9 +25,14 @@ export type DiligenciaResultado =
 
 export type ResultadoDiligencia = "CUMPLE" | "NO_CUMPLE" | "EN_SUBSANACION";
 
+const ETIQUETAS: Record<ResultadoDiligencia, string> = {
+  CUMPLE: "Cumple",
+  NO_CUMPLE: "No cumple",
+  EN_SUBSANACION: "Observaciones subsanables",
+};
+
 export type ResultadoDiligenciaInput = {
   resultado: ResultadoDiligencia;
-  informe: string;
   codigos?: readonly string[];
   libres?: readonly string[];
   reprogramadaPara?: Date;
@@ -116,8 +121,7 @@ export async function registrarResultadoDiligencia(
   ) {
     return { status: "no_permitido" };
   }
-  const informe = input.informe.trim();
-  if (informe.length < 10) return { status: "motivo_requerido" };
+  const informe = `Resultado de la inspección: ${ETIQUETAS[resultado]}.`;
 
   if (resultado !== "EN_SUBSANACION") {
     // En "No cumple" las observaciones son opcionales y no se exige que sean no relevantes.

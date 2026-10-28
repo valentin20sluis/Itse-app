@@ -2,6 +2,8 @@
 
 Estado: approved
 
+> Nota (cambio posterior): se retira el campo «Informe» de los formularios del personal. Ya no hay texto del admin ni `motivo_requerido` en estos flujos: el servicio guarda un comentario automático en el historial («Resultado de la inspección: Cumple.» / «No cumple.» / «Observaciones subsanables.», con el plazo y la reprogramación como hasta ahora; «Evaluación de la subsanación: Cumple.» / «Sigue en subsanación.» / «No cumple.»). Donde esta spec menciona el informe (10 a 1000 caracteres), léase sustituido por ese comentario.
+
 Parte 3 de 4 de `subsanacion-plazos`. **Depende de `plazos-dias-habiles`** (`calcularLimiteSubsanacion`, `validarReprogramacion`, `estadoPlazo`, `TipoItse`). Se debe implementar junto con la parte 4 (`subsanacion-evidencia`): sin ella, un expediente en `EN_SUBSANACION` solo se puede anular.
 
 ## Objetivo

@@ -28,7 +28,7 @@ describe("EvaluarSubsanacionForm", () => {
     for (const nombre of ["Cumple", "Sigue en subsanación", "No cumple"]) {
       expect(screen.getByRole("radio", { name: nombre })).toBeInTheDocument();
     }
-    expect(screen.getByText("El solicitante verá este informe.")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Informe")).not.toBeInTheDocument();
   });
 
   it("el botón abre la confirmación solo con el formulario válido", () => {
@@ -38,7 +38,6 @@ describe("EvaluarSubsanacionForm", () => {
     expect(screen.queryByText("¿Registrar la evaluación?")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("radio", { name: "Cumple" }));
-    fireEvent.change(screen.getByLabelText("Informe"), { target: { value: "Todo en orden." } });
     fireEvent.click(boton);
     expect(screen.getByText("¿Registrar la evaluación?")).toBeInTheDocument();
   });

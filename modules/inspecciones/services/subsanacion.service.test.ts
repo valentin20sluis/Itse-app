@@ -42,7 +42,6 @@ const cliente = { id: "u3", rol: "cliente" as const };
 const LIMITE = new Date("2026-11-02T05:00:00.000Z");
 const A_TIEMPO = new Date("2026-10-30T15:00:00.000Z");
 const VENCIDO = new Date("2026-11-03T15:00:00.000Z");
-const informe = "La evidencia es suficiente.";
 
 const exp = (extra: Record<string, unknown> = {}) => [
   {
@@ -139,8 +138,7 @@ describe("evaluarSubsanacion", () => {
     resultado: "CUMPLE" | "SIGUE_EN_SUBSANACION" | "NO_CUMPLE",
     ahora = A_TIEMPO,
     actor: typeof admin | typeof superadmin = admin,
-    texto = informe,
-  ) => evaluarSubsanacion(actor, "e", { resultado, informe: texto }, ahora);
+  ) => evaluarSubsanacion(actor, "e", { resultado }, ahora);
 
   it("lanza para cliente", async () => {
     await expect(evaluar("CUMPLE", A_TIEMPO, cliente as never)).rejects.toThrow("No autorizado");
@@ -162,12 +160,6 @@ describe("evaluarSubsanacion", () => {
     expect(h.batch).not.toHaveBeenCalled();
   });
 
-  it("motivo_requerido: informe corto tras recortar", async () => {
-    h.lecturas = [exp({ presentadaAt: A_TIEMPO })];
-    expect(await evaluar("CUMPLE", A_TIEMPO, admin, "  corto  ")).toEqual({ status: "motivo_requerido" });
-    expect(h.batch).not.toHaveBeenCalled();
-  });
-
   it.each(["CUMPLE", "SIGUE_EN_SUBSANACION"] as const)(
     "sin_evidencia: %s en posterior sin presentar",
     async (resultado) => {
@@ -185,7 +177,7 @@ describe("evaluarSubsanacion", () => {
     expect(h.batch).not.toHaveBeenCalled();
   });
 
-  it("CUMPLE y NO_CUMPLE cambian el estado con el informe recortado", async () => {
+  it("CUMPLE y NO_CUMPLE cambian el estado con comentario automático", async () => {
     for (const [resultado, previo] of [
       ["CUMPLE", { presentadaAt: A_TIEMPO }],
       ["NO_CUMPLE", {}],
@@ -193,12 +185,12 @@ describe("evaluarSubsanacion", () => {
       h.batch.mockClear();
       h.sets = [];
       h.lecturas = [exp(previo)];
-      expect(await evaluar(resultado, A_TIEMPO, admin, `  ${informe}  `)).toEqual({ status: "ok" });
+      expect(await evaluar(resultado, A_TIEMPO, admin)).toEqual({ status: "ok" });
       expect(h.batch).toHaveBeenCalledTimes(1);
       expect(h.sets[0]).toMatchObject({ estado: resultado });
       const [sentencias] = h.batch.mock.calls[0];
       expect(params(sentencias[1].q)).toEqual(
-        expect.arrayContaining(["EN_SUBSANACION", resultado, "u1", informe]),
+        expect.arrayContaining(["EN_SUBSANACION", resultado, "u1", `Evaluación de la subsanación: ${resultado === "CUMPLE" ? "Cumple" : "No cumple"}.`]),
       );
     }
   });
@@ -216,7 +208,7 @@ describe("evaluarSubsanacion", () => {
     expect(h.sets[0]).not.toHaveProperty("estado");
     const [sentencias] = h.batch.mock.calls[0];
     expect(params(sentencias[1].q)).toEqual(
-      expect.arrayContaining(["EN_SUBSANACION", "u1", informe]),
+      expect.arrayContaining(["EN_SUBSANACION", "u1", "Evaluación de la subsanación: Sigue en subsanación."]),
     );
   });
 

@@ -18,7 +18,6 @@ import { evaluarSubsanacionAction, presentarSubsanacionAction } from "./subsanac
 
 const usuario = { id: "u-1", rol: "admin" };
 const ID = "3f2b8c1e-5a4d-4e6f-8b7a-1c2d3e4f5a6b";
-const INFORME = "La evidencia es suficiente.";
 
 const fd = (campos: Record<string, string>) => {
   const f = new FormData();
@@ -33,7 +32,7 @@ const MENSAJES: [string, string][] = [
   ["incompleto", "Sube la declaración jurada y el panel fotográfico antes de presentar."],
   ["sin_evidencia", "El solicitante aún no presentó la subsanación."],
   ["plazo_vencido", 'El plazo venció: solo puedes registrar "Cumple" o "No cumple".'],
-  ["motivo_requerido", "Escribe un informe de al menos 10 caracteres."],
+  ["motivo_requerido", "No se pudo guardar el cambio. Inténtalo de nuevo."],
   ["conflicto", "El expediente cambió de estado. Actualiza la página e inténtalo de nuevo."],
 ];
 
@@ -89,7 +88,7 @@ describe("presentarSubsanacionAction", () => {
 });
 
 describe("evaluarSubsanacionAction", () => {
-  const form = fd({ resultado: "CUMPLE", informe: INFORME });
+  const form = fd({ resultado: "CUMPLE" });
 
   it("requireRole primero; si redirige no toca el servicio", async () => {
     mocks.requireRole.mockRejectedValue(new Error("NEXT_REDIRECT"));
@@ -106,11 +105,9 @@ describe("evaluarSubsanacionAction", () => {
     expect(mocks.evaluarSubsanacion).not.toHaveBeenCalled();
   });
 
-  it("resultado inválido o informe corto: fieldErrors, sin servicio", async () => {
-    const a = await evaluarSubsanacionAction(ID, null, fd({ resultado: "ANULADO", informe: INFORME }));
+  it("resultado inválido: fieldErrors, sin servicio", async () => {
+    const a = await evaluarSubsanacionAction(ID, null, fd({ resultado: "ANULADO" }));
     expect(!a.ok && a.fieldErrors?.resultado).toEqual(["Elige el resultado."]);
-    const b = await evaluarSubsanacionAction(ID, null, fd({ resultado: "CUMPLE", informe: "corto" }));
-    expect(!b.ok && b.fieldErrors?.informe).toBeDefined();
     expect(mocks.evaluarSubsanacion).not.toHaveBeenCalled();
   });
 
@@ -128,17 +125,16 @@ describe("evaluarSubsanacionAction", () => {
     });
   });
 
-  it("ok: pasa el usuario de requireRole y el informe recortado, y revalida", async () => {
+  it("ok: pasa el usuario de requireRole y y revalida", async () => {
     mocks.evaluarSubsanacion.mockResolvedValue({ status: "ok" });
     const r = await evaluarSubsanacionAction(
       ID,
       null,
-      fd({ resultado: "SIGUE_EN_SUBSANACION", informe: `  ${INFORME} ` }),
+      fd({ resultado: "SIGUE_EN_SUBSANACION" }),
     );
     expect(r).toEqual({ ok: true, data: null });
     expect(mocks.evaluarSubsanacion).toHaveBeenCalledWith(usuario, ID, {
       resultado: "SIGUE_EN_SUBSANACION",
-      informe: INFORME,
     });
     expect(mocks.revalidatePath.mock.calls.map((c) => c[0])).toEqual(RUTAS);
   });

@@ -2,6 +2,8 @@
 
 Estado: approved
 
+> Nota (cambio posterior): se retira el campo «Informe» de los formularios del personal. Ya no hay texto del admin ni `motivo_requerido` en estos flujos: el servicio guarda un comentario automático en el historial («Resultado de la inspección: Cumple.» / «No cumple.» / «Observaciones subsanables.», con el plazo y la reprogramación como hasta ahora; «Evaluación de la subsanación: Cumple.» / «Sigue en subsanación.» / «No cumple.»). Donde esta spec menciona el informe (10 a 1000 caracteres), léase sustituido por ese comentario.
+
 Parte 4 de 4 de `subsanacion-plazos`. **Depende de `observaciones-diligencia`** (columna `subsanacion_limite`, estado `EN_SUBSANACION` con observaciones, `PlazoSubsanacion`, `getResumenSubsanacion`), de `plazos-dias-habiles` (`estadoPlazo`, `TipoItse`) y de `subsanacion-requisitos` (comparten `documento.service.ts`, `documentos.ts` y `app/api/uploadthing/core.ts`, que esa spec ya generalizó a «estados editables»).
 
 ## Objetivo

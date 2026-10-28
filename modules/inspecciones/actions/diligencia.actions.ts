@@ -18,7 +18,7 @@ const MENSAJES = {
   no_encontrado: "No se encontró el expediente.",
   no_permitido: "Esa acción no está disponible para este expediente.",
   fecha_invalida: "Elige una fecha desde hoy, dentro de los próximos 90 días.",
-  motivo_requerido: "Escribe un informe de al menos 10 caracteres.",
+  motivo_requerido: "No se pudo guardar el cambio. Inténtalo de nuevo.",
   observaciones_requeridas: "Agrega al menos una observación.",
   observacion_invalida: "Una de las observaciones elegidas no es válida.",
   observacion_relevante:
@@ -76,7 +76,6 @@ export async function registrarResultadoAction(
   if (!z.uuid().safeParse(id).success) return { ok: false, error: MENSAJES.no_encontrado };
   const parsed = resultadoDiligenciaSchema.safeParse({
     resultado: formData.get("resultado") ?? "",
-    informe: formData.get("informe") ?? "",
     codigos: formData.getAll("codigo").map(String),
     libres: String(formData.get("libres") ?? "").split(/\r?\n/),
     reprogramadaPara: formData.get("reprogramadaPara") ?? undefined,

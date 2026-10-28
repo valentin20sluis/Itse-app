@@ -18,7 +18,6 @@ import { programarDiligenciaAction, registrarResultadoAction } from "./diligenci
 
 const usuario = { id: "u-1", rol: "admin" };
 const ID = "3f2b8c1e-5a4d-4e6f-8b7a-1c2d3e4f5a6b";
-const INFORME = "Se verificó todo en sitio.";
 
 const fd = (campos: Record<string, string>) => {
   const f = new FormData();
@@ -96,7 +95,7 @@ describe("programarDiligenciaAction", () => {
 });
 
 describe("registrarResultadoAction", () => {
-  const form = fd({ resultado: "CUMPLE", informe: INFORME });
+  const form = fd({ resultado: "CUMPLE" });
 
   it("requireRole primero; si redirige no toca el servicio", async () => {
     mocks.requireRole.mockRejectedValue(new Error("NEXT_REDIRECT"));
@@ -112,17 +111,15 @@ describe("registrarResultadoAction", () => {
     expect(mocks.registrarResultadoDiligencia).not.toHaveBeenCalled();
   });
 
-  it("resultado inválido o informe corto: fieldErrors, sin servicio", async () => {
-    const a = await registrarResultadoAction(ID, null, fd({ resultado: "ANULADO", informe: INFORME }));
+  it("resultado inválido: fieldErrors, sin servicio", async () => {
+    const a = await registrarResultadoAction(ID, null, fd({ resultado: "ANULADO" }));
     expect(!a.ok && a.fieldErrors?.resultado).toBeDefined();
-    const b = await registrarResultadoAction(ID, null, fd({ resultado: "CUMPLE", informe: "corto" }));
-    expect(!b.ok && b.fieldErrors?.informe).toBeDefined();
     expect(mocks.registrarResultadoDiligencia).not.toHaveBeenCalled();
   });
 
   it.each([
     ...MENSAJES,
-    ["motivo_requerido", "Escribe un informe de al menos 10 caracteres."],
+    ["motivo_requerido", "No se pudo guardar el cambio. Inténtalo de nuevo."],
     ["observaciones_requeridas", "Agrega al menos una observación."],
     ["observacion_invalida", "Una de las observaciones elegidas no es válida."],
     [
@@ -149,13 +146,12 @@ describe("registrarResultadoAction", () => {
 
   it("ok: pasa el usuario de requireRole y revalida", async () => {
     mocks.registrarResultadoDiligencia.mockResolvedValue({ status: "ok" });
-    expect(await registrarResultadoAction(ID, null, fd({ resultado: "NO_CUMPLE", informe: `  ${INFORME} ` }))).toEqual({
+    expect(await registrarResultadoAction(ID, null, fd({ resultado: "NO_CUMPLE" }))).toEqual({
       ok: true,
       data: null,
     });
     expect(mocks.registrarResultadoDiligencia).toHaveBeenCalledWith(usuario, ID, {
       resultado: "NO_CUMPLE",
-      informe: INFORME,
       codigos: [],
       libres: [],
       reprogramadaPara: undefined,
@@ -167,7 +163,6 @@ describe("registrarResultadoAction", () => {
     mocks.registrarResultadoDiligencia.mockResolvedValue({ status: "ok" });
     const f = new FormData();
     f.append("resultado", "EN_SUBSANACION");
-    f.append("informe", INFORME);
     f.append("codigo", "EXTINTORES");
     f.append("codigo", "COLOCAR_SENALIZACION");
     f.append("libres", "Grieta en la columna\r\n\n  Humedad en el techo  ");
@@ -183,7 +178,7 @@ describe("registrarResultadoAction", () => {
   });
 
   it("suspensión sin observaciones: error de campo, sin servicio", async () => {
-    const r = await registrarResultadoAction(ID, null, fd({ resultado: "EN_SUBSANACION", informe: INFORME }));
+    const r = await registrarResultadoAction(ID, null, fd({ resultado: "EN_SUBSANACION" }));
     expect(!r.ok && r.fieldErrors?.codigos).toBeDefined();
     expect(mocks.registrarResultadoDiligencia).not.toHaveBeenCalled();
   });
