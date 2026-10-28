@@ -47,15 +47,26 @@ describe("getCertificadoPdfData", () => {
     ["sin fila", undefined],
     ["sin emisión", fila({ emitidoAt: null })],
     ["anulado", fila({ estado: "ANULADO" })],
-    ["pendiente de firma", fila({ estado: "CERTIFICADO_PENDIENTE_FIRMA" })],
+    ["cumple sin certificado emitido", fila({ estado: "CUMPLE" })],
   ])("null: %s", async (_n, f) => {
     h.lecturas = [f ? [f] : []];
     expect(await getCertificadoPdfData(admin, "e")).toBeNull();
   });
 
-  it("pendiente de firma es null también para el superadmin", async () => {
-    h.lecturas = [[fila({ estado: "CERTIFICADO_PENDIENTE_FIRMA" })]];
-    expect(await getCertificadoPdfData({ id: "s", rol: "superadmin" }, "e")).toBeNull();
+  it("borrador en pendiente de firma: personal sí (fechas nulas), cliente no", async () => {
+    const borrador = fila({ estado: "CERTIFICADO_PENDIENTE_FIRMA", emitidoAt: null, venceAt: null });
+    for (const rol of ["admin", "superadmin"] as const) {
+      h.lecturas = [[borrador], []];
+      const r = await getCertificadoPdfData({ id: "s", rol }, "e");
+      expect(r).toMatchObject({ borrador: true, emitidoAt: null, venceAt: null, numero: "0001-2026", jefeNombre: null });
+    }
+    h.lecturas = [[borrador]];
+    expect(await getCertificadoPdfData(cliente, "e")).toBeNull();
+  });
+
+  it("aprobado no es borrador", async () => {
+    h.lecturas = [[fila()], []];
+    expect((await getCertificadoPdfData(admin, "e"))?.borrador).toBe(false);
   });
 
   it("cliente: solo propio y solo en ENTREGADO", async () => {
@@ -72,6 +83,7 @@ describe("getCertificadoPdfData", () => {
     h.lecturas = [[fila({ estado: "FINALIZADO" })], [{ nombres: "Rosa", apellidos: "Díaz" }]];
     const r = await getCertificadoPdfData(admin, "e");
     expect(r).toEqual({
+      borrador: false,
       numero: "0001-2026",
       codigo: "ABCDEFGHJKMN",
       emitidoAt: emitido,

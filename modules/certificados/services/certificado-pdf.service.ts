@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { certificados, establecimientos, expedientes, historialEstados, usuarios } from "@/db/schema";
-import { certificadoDescargable } from "@/modules/certificados/utils/certificado-acceso";
+import { certificadoPdfVisible } from "@/modules/certificados/utils/certificado-acceso";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
 import type { NivelRiesgo } from "@/modules/expedientes/types/expediente.types";
 import { tipoItsePorRiesgo } from "@/modules/expedientes/utils/riesgo";
@@ -9,8 +9,9 @@ import { tipoItsePorRiesgo } from "@/modules/expedientes/utils/riesgo";
 export type CertificadoPdfData = {
   numero: string;
   codigo: string;
-  emitidoAt: Date;
-  venceAt: Date;
+  borrador: boolean;
+  emitidoAt: Date | null;
+  venceAt: Date | null;
   expedienteNumero: string;
   solicitante: { nombre: string; razonSocial: string | null };
   establecimiento: { nombreComercial: string; direccion: string; distrito: string; giro: string; areaM2: string };
@@ -46,13 +47,13 @@ export async function getCertificadoPdfData(
     .innerJoin(establecimientos, eq(expedientes.establecimientoId, establecimientos.id))
     .where(eq(certificados.expedienteId, expedienteId))
     .limit(1);
+  const borrador = fila?.estado === "CERTIFICADO_PENDIENTE_FIRMA";
   if (
     !fila ||
-    !fila.emitidoAt ||
-    !fila.venceAt ||
+    (!borrador && (!fila.emitidoAt || !fila.venceAt)) ||
     !fila.expedienteNumero ||
     !fila.nivelRiesgo ||
-    !certificadoDescargable(actor.rol, fila.estado) ||
+    !certificadoPdfVisible(actor.rol, fila.estado) ||
     (actor.rol === "cliente" && fila.usuarioId !== actor.id)
   ) {
     return null;
@@ -70,6 +71,7 @@ export async function getCertificadoPdfData(
   return {
     numero: fila.numero,
     codigo: fila.codigo,
+    borrador,
     emitidoAt: fila.emitidoAt,
     venceAt: fila.venceAt,
     expedienteNumero: fila.expedienteNumero,

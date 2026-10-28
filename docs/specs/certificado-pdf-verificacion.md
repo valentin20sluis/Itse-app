@@ -1,6 +1,7 @@
 # PDF del certificado con QR y verificación pública
 
 Estado: approved
+Nota (cambio posterior): el personal (admin y superadmin) ve el PDF del certificado como BORRADOR mientras el expediente está en `CERTIFICADO_PENDIENTE_FIRMA`, antes de aprobarlo (enlace «Ver certificado (borrador)»); esto revierte la decisión «sin vista previa». El cliente sigue sin verlo hasta `ENTREGADO` y la Resolución no tiene borrador.
 
 Parte 3 de 4 de `certificados`. **Depende de `certificado-emision`** (tabla `certificados`, `certificadoDescargable`, `estadoCertificado`, `normalizarCodigo`, `formatCodigo`, `PanelCertificado`) y se apoya en `constancia-designacion` (patrón de PDF y de ruta de descarga). **Depende también de `certificado-resolucion-entrega`** (estados `FINALIZADO`/`ENTREGADO`, columnas de la Resolución y la ruta `/api/expedientes/<id>/resolucion`, que T6 enlaza). El PDF de la Resolución Gerencial pertenece a esa spec; esta cubre el PDF del certificado y la verificación pública.
 

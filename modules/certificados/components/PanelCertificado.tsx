@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { AprobarCertificadoButton } from "@/modules/certificados/components/AprobarCertificadoButton";
 import { CertificadoEstadoBadge } from "@/modules/certificados/components/CertificadoEstadoBadge";
 import { DescargasCertificado } from "@/modules/certificados/components/DescargasCertificado";
+import { VerBorradorCertificado } from "@/modules/certificados/components/VerBorradorCertificado";
 import { GenerarCertificadoButton } from "@/modules/certificados/components/GenerarCertificadoButton";
 import { getResumenCertificado } from "@/modules/certificados/services/certificado.service";
 import { certificadoDescargable } from "@/modules/certificados/utils/certificado-acceso";
@@ -35,6 +36,7 @@ export async function PanelCertificado({ usuario, expedienteId, estado }: Props)
       contenido = (
         <>
           <p className="text-sm">Certificado N.° {resumen.numero} pendiente de aprobación de Jefatura.</p>
+          <VerBorradorCertificado expedienteId={expedienteId} numero={resumen.numero} />
           {usuario.rol === "superadmin" ? (
             <AprobarCertificadoButton expedienteId={expedienteId} />
           ) : (

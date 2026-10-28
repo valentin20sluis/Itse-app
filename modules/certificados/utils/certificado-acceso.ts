@@ -6,3 +6,8 @@ export function certificadoDescargable(rol: Role, estado: EstadoExpediente): boo
   if (rol === "cliente") return estado === "ENTREGADO";
   return estado === "FINALIZADO" || estado === "ENTREGADO";
 }
+
+// El PDF del certificado (no la Resolución) además se ve como borrador antes de aprobarlo; solo el personal.
+export function certificadoPdfVisible(rol: Role, estado: EstadoExpediente): boolean {
+  return certificadoDescargable(rol, estado) || (rol !== "cliente" && estado === "CERTIFICADO_PENDIENTE_FIRMA");
+}

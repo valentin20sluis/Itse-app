@@ -6,6 +6,16 @@ import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
 
 const styles = StyleSheet.create({
   page: { padding: 48, fontFamily: "Helvetica", fontSize: 11, color: "#1a1a1a" },
+  borrador: {
+    fontSize: 14,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "center",
+    color: "#b45309",
+    borderWidth: 1.5,
+    borderColor: "#b45309",
+    padding: 6,
+    marginBottom: 16,
+  },
   title: { fontSize: 15, fontFamily: "Helvetica-Bold", textAlign: "center", marginBottom: 4 },
   numero: { textAlign: "center", marginBottom: 20 },
   row: { flexDirection: "row", marginBottom: 6 },
@@ -20,6 +30,8 @@ const styles = StyleSheet.create({
   firmaLinea: { width: 220, borderTopWidth: 1, borderTopColor: "#1a1a1a", paddingTop: 4, textAlign: "center" },
   pie: { position: "absolute", bottom: 28, left: 48, right: 48, fontSize: 9, textAlign: "center", color: "#555555" },
 });
+
+const PENDIENTE_FECHA = "Se definen al aprobar";
 
 function Fila({ label, value }: { label: string; value: string }) {
   return (
@@ -40,6 +52,11 @@ export function CertificadoDocument({ data, qrDataUrl, urlVerificacion }: Props)
   return (
     <Document title={`Certificado ${data.numero}`}>
       <Page size="A4" style={styles.page}>
+        {data.borrador ? (
+          <Text style={styles.borrador} fixed>
+            BORRADOR — PENDIENTE DE APROBACIÓN
+          </Text>
+        ) : null}
         <Text style={styles.title}>Certificado de Inspección Técnica de Seguridad en Edificaciones</Text>
         <Text style={styles.numero}>N.° {data.numero}</Text>
 
@@ -51,8 +68,8 @@ export function CertificadoDocument({ data, qrDataUrl, urlVerificacion }: Props)
         <Fila label="Distrito" value={est.distrito} />
         <Fila label="Giro" value={est.giro} />
         <Fila label="Área" value={`${Number(est.areaM2)} m²`} />
-        <Fila label="Fecha de expedición" value={formatFecha(data.emitidoAt)} />
-        <Fila label="Fecha de vencimiento" value={formatFecha(data.venceAt)} />
+        <Fila label="Fecha de expedición" value={data.emitidoAt ? formatFecha(data.emitidoAt) : PENDIENTE_FECHA} />
+        <Fila label="Fecha de vencimiento" value={data.venceAt ? formatFecha(data.venceAt) : PENDIENTE_FECHA} />
 
         <View style={styles.verificacion} wrap={false}>
           {/* eslint-disable-next-line jsx-a11y/alt-text -- Image de react-pdf, no es un <img> HTML */}
@@ -68,6 +85,7 @@ export function CertificadoDocument({ data, qrDataUrl, urlVerificacion }: Props)
 
         <View style={styles.firma}>
           <Text style={styles.firmaLinea}>Jefe de GRDyDC</Text>
+          {data.borrador ? <Text>Pendiente de aprobación</Text> : null}
           {data.jefeNombre ? <Text>{data.jefeNombre}</Text> : null}
         </View>
 

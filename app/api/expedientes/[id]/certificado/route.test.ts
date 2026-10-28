@@ -69,4 +69,14 @@ describe("GET /api/expedientes/[id]/certificado", () => {
     }
     expect(h.qr).toHaveBeenCalledWith(expect.stringMatching(/\/verificar\/ABCDEFGHJKMN$/));
   });
+
+  it("borrador: 200 inline para el personal; 404 para el cliente (decide el servicio)", async () => {
+    h.data.mockResolvedValue({ numero: "0001-2026", codigo: "ABCDEFGHJKMN", borrador: true });
+    const res = await llamar();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Disposition")).toBe('inline; filename="certificado-0001-2026-borrador.pdf"');
+    h.usuario.mockResolvedValue({ id: "u2", rol: "cliente", activo: true });
+    h.data.mockResolvedValue(null);
+    expect((await llamar()).status).toBe(404);
+  });
 });

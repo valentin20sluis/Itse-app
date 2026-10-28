@@ -1,6 +1,7 @@
 # Aprobación del certificado, Resolución Gerencial y envío al cliente (CERTIFICADO_PENDIENTE_FIRMA → FINALIZADO → ENTREGADO)
 
 Estado: approved
+Nota (cambio posterior): el personal (admin y superadmin) ve el PDF del certificado como BORRADOR mientras el expediente está en `CERTIFICADO_PENDIENTE_FIRMA`, antes de aprobarlo (enlace «Ver certificado (borrador)»); esto revierte la decisión «sin vista previa». El cliente sigue sin verlo hasta `ENTREGADO` y la Resolución no tiene borrador.
 
 Parte 2 de 4 de `certificados`. **Depende de `certificado-emision`** (tabla `certificados`, estado `CERTIFICADO_PENDIENTE_FIRMA`, `PanelCertificado`, `calcularVencimiento`, `certificadoDescargable`). No es paralela con ninguna otra spec de `certificados` (comparten `transiciones.ts`, `db/schema.ts`, el journal de `drizzle/` y `PanelCertificado.tsx`).
 

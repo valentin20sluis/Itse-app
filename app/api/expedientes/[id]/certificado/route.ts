@@ -29,7 +29,9 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="certificado-${data.numero}.pdf"`,
+      "Content-Disposition": data.borrador
+        ? `inline; filename="certificado-${data.numero}-borrador.pdf"`
+        : `attachment; filename="certificado-${data.numero}.pdf"`,
       "Cache-Control": "private, no-store",
     },
   });

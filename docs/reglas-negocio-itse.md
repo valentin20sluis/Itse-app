@@ -249,6 +249,7 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 - **Solo se genera** si el expediente está en `CUMPLE`.
 - Numeración correlativa por año (de Lima): `0001-2026`, `0002-2026`…; el número se asigna **al generar** el certificado (si el expediente se anula antes de aprobar, el número queda sin usar).
 - Lo genera el `admin` o el `superadmin` desde `CUMPLE` y queda en `CERTIFICADO_PENDIENTE_FIRMA`.
+- **Vista previa:** el personal (admin y superadmin) ve el PDF como BORRADOR (marca «BORRADOR — PENDIENTE DE APROBACIÓN», fechas «Se definen al aprobar», jefe «Pendiente de aprobación») mientras está en `CERTIFICADO_PENDIENTE_FIRMA`, antes de aprobarlo. El cliente no lo ve hasta `ENTREGADO` y la verificación pública no lo reconoce hasta la aprobación.
 - Datos: número, administrado, establecimiento, dirección, giro, nivel de riesgo, área, fecha de expedición, **fecha de vencimiento (+2 años)**, nombre del jefe de GRDyDC.
 - Incluye un **código de verificación** y un **QR** que apunta a `/verificar/[codigo]`.
 - **Solo el `superadmin`** puede aprobarlo (equivale a la firma del jefe). Un superadmin puede generar y aprobar el mismo certificado.

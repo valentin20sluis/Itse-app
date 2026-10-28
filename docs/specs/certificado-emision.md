@@ -1,6 +1,7 @@
 # Generación del certificado (CUMPLE → CERTIFICADO_PENDIENTE_FIRMA)
 
 Estado: approved
+Nota (cambio posterior): el personal (admin y superadmin) ve el PDF del certificado como BORRADOR mientras el expediente está en `CERTIFICADO_PENDIENTE_FIRMA`, antes de aprobarlo (enlace «Ver certificado (borrador)»); esto revierte la decisión «sin vista previa». El cliente sigue sin verlo hasta `ENTREGADO` y la Resolución no tiene borrador.
 
 Parte 1 de 4 de `certificados`. Depende de `diligencia-inspeccion` y `subsanacion-evidencia` (ya implementadas: dejan el expediente en `CUMPLE`), de `bandeja-estados` (`aplicar`, `transiciones.ts`) y de `aprobacion-jefatura`. **Cierra el flujo hasta `CERTIFICADO_PENDIENTE_FIRMA`** (el certificado ya está en manos del superadmin). Orden de las specs: 1 `certificado-emision` → 2 `certificado-resolucion-entrega` → 3 `certificado-pdf-verificacion` → 4 `certificados-listados`. `NO_CUMPLE` es estado final del flujo (sin certificado ni derivación): no requiere spec.
 
