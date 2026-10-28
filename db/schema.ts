@@ -298,3 +298,29 @@ export const certificados = pgTable(
 );
 
 export type Certificado = typeof certificados.$inferSelect;
+
+export const accionUsuarioEnum = pgEnum("accion_usuario", [
+  "CAMBIO_ROL",
+  "ACTIVACION",
+  "DESACTIVACION",
+]);
+
+export const usuariosAuditoria = pgTable(
+  "usuarios_auditoria",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    usuarioId: uuid("usuario_id")
+      .notNull()
+      .references(() => usuarios.id, { onDelete: "restrict" }),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => usuarios.id, { onDelete: "restrict" }),
+    accion: accionUsuarioEnum("accion").notNull(),
+    valorAnterior: text("valor_anterior"),
+    valorNuevo: text("valor_nuevo"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("usuarios_auditoria_usuario_created_idx").on(t.usuarioId, t.createdAt)],
+);
+
+export type UsuarioAuditoria = typeof usuariosAuditoria.$inferSelect;

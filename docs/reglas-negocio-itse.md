@@ -301,11 +301,11 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 | Generar la resolución de no cumple | | | ✅ |
 | Enviar certificado y resolución (o la resolución de no cumple) al cliente | | ✅ | ✅ |
 | Anular expedientes | | | ✅ |
-| Gestionar usuarios y roles *(Próximamente: no implementado)* | | | ✅ |
+| Gestionar usuarios y roles (listado, detalle con auditoría, cambio de rol, activar/desactivar e invitar personal en `/panel/usuarios`) | | | ✅ |
 | Gestionar catálogo de observaciones y feriados *(Próximamente: no implementado)* | | | ✅ |
 | Ver reportes | | ✅ | ✅ |
 
-> El catálogo de observaciones y los feriados viven como constantes en código, no como tablas editables. `usuarios.activo` aún no se cambia desde la aplicación (las pantallas de usuarios y configuración muestran «Próximamente»). El cliente ve el nombre del inspector designado, pero no el del personal (admin/superadmin) que actúa en el expediente.
+> El catálogo de observaciones y los feriados viven como constantes en código, no como tablas editables. `usuarios.activo` y el rol se cambian solo desde `/panel/usuarios` (superadmin), con auditoría en `usuarios_auditoria`; nadie puede modificar su propia cuenta y siempre queda al menos un jefe activo. La pantalla de configuración sigue mostrando «Próximamente». El cliente ve el nombre del inspector designado, pero no el del personal (admin/superadmin) que actúa en el expediente.
 
 ---
 

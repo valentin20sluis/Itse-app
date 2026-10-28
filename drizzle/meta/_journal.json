@@ -148,6 +148,13 @@
       "when": 1793203219817,
       "tag": "0020_tan_tombstone",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793226356291,
+      "tag": "0021_brave_spectrum",
+      "breakpoints": true
     }
   ]
 }

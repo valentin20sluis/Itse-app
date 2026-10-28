@@ -85,6 +85,17 @@ describe("getOrCreateUser", () => {
     );
   });
 
+  it("la sincronización no modifica activo", async () => {
+    mocks.auth.mockResolvedValue({ userId: "u1" });
+    mocks.currentUser.mockResolvedValue(clerkUser("admin"));
+    mocks.returning.mockResolvedValue([{ clerkId: "u1", rol: "admin", activo: false }]);
+
+    await getOrCreateUser();
+
+    const { set } = mocks.onConflictDoUpdate.mock.calls[0][0];
+    expect(Object.keys(set)).not.toContain("activo");
+  });
+
   it("es idempotente: dos llamadas usan upsert por clerk_id", async () => {
     mocks.auth.mockResolvedValue({ userId: "u1" });
     mocks.currentUser.mockResolvedValue(clerkUser("cliente"));

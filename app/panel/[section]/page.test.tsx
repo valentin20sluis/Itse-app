@@ -18,8 +18,8 @@ const render = (section: string) =>
 describe("/panel/[section]", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("exige superadmin en usuarios", async () => {
-    await render("usuarios");
+  it("exige superadmin en configuracion", async () => {
+    await render("configuracion");
     expect(requireRole).toHaveBeenCalledWith("superadmin");
   });
 
