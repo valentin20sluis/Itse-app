@@ -1,13 +1,13 @@
+import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { CertificadoEstadoBadge } from "@/modules/certificados/components/CertificadoEstadoBadge";
-import { DescargasCertificado } from "@/modules/certificados/components/DescargasCertificado";
 import type { ResumenCertificado } from "@/modules/certificados/services/certificado.service";
 import { diasParaVencer } from "@/modules/certificados/utils/vigencia";
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
 
-type Props = { expedienteId: string; resumen: ResumenCertificado; ahora?: Date };
+type Props = { resumen: ResumenCertificado; entregado: boolean; ahora?: Date };
 
-export function CertificadoCliente({ expedienteId, resumen, ahora = new Date() }: Props) {
+export function CertificadoCliente({ resumen, entregado, ahora = new Date() }: Props) {
   const dias = resumen.venceAt ? diasParaVencer(resumen.venceAt, ahora) : null;
   return (
     <Card>
@@ -33,7 +33,15 @@ export function CertificadoCliente({ expedienteId, resumen, ahora = new Date() }
             solicitud para renovarlo.
           </p>
         )}
-        <DescargasCertificado expedienteId={expedienteId} numero={resumen.numero} />
+        {entregado && (
+          <p className="text-sm">
+            Tu certificado y tu resolución ya están disponibles. Ve a{" "}
+            <Link href="/mi-cuenta/certificados" className="font-medium underline underline-offset-2">
+              Mis certificados
+            </Link>{" "}
+            para descargarlos.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

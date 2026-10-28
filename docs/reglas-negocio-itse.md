@@ -258,6 +258,7 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 - No hay campo de aforo: el sistema no registra el aforo del establecimiento.
 - Estado del certificado: `VIGENTE`, `POR_VENCER` (≤ 60 días), `VENCIDO`, `REVOCADO`. Se calcula al leer; `REVOCADO` equivale a que el expediente esté `ANULADO` (en pantalla se muestra «Anulado»).
 - El certificado y la resolución solo son visibles y descargables para el cliente cuando el expediente llega a `ENTREGADO`; el personal los ve desde `FINALIZADO`.
+- **El cliente descarga el certificado y la resolución solo desde «Mis certificados»** (`/mi-cuenta/certificados`, que también lista las resoluciones de no cumple entregadas). «Mis expedientes» y «Ver detalle» no tienen botones de descarga: solo enlazan a «Mis certificados» cuando el expediente está `ENTREGADO` (se muestra como «Finalizado»).
 
 ### Resolución de no cumple
 

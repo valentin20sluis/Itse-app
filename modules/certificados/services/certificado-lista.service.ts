@@ -138,3 +138,34 @@ export async function listCertificadosCliente(
       : [],
   );
 }
+
+export type ResolucionNoCumpleClienteFila = {
+  expedienteId: string;
+  nombreComercial: string;
+  resolucionAt: Date;
+};
+
+export async function listResolucionesNoCumpleCliente(actor: Actor): Promise<ResolucionNoCumpleClienteFila[]> {
+  if (actor.rol !== "cliente") throw new Error("No autorizado");
+
+  const filas = await db
+    .select({
+      expedienteId: expedientes.id,
+      nombreComercial: establecimientos.nombreComercial,
+      resolucionAt: expedientes.resolucionNoCumpleAt,
+    })
+    .from(expedientes)
+    .innerJoin(establecimientos, eq(expedientes.establecimientoId, establecimientos.id))
+    .where(
+      and(
+        eq(expedientes.usuarioId, actor.id),
+        eq(expedientes.estado, "ENTREGADO"),
+        isNotNull(expedientes.resolucionNoCumpleNumero),
+        isNotNull(expedientes.resolucionNoCumpleAt),
+      ),
+    )
+    .orderBy(desc(expedientes.resolucionNoCumpleAt))
+    .limit(MAX_FILAS_CERTIFICADOS);
+
+  return filas.flatMap((f) => (f.resolucionAt ? [{ expedienteId: f.expedienteId, nombreComercial: f.nombreComercial, resolucionAt: f.resolucionAt }] : []));
+}

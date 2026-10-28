@@ -53,6 +53,17 @@ function ExpedienteCard({ expediente: e }: { expediente: ExpedienteListItem }) {
             </>
           )}
         </dl>
+        {e.estado === "ENTREGADO" && (
+          <p className="mt-3 text-sm">
+            Ve a{" "}
+            <Link href="/mi-cuenta/certificados" className="font-medium underline underline-offset-2">
+              Mis certificados
+            </Link>{" "}
+            {e.resolucionNoCumpleNumero
+              ? "para descargar tu resolución."
+              : "para descargar tu certificado y tu resolución."}
+          </p>
+        )}
       </CardContent>
       {e.numero && (
         <CardFooter>

@@ -1,10 +1,8 @@
-import { buttonVariants } from "@/components/ui/button";
+import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
 
-type Props = { expedienteId: string; resolucionAt: Date };
-
-export function ResolucionNoCumpleCliente({ expedienteId, resolucionAt }: Props) {
+export function ResolucionNoCumpleCliente({ resolucionAt }: { resolucionAt: Date }) {
   return (
     <Card>
       <CardHeader>
@@ -15,13 +13,13 @@ export function ResolucionNoCumpleCliente({ expedienteId, resolucionAt }: Props)
           La inspección determinó que el establecimiento no cumple las condiciones de seguridad exigidas.
           Resolución del {formatFecha(resolucionAt)}. No se emitió certificado.
         </p>
-        <a
-          href={`/api/expedientes/${expedienteId}/resolucion`}
-          download
-          className={buttonVariants({ variant: "outline", className: "inline-flex min-h-11 w-fit" })}
-        >
-          Descargar resolución
-        </a>
+        <p className="text-sm">
+          Tu resolución ya está disponible. Ve a{" "}
+          <Link href="/mi-cuenta/certificados" className="font-medium underline underline-offset-2">
+            Mis certificados
+          </Link>{" "}
+          para descargarla.
+        </p>
       </CardContent>
     </Card>
   );

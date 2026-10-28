@@ -105,3 +105,6 @@ El personal y el dueño del expediente descargan el **Certificado de ITSE en PDF
 
 ## Fases siguientes
 - Spec 4 `certificados-listados`.
+
+## Nota (cambio posterior)
+El cliente descarga el certificado y la resolución **solo desde «Mis certificados»** (`/mi-cuenta/certificados`). «Mis expedientes» (tarjetas y «Ver detalle») no tienen botones de descarga: muestran un enlace a «Mis certificados» cuando el expediente está `ENTREGADO` (Finalizado). «Mis certificados» lista además las resoluciones de no cumple entregadas (`listResolucionesNoCumpleCliente`). Las rutas de descarga no cambian.

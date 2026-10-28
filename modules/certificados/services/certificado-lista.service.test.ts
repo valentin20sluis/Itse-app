@@ -19,6 +19,7 @@ import {
   limitesFiltro,
   listCertificadosCliente,
   listCertificadosPanel,
+  listResolucionesNoCumpleCliente,
 } from "@/modules/certificados/services/certificado-lista.service";
 import { estadoCertificado } from "@/modules/certificados/utils/vigencia";
 import { aInputLima, parseFechaLima } from "@/modules/inspecciones/utils/fecha-diligencia";
@@ -120,6 +121,24 @@ describe("listCertificadosCliente", () => {
     expect(Object.keys(r).sort()).toEqual(
       ["diasRestantes", "emitidoAt", "estado", "expedienteId", "nombreComercial", "numero", "venceAt"].sort(),
     );
+    expect(h.limite).toBe(100);
+  });
+});
+
+describe("listResolucionesNoCumpleCliente", () => {
+  it("lanza No autorizado si no es cliente", async () => {
+    await expect(listResolucionesNoCumpleCliente(admin)).rejects.toThrow("No autorizado");
+  });
+
+  it("devuelve solo id, establecimiento y fecha, sin número interno, y descarta filas sin fecha", async () => {
+    const resolucionAt = new Date("2027-01-05T15:00:00Z");
+    h.filas = [
+      { expedienteId: "e1", nombreComercial: "Bodega Ficticia", resolucionAt, resolucionNumero: "SECRETO" },
+      { expedienteId: "e2", nombreComercial: "Otra", resolucionAt: null },
+    ];
+    const r = await listResolucionesNoCumpleCliente(cliente);
+    expect(r).toHaveLength(1);
+    expect(Object.keys(r[0]).sort()).toEqual(["expedienteId", "nombreComercial", "resolucionAt"]);
     expect(h.limite).toBe(100);
   });
 });

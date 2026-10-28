@@ -41,6 +41,19 @@ describe("ExpedientesView: pagado y ver detalle", () => {
     expect(link).toHaveAttribute("href", "/mi-cuenta/expedientes/e9");
   });
 
+  it("un expediente entregado indica ir a Mis certificados (certificado y resolución, o solo resolución)", () => {
+    const entregado = { ...presentado, estado: "ENTREGADO", resolucionNoCumpleNumero: null } as unknown as ExpedienteListItem;
+    render(<ExpedientesView expedientes={[entregado]} />);
+    expect(screen.getByRole("link", { name: "Mis certificados" })).toHaveAttribute("href", "/mi-cuenta/certificados");
+    expect(screen.getByText(/para descargar tu certificado y tu resolución./)).toBeInTheDocument();
+    cleanup();
+    const noCumple = { ...entregado, resolucionNoCumpleNumero: "RG-2026-0001" } as unknown as ExpedienteListItem;
+    render(<ExpedientesView expedientes={[noCumple]} />);
+    expect(screen.getByRole("link", { name: "Mis certificados" })).toHaveAttribute("href", "/mi-cuenta/certificados");
+    expect(screen.getByText(/para descargar tu resolución./)).toBeInTheDocument();
+    expect(screen.queryByText(/Ver detalle» para descargar/)).toBeNull();
+  });
+
   it("un borrador no muestra Pagado ni Ver detalle", () => {
     render(<ExpedientesView expedientes={[{ ...base, pagadoAt: null } as unknown as ExpedienteListItem]} />);
     expect(screen.queryByText(/Pagado/)).toBeNull();

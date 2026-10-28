@@ -90,9 +90,9 @@ export function ExpedienteDetalleCliente({
         {e.estado === "EN_SUBSANACION" && subsanacion.limite && (
           <PlazoSubsanacion limite={subsanacion.limite} />
         )}
-        {certificado && <CertificadoCliente expedienteId={e.id} resumen={certificado} />}
+        {certificado && <CertificadoCliente resumen={certificado} entregado={e.estado === "ENTREGADO"} />}
         {resolucionNoCumple && (
-          <ResolucionNoCumpleCliente expedienteId={e.id} resolucionAt={resolucionNoCumple.resolucionAt} />
+          <ResolucionNoCumpleCliente resolucionAt={resolucionNoCumple.resolucionAt} />
         )}
         <Card>
           <CardHeader>

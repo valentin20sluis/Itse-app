@@ -77,3 +77,6 @@ Hacer visible el motor de la parte 1: los expedientes en `NO_CUMPLE` (derivació
 
 ## Grupos paralelos
 - G1: T1, T3 (archivos disjuntos). G2: T2, T4 (disjuntos; T2 consume T1; T4 consume la parte 1 y `certificado-pdf-verificacion` T6).
+
+## Nota (cambio posterior)
+El cliente descarga el certificado y la resolución **solo desde «Mis certificados»** (`/mi-cuenta/certificados`). «Mis expedientes» (tarjetas y «Ver detalle») no tienen botones de descarga: muestran un enlace a «Mis certificados» cuando el expediente está `ENTREGADO` (Finalizado). «Mis certificados» lista además las resoluciones de no cumple entregadas (`listResolucionesNoCumpleCliente`). Las rutas de descarga no cambian.

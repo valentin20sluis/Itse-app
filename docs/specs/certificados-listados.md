@@ -70,3 +70,6 @@ El personal ve en `/panel/certificados` los certificados emitidos y puede filtra
 
 ## Fases siguientes
 - `dashboard-reportes`: métricas y gráficos; puede reutilizar `listCertificadosPanel`.
+
+## Nota (cambio posterior)
+El cliente descarga el certificado y la resolución **solo desde «Mis certificados»** (`/mi-cuenta/certificados`). «Mis expedientes» (tarjetas y «Ver detalle») no tienen botones de descarga: muestran un enlace a «Mis certificados» cuando el expediente está `ENTREGADO` (Finalizado). «Mis certificados» lista además las resoluciones de no cumple entregadas (`listResolucionesNoCumpleCliente`). Las rutas de descarga no cambian.
