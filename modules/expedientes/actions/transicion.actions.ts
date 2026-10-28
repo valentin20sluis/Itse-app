@@ -15,6 +15,7 @@ const MENSAJES = {
   no_encontrado: "No se encontró el expediente.",
   no_permitido: "Esa acción no está disponible para este expediente.",
   conflicto: "El expediente cambió de estado. Actualiza la página e inténtalo de nuevo.",
+  motivo_requerido: "Escribe un motivo de al menos 10 caracteres.",
   error: "No se pudo guardar el cambio. Inténtalo de nuevo.",
 } as const;
 

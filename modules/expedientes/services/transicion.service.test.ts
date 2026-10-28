@@ -69,6 +69,73 @@ describe("cambiarEstado", () => {
     expect(await cambiarEstado(admin, "e", { hasta: "EN_REVISION" })).toEqual({ status: "conflicto" });
   });
 
+  describe("Jefatura", () => {
+    it("EN_REVISION -> ENVIADO_JEFATURA: ok para admin y superadmin", async () => {
+      h.fila = { estado: "EN_REVISION", nivelRiesgo: "MEDIO", numero: "n" };
+      expect(await cambiarEstado(admin, "e", { hasta: "ENVIADO_JEFATURA" })).toEqual({ status: "ok" });
+      expect(await cambiarEstado(superadmin, "e", { hasta: "ENVIADO_JEFATURA" })).toEqual({ status: "ok" });
+    });
+
+    it("admin no aprueba ni devuelve: no_permitido sin batch", async () => {
+      h.fila = { estado: "ENVIADO_JEFATURA", nivelRiesgo: "MEDIO", numero: "n" };
+      expect(await cambiarEstado(admin, "e", { hasta: "APROBADO_JEFATURA" })).toEqual({ status: "no_permitido" });
+      expect(await cambiarEstado(admin, "e", { hasta: "EN_REVISION" })).toEqual({ status: "no_permitido" });
+      expect(await cambiarEstado(admin, "e", { hasta: "EN_REVISION", comentario: "x".repeat(10) })).toEqual({
+        status: "no_permitido",
+      });
+      expect(h.batch).not.toHaveBeenCalled();
+    });
+
+    it("superadmin aprueba y devuelve en un batch con estados e historial", async () => {
+      h.fila = { estado: "ENVIADO_JEFATURA", nivelRiesgo: "MEDIO", numero: "n" };
+      expect(await cambiarEstado(superadmin, "e", { hasta: "APROBADO_JEFATURA" })).toEqual({ status: "ok" });
+      expect(h.batch).toHaveBeenCalledTimes(1);
+      expect(
+        await cambiarEstado(superadmin, "e", { hasta: "EN_REVISION", comentario: "Falta el plano" + "!".repeat(3) }),
+      ).toEqual({ status: "ok" });
+      expect(h.batch).toHaveBeenCalledTimes(2);
+      const { params } = new PgDialect().sqlToQuery(h.batch.mock.calls[1][0][1].q);
+      expect(params).toEqual(
+        expect.arrayContaining(["ENVIADO_JEFATURA", "EN_REVISION", "u2", "Falta el plano!!!"]),
+      );
+    });
+
+    it("devolver sin motivo suficiente: motivo_requerido sin batch", async () => {
+      h.fila = { estado: "ENVIADO_JEFATURA", nivelRiesgo: "MEDIO", numero: "n" };
+      expect(await cambiarEstado(superadmin, "e", { hasta: "EN_REVISION" })).toEqual({ status: "motivo_requerido" });
+      expect(await cambiarEstado(superadmin, "e", { hasta: "EN_REVISION", comentario: "corto" })).toEqual({
+        status: "motivo_requerido",
+      });
+      expect(h.batch).not.toHaveBeenCalled();
+    });
+
+    it("PRESENTADO -> EN_REVISION sin comentario sigue ok", async () => {
+      expect(await cambiarEstado(admin, "e", { hasta: "EN_REVISION" })).toEqual({ status: "ok" });
+    });
+
+    it("transiciones ilegales: no_permitido sin batch", async () => {
+      const casos: [string, "ENVIADO_JEFATURA" | "APROBADO_JEFATURA" | "EN_REVISION" | "EN_TRAMITE_EXTERNO"][] = [
+        ["PRESENTADO", "ENVIADO_JEFATURA"],
+        ["EN_REVISION", "APROBADO_JEFATURA"],
+        ["APROBADO_JEFATURA", "EN_REVISION"],
+        ["EN_REVISION", "EN_TRAMITE_EXTERNO"],
+      ];
+      for (const [estado, hasta] of casos) {
+        h.fila = { estado, nivelRiesgo: "MEDIO", numero: "n" };
+        expect(await cambiarEstado(superadmin, "e", { hasta, comentario: "x".repeat(10) })).toEqual({
+          status: "no_permitido",
+        });
+      }
+      expect(h.batch).not.toHaveBeenCalled();
+    });
+
+    it("conflicto en la nueva transición", async () => {
+      h.fila = { estado: "EN_REVISION", nivelRiesgo: "MEDIO", numero: "n" };
+      h.actualizados = [];
+      expect(await cambiarEstado(admin, "e", { hasta: "ENVIADO_JEFATURA" })).toEqual({ status: "conflicto" });
+    });
+  });
+
   it("inexistente o sin número: no_encontrado", async () => {
     h.fila = undefined;
     expect(await cambiarEstado(admin, "e", { hasta: "EN_REVISION" })).toEqual({ status: "no_encontrado" });

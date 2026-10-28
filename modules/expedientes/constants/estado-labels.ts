@@ -25,4 +25,6 @@ export const ESTADO_LABELS: Record<
   ENTREGADO: { label: "Entregado", variant: "default" },
   DERIVADO_COMERCIALIZACION: { label: "Derivado a Comercialización", variant: "secondary" },
   ANULADO: { label: "Anulado", variant: "outline" },
+  ENVIADO_JEFATURA: { label: "Enviado a Jefatura", variant: "secondary" },
+  APROBADO_JEFATURA: { label: "Aprobado por Jefatura", variant: "default" },
 };

@@ -5,9 +5,13 @@ import { cambioEstadoSchema, cambioRiesgoSchema } from "./cambio-estado.schema";
 const motivo = (n: number) => "a".repeat(n);
 
 describe("cambioEstadoSchema", () => {
-  it("motivo opcional en EN_REVISION y EN_TRAMITE_EXTERNO", () => {
-    expect(cambioEstadoSchema.safeParse({ hasta: "EN_REVISION", comentario: "" }).success).toBe(true);
-    expect(cambioEstadoSchema.safeParse({ hasta: "EN_TRAMITE_EXTERNO", comentario: "ok" }).success).toBe(true);
+  it.each(["EN_REVISION", "ENVIADO_JEFATURA", "APROBADO_JEFATURA"])("motivo opcional en %s", (hasta) => {
+    expect(cambioEstadoSchema.safeParse({ hasta, comentario: "" }).success).toBe(true);
+    expect(cambioEstadoSchema.safeParse({ hasta, comentario: "ok" }).success).toBe(true);
+  });
+
+  it("rechaza EN_TRAMITE_EXTERNO", () => {
+    expect(cambioEstadoSchema.safeParse({ hasta: "EN_TRAMITE_EXTERNO", comentario: "" }).success).toBe(false);
   });
 
   it.each(["OBSERVADO_REQUISITOS", "ANULADO"])("%s exige motivo de 10 a 500", (hasta) => {

@@ -143,7 +143,9 @@ accionComercializacion(riesgo, tipoTramite) →
 | `PRESENTADO` | cliente | Enviada; espera revisión |
 | `EN_REVISION` | admin | GRDyDC revisa documentos y nivel de riesgo |
 | `OBSERVADO_REQUISITOS` | admin | Faltan documentos o hay errores; vuelve al cliente |
-| `EN_TRAMITE_EXTERNO` | admin | Derivado a Servicios Públicos / Logística |
+| `ENVIADO_JEFATURA` | admin | Revisión terminada; espera la aprobación de Jefatura |
+| `APROBADO_JEFATURA` | superadmin | Aprobado por Jefatura; espera designación de inspector |
+| `EN_TRAMITE_EXTERNO` | admin | **En desuso**: ya no forma parte del flujo (reemplazado por la aprobación de Jefatura) |
 | `INSPECTOR_DESIGNADO` | admin | Inspector(es) designado(s); constancia generada |
 | `DILIGENCIA_PROGRAMADA` | admin | Fecha de visita acordada |
 | `EN_SUBSANACION` | admin | Diligencia suspendida con observaciones subsanables y plazo activo |
@@ -161,9 +163,10 @@ accionComercializacion(riesgo, tipoTramite) →
 ```
 BORRADOR → PRESENTADO   (solo con el pago de la tasa confirmado por Stripe)
 PRESENTADO → EN_REVISION
-EN_REVISION → OBSERVADO_REQUISITOS | EN_TRAMITE_EXTERNO
+EN_REVISION → OBSERVADO_REQUISITOS | ENVIADO_JEFATURA
 OBSERVADO_REQUISITOS → PRESENTADO (cuando el cliente corrige)
-EN_TRAMITE_EXTERNO → INSPECTOR_DESIGNADO
+ENVIADO_JEFATURA → APROBADO_JEFATURA | EN_REVISION   [solo superadmin; la devolución exige motivo]
+APROBADO_JEFATURA → INSPECTOR_DESIGNADO
 INSPECTOR_DESIGNADO → DILIGENCIA_PROGRAMADA
 DILIGENCIA_PROGRAMADA → EN_SUBSANACION | CUMPLE | NO_CUMPLE
 EN_SUBSANACION → CUMPLE | NO_CUMPLE
@@ -288,6 +291,7 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 | Cambiar estados (según transiciones) | | ✅ | ✅ |
 | Gestionar inspectores | | ✅ | ✅ |
 | Registrar diligencia y observaciones | | ✅ | ✅ |
+| Aprobar / devolver expedientes en Jefatura | | | ✅ |
 | Aprobar certificados | | | ✅ |
 | Anular expedientes | | | ✅ |
 | Gestionar usuarios y roles | | | ✅ |

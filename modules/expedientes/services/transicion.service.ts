@@ -5,13 +5,14 @@ import { RIESGO_LABELS } from "@/modules/expedientes/constants/expediente-labels
 import type { EstadoExpediente } from "@/modules/expedientes/constants/estado-labels";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
 import type { NivelRiesgo } from "@/modules/expedientes/types/expediente.types";
-import { puedeTransicionar } from "@/modules/expedientes/utils/transiciones";
+import { puedeTransicionar, requiereMotivo } from "@/modules/expedientes/utils/transiciones";
 
 export type TransicionResultado =
   | { status: "ok" }
   | { status: "no_encontrado" }
   | { status: "no_permitido" }
-  | { status: "conflicto" };
+  | { status: "conflicto" }
+  | { status: "motivo_requerido" };
 
 function assertStaff(actor: Actor) {
   if (actor.rol === "cliente") throw new Error("No autorizado");
@@ -67,15 +68,12 @@ export async function cambiarEstado(
   const exp = await leer(id);
   if (!exp) return { status: "no_encontrado" };
   if (!puedeTransicionar(exp.estado, input.hasta, actor.rol)) return { status: "no_permitido" };
-  return aplicar(
-    actor,
-    id,
-    exp.estado,
-    input.hasta,
-    { estado: input.hasta },
-    undefined,
-    input.comentario?.trim() || null,
-  );
+  const comentario = input.comentario?.trim() || null;
+  // El schema solo ve `hasta`; la devolución (mismo destino que "Iniciar revisión") se exige aquí.
+  if (requiereMotivo(input.hasta, exp.estado) && (comentario?.length ?? 0) < 10) {
+    return { status: "motivo_requerido" };
+  }
+  return aplicar(actor, id, exp.estado, input.hasta, { estado: input.hasta }, undefined, comentario);
 }
 
 export async function actualizarRiesgo(

@@ -4,9 +4,10 @@ import { requiereMotivo } from "@/modules/expedientes/utils/transiciones";
 
 export const cambioEstadoSchema = z
   .object({
-    hasta: z.enum(["EN_REVISION", "OBSERVADO_REQUISITOS", "EN_TRAMITE_EXTERNO", "ANULADO"], {
-      error: "Elige una acción válida.",
-    }),
+    hasta: z.enum(
+      ["EN_REVISION", "OBSERVADO_REQUISITOS", "ENVIADO_JEFATURA", "APROBADO_JEFATURA", "ANULADO"],
+      { error: "Elige una acción válida." },
+    ),
     comentario: z
       .string()
       .trim()

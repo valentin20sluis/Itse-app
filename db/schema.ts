@@ -85,6 +85,8 @@ export const estadoExpedienteEnum = pgEnum("estado_expediente", [
   "ENTREGADO",
   "DERIVADO_COMERCIALIZACION",
   "ANULADO",
+  "ENVIADO_JEFATURA",
+  "APROBADO_JEFATURA",
 ]);
 
 export const tipoTramiteEnum = pgEnum("tipo_tramite", ["NUEVA", "RENOVACION"]);

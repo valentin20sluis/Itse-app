@@ -11,8 +11,14 @@ const ESTADOS = Object.keys(ESTADO_LABELS) as EstadoExpediente[];
 
 const FLUJO: Partial<Record<EstadoExpediente, EstadoExpediente[]>> = {
   PRESENTADO: ["EN_REVISION"],
-  EN_REVISION: ["OBSERVADO_REQUISITOS", "EN_TRAMITE_EXTERNO"],
+  EN_REVISION: ["OBSERVADO_REQUISITOS", "ENVIADO_JEFATURA"],
+  ENVIADO_JEFATURA: ["APROBADO_JEFATURA", "EN_REVISION"],
 };
+
+const SOLO_SUPERADMIN = (desde: EstadoExpediente, hasta: EstadoExpediente) =>
+  hasta === "ANULADO" ||
+  hasta === "APROBADO_JEFATURA" ||
+  (desde === "ENVIADO_JEFATURA" && hasta === "EN_REVISION");
 
 export const TRANSICIONES: Record<EstadoExpediente, EstadoExpediente[]> = Object.fromEntries(
   ESTADOS.map((estado) => {
@@ -23,7 +29,9 @@ export const TRANSICIONES: Record<EstadoExpediente, EstadoExpediente[]> = Object
 
 export function transicionesPermitidas(estado: EstadoExpediente, rol: Role): EstadoExpediente[] {
   if (rol === "cliente") return [];
-  return TRANSICIONES[estado].filter((hasta) => hasta !== "ANULADO" || rol === "superadmin");
+  return TRANSICIONES[estado].filter(
+    (hasta) => rol === "superadmin" || !SOLO_SUPERADMIN(estado, hasta),
+  );
 }
 
 export function puedeTransicionar(
@@ -34,6 +42,10 @@ export function puedeTransicionar(
   return transicionesPermitidas(desde, rol).includes(hasta);
 }
 
-export function requiereMotivo(hasta: EstadoExpediente): boolean {
-  return hasta === "OBSERVADO_REQUISITOS" || hasta === "ANULADO";
+export function requiereMotivo(hasta: EstadoExpediente, desde?: EstadoExpediente): boolean {
+  return (
+    hasta === "OBSERVADO_REQUISITOS" ||
+    hasta === "ANULADO" ||
+    (hasta === "EN_REVISION" && desde === "ENVIADO_JEFATURA")
+  );
 }

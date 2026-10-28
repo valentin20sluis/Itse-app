@@ -127,6 +127,12 @@ export function BandejaView({ resultado, filtros }: Props) {
     <div className="min-w-0">
       <PageHeader title="Expedientes" description="Expedientes presentados por los administrados." />
       <Filtros filtros={filtros} />
+      <Link
+        href={`${BASE}?estado=ENVIADO_JEFATURA`}
+        className={buttonVariants({ variant: "outline", className: "-mt-2 mb-6 h-11" })}
+      >
+        Pendientes de Jefatura
+      </Link>
 
       {items.length === 0 ? (
         hayFiltros ? (

@@ -37,9 +37,20 @@ type Props = {
 const ACCION_LABELS: Partial<Record<EstadoExpediente, string>> = {
   EN_REVISION: "Iniciar revisión",
   OBSERVADO_REQUISITOS: "Observar requisitos",
-  EN_TRAMITE_EXTERNO: "Derivar a trámite externo",
+  ENVIADO_JEFATURA: "Enviar a Jefatura",
+  APROBADO_JEFATURA: "Aprobar",
   ANULADO: "Anular expediente",
 };
+
+const SIN_ACCIONES: Partial<Record<EstadoExpediente, string>> = {
+  ENVIADO_JEFATURA: "Esperando aprobación de Jefatura.",
+  APROBADO_JEFATURA: "Esperando designación de inspector.",
+};
+
+function accionLabel(hasta: EstadoExpediente, desde: EstadoExpediente) {
+  if (hasta === "EN_REVISION" && desde === "ENVIADO_JEFATURA") return "Devolver";
+  return ACCION_LABELS[hasta] ?? hasta;
+}
 
 const CONTROL =
   "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm";
@@ -72,9 +83,11 @@ function ErrorCampo({
 // Transiciones sin motivo obligatorio: un solo botón que ejecuta la acción.
 function AccionDirecta({
   expedienteId,
+  estado,
   hasta,
 }: {
   expedienteId: string;
+  estado: EstadoExpediente;
   hasta: EstadoExpediente;
 }) {
   const [state, action, pending] = useActionState(
@@ -85,7 +98,7 @@ function AccionDirecta({
     <form action={action} className="space-y-2">
       <input type="hidden" name="hasta" value={hasta} />
       <Button type="submit" className="h-11" disabled={pending}>
-        {pending ? "Guardando…" : (ACCION_LABELS[hasta] ?? hasta)}
+        {pending ? "Guardando…" : accionLabel(hasta, estado)}
       </Button>
       <Mensaje state={state} />
     </form>
@@ -94,9 +107,11 @@ function AccionDirecta({
 
 function FormTransicion({
   expedienteId,
+  estado,
   hasta,
 }: {
   expedienteId: string;
+  estado: EstadoExpediente;
   hasta: EstadoExpediente;
 }) {
   const uid = useId();
@@ -110,7 +125,11 @@ function FormTransicion({
   const anula = hasta === "ANULADO";
   const errId = `${uid}-err`;
   const hayError = !!(state && !state.ok && state.fieldErrors?.comentario);
-  const label = anula ? "Confirmar anulación" : "Confirmar";
+  const label = anula
+    ? "Confirmar anulación"
+    : hasta === "EN_REVISION" && estado === "ENVIADO_JEFATURA"
+      ? "Confirmar devolución"
+      : "Confirmar";
 
   return (
     <form ref={formRef} id={uid} action={action} className="space-y-3">
@@ -257,8 +276,8 @@ export function AccionesExpediente({
 }: Props) {
   const permitidas = transicionesPermitidas(estado, rol);
   const [elegida, setElegida] = useState<EstadoExpediente | null>(null);
-  const directas = permitidas.filter((h) => !requiereMotivo(h));
-  const conMotivo = permitidas.filter(requiereMotivo);
+  const directas = permitidas.filter((h) => !requiereMotivo(h, estado));
+  const conMotivo = permitidas.filter((h) => requiereMotivo(h, estado));
   const puedeRiesgo = estado === "EN_REVISION" && rol !== "cliente";
 
   return (
@@ -268,7 +287,7 @@ export function AccionesExpediente({
       </h2>
       {permitidas.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No hay acciones disponibles en este estado.
+          {SIN_ACCIONES[estado] ?? "No hay acciones disponibles en este estado."}
         </p>
       ) : (
         <div className="space-y-4">
@@ -278,6 +297,7 @@ export function AccionesExpediente({
                 <AccionDirecta
                   key={hasta}
                   expedienteId={expedienteId}
+                  estado={estado}
                   hasta={hasta}
                 />
               ))}
@@ -293,7 +313,7 @@ export function AccionesExpediente({
                 aria-pressed={hasta === elegida}
                 onClick={() => setElegida(hasta)}
               >
-                {ACCION_LABELS[hasta] ?? hasta}
+                {accionLabel(hasta, estado)}
               </Button>
             ))}
           </div>
@@ -301,6 +321,7 @@ export function AccionesExpediente({
             <FormTransicion
               key={elegida}
               expedienteId={expedienteId}
+              estado={estado}
               hasta={elegida}
             />
           )}

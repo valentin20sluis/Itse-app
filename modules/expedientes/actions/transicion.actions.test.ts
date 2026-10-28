@@ -60,6 +60,7 @@ describe.each([
     ["no_encontrado", "No se encontró el expediente."],
     ["no_permitido", "Esa acción no está disponible para este expediente."],
     ["conflicto", "El expediente cambió de estado. Actualiza la página e inténtalo de nuevo."],
+    ["motivo_requerido", "Escribe un motivo de al menos 10 caracteres."],
   ])("mapea %s sin revalidar", async (status, error) => {
     servicio.mockResolvedValue({ status });
     expect(await action(ID, null, valido)).toEqual({ ok: false, error });
@@ -86,5 +87,15 @@ describe.each([
       "/mi-cuenta/expedientes",
       `/mi-cuenta/expedientes/${ID}`,
     ]);
+  });
+});
+
+describe("cambiarEstadoAction: Jefatura", () => {
+  it("admin que aprueba recibe no_permitido; el servicio recibe el usuario de requireRole", async () => {
+    mocks.cambiarEstado.mockResolvedValue({ status: "no_permitido" });
+    const res = await cambiarEstadoAction(ID, null, fd({ hasta: "APROBADO_JEFATURA", comentario: "" }));
+    expect(res).toEqual({ ok: false, error: "Esa acción no está disponible para este expediente." });
+    expect(mocks.cambiarEstado.mock.calls[0][0]).toBe(usuario);
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 });
