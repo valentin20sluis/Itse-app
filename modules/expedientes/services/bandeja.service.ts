@@ -51,6 +51,7 @@ export async function listExpedientesPanel(
         nivelRiesgo: expedientes.nivelRiesgo,
         estado: expedientes.estado,
         presentadoAt: expedientes.presentadoAt,
+        resolucionNoCumpleNumero: expedientes.resolucionNoCumpleNumero,
       })
       .from(expedientes)
       .innerJoin(establecimientos, eq(expedientes.establecimientoId, establecimientos.id))
@@ -63,9 +64,10 @@ export async function listExpedientesPanel(
   ]);
 
   return {
-    items: filas.map(({ nombres, apellidos, email, numero, ...f }) => ({
+    items: filas.map(({ nombres, apellidos, email, numero, resolucionNoCumpleNumero, ...f }) => ({
       ...f,
       numero: numero ?? "",
+      noCumple: resolucionNoCumpleNumero !== null,
       clienteNombre: nombreCompleto(nombres, apellidos, email),
     })),
     total: conteo?.total ?? 0,
@@ -112,13 +114,20 @@ export async function getExpedienteDetalle(
   ]);
 
   const { expediente, establecimiento } = fila;
-  const historial: HistorialItem[] = historialRows.map(({ nombres, apellidos, email, ...h }) => ({
-    ...h,
-    actorNombre:
-      actor.rol !== "cliente" && email !== null
-        ? nombreCompleto(nombres ?? "", apellidos ?? "", email)
-        : undefined,
-  }));
+  const esCliente = actor.rol === "cliente";
+  // Notas internas: el cambio de nivel de riesgo (EN_REVISION -> EN_REVISION) y el motivo de devolución de Jefatura.
+  const esNotaRiesgo = (h: { estadoAnterior: string | null; estadoNuevo: string }) =>
+    h.estadoAnterior === "EN_REVISION" && h.estadoNuevo === "EN_REVISION";
+  const esDevolucion = (h: { estadoAnterior: string | null; estadoNuevo: string }) =>
+    h.estadoAnterior === "ENVIADO_JEFATURA" && h.estadoNuevo === "EN_REVISION";
+  const historial: HistorialItem[] = historialRows
+    .filter((h) => !(esCliente && esNotaRiesgo(h)))
+    .map(({ nombres, apellidos, email, ...h }) => ({
+      ...h,
+      comentario: esCliente && esDevolucion(h) ? null : h.comentario,
+      actorNombre:
+        !esCliente && email !== null ? nombreCompleto(nombres ?? "", apellidos ?? "", email) : undefined,
+    }));
 
   return {
     expediente,

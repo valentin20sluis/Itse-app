@@ -79,5 +79,7 @@ export async function setInspectorActivoAction(
 ): Promise<ActionResult<Inspector>> {
   const usuario = await requireRole("admin", "superadmin");
   if (!idSchema.safeParse(id).success) return { ok: false, error: NO_ENCONTRADO };
-  return run(() => setInspectorActivo(usuario, id, activo === true));
+  const valor = z.boolean().safeParse(activo);
+  if (!valor.success) return { ok: false, error: ERROR_GENERICO };
+  return run(() => setInspectorActivo(usuario, id, valor.data));
 }

@@ -39,7 +39,7 @@ function ExpedienteCard({ expediente: e }: { expediente: ExpedienteListItem }) {
           <dd>{TIPO_TRAMITE_LABELS[e.tipoTramite]}</dd>
           <dt className="text-muted-foreground">Estado</dt>
           <dd>
-            {e.pagoPendiente ? <Badge variant="outline">Falta el pago</Badge> : <EstadoBadge estado={e.estado} />}
+            {e.pagoPendiente ? <Badge variant="outline">Falta el pago</Badge> : <EstadoBadge estado={e.estado} noCumple={!!e.resolucionNoCumpleNumero} />}
           </dd>
           <dt className="text-muted-foreground">{esBorrador ? "Actualizado" : "Presentado"}</dt>
           <dd>{formatFecha(fecha)}</dd>

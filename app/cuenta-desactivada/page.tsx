@@ -16,7 +16,7 @@ export default function CuentaDesactivadaPage() {
         </CardHeader>
         <CardContent>
           <SignOutButton redirectUrl="/">
-            <Button variant="outline">Cerrar sesión</Button>
+            <Button variant="outline" className="h-11">Cerrar sesión</Button>
           </SignOutButton>
         </CardContent>
       </Card>

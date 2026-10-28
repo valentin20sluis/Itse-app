@@ -54,6 +54,15 @@ describe("ExpedientesView: pagado y ver detalle", () => {
     expect(screen.queryByText(/Ver detalle» para descargar/)).toBeNull();
   });
 
+  it("un expediente finalizado con resolución de no cumple muestra «Resolución Aprobada»", () => {
+    const finalizado = { ...presentado, estado: "FINALIZADO", resolucionNoCumpleNumero: "RG-2026-0001" } as unknown as ExpedienteListItem;
+    render(<ExpedientesView expedientes={[finalizado]} />);
+    expect(screen.getByText("Resolución Aprobada")).toBeInTheDocument();
+    cleanup();
+    render(<ExpedientesView expedientes={[{ ...finalizado, resolucionNoCumpleNumero: null } as unknown as ExpedienteListItem]} />);
+    expect(screen.getByText("Certificado y Resolución Aprobado")).toBeInTheDocument();
+  });
+
   it("un borrador no muestra Pagado ni Ver detalle", () => {
     render(<ExpedientesView expedientes={[{ ...base, pagadoAt: null } as unknown as ExpedienteListItem]} />);
     expect(screen.queryByText(/Pagado/)).toBeNull();

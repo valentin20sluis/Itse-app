@@ -1,8 +1,8 @@
-import { ESTADO_LABELS } from "@/modules/expedientes/constants/estado-labels";
+import { etiquetaEstado } from "@/modules/expedientes/constants/estado-labels";
 import type { HistorialItem } from "@/modules/expedientes/types/bandeja.types";
 import { formatFechaHora } from "@/modules/expedientes/utils/format-fecha";
 
-export function HistorialTimeline({ historial }: { historial: HistorialItem[] }) {
+export function HistorialTimeline({ historial, noCumple }: { historial: HistorialItem[]; noCumple?: boolean }) {
   if (historial.length === 0) {
     return <p className="text-sm text-muted-foreground">Sin movimientos registrados.</p>;
   }
@@ -22,7 +22,7 @@ export function HistorialTimeline({ historial }: { historial: HistorialItem[] })
                 ? h.estadoNuevo === "EN_SUBSANACION"
                   ? "Seguimiento de la subsanación"
                   : "Nivel de riesgo actualizado"
-                : ESTADO_LABELS[h.estadoNuevo].label}
+                : etiquetaEstado(h.estadoNuevo, { noCumple })}
             </p>
             <p className="text-xs text-muted-foreground">
               <time dateTime={h.createdAt.toISOString()}>{formatFechaHora(h.createdAt)}</time>

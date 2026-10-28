@@ -49,7 +49,7 @@ export function ExpedienteDetalleCliente({
       </Link>
       <PageHeader title={e.numero ?? "Expediente"} />
       <div className="-mt-4 mb-6 flex flex-wrap items-center gap-2">
-        <EstadoBadge estado={e.estado} />
+        <EstadoBadge estado={e.estado} noCumple={!!e.resolucionNoCumpleNumero} />
         {e.pagadoAt && (
           <>
             <Badge variant="secondary">Pagado</Badge>
@@ -99,7 +99,7 @@ export function ExpedienteDetalleCliente({
             <h2 className="font-heading text-base font-medium">Historial</h2>
           </CardHeader>
           <CardContent>
-            <HistorialTimeline historial={historial} />
+            <HistorialTimeline historial={historial} noCumple={!!e.resolucionNoCumpleNumero} />
           </CardContent>
         </Card>
       </div>

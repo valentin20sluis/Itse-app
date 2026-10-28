@@ -42,7 +42,7 @@ export default async function ExpedienteDetallePage({
     <div className="min-w-0">
       <PageHeader title={`Expediente ${expediente.numero}`} />
       <div className="mb-6 -mt-4">
-        <EstadoBadge estado={expediente.estado} />
+        <EstadoBadge estado={expediente.estado} noCumple={!!expediente.resolucionNoCumpleNumero} />
       </div>
       <div className="flex min-w-0 flex-col gap-6">
         <ExpedienteDatos detalle={detalle} />
@@ -56,7 +56,7 @@ export default async function ExpedienteDetallePage({
           >
             Historial
           </h2>
-          <HistorialTimeline historial={detalle.historial} />
+          <HistorialTimeline historial={detalle.historial} noCumple={!!expediente.resolucionNoCumpleNumero} />
         </section>
         <AccionesExpediente
           expedienteId={expediente.id}

@@ -10,7 +10,8 @@ Trabajamos con **Next.js App Router** (carpeta `app/`, sin `pages/`). Toda funci
 
 ### 1.1 Reglas
 
-- **Nombres en inglés** para carpetas, archivos, variables, funciones, componentes, etc. Sin excepciones, aunque el equipo hable en español.
+- **Nombres en inglés** para carpetas, archivos, variables, funciones, componentes, etc., aunque el equipo hable en español.
+  - **Excepción (proyecto ITSE):** los nombres del dominio ITSE (`expediente`, `establecimiento`, `inspector`, `certificado`, `diligencia`, `subsanacion`…) van en español, según `docs/constitucion-itse.md` §3, porque son términos legales peruanos. La infraestructura y la sintaxis (hooks, utilidades, prefijos como `get`/`create`) siguen en inglés.
 - **Modularidad por dominio**: cada dominio de negocio (ej. `invoices`, `auth`, `user-profile`) vive en su propia carpeta bajo `modules/`, con todo lo que le pertenece (componentes, hooks, services, schemas, types, store) dentro.
 - **`app/` solo contiene rutas** (páginas, layouts, route handlers). La lógica de negocio y la UI compleja se importan desde `modules/` o `components/`; `app/` no debe acumular lógica propia más allá de composición y data-fetching de la página.
 - **`components/ui/`** es exclusivo de shadcn/ui. No se edita a mano la convención de nombres que genera el CLI (kebab-case, ej. `dropdown-menu.tsx`) y no se le agrega lógica de negocio.

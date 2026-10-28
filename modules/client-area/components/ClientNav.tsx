@@ -50,7 +50,7 @@ export function ClientNav() {
               href={href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[0.65rem] font-medium leading-tight",
+                "flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-xs font-medium leading-tight",
                 active ? "text-primary" : "text-muted-foreground",
               )}
             >

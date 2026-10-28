@@ -12,6 +12,7 @@ const CSV = "/api/reportes/expedientes";
 const SELECT =
   "h-11 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30";
 const ENLACE = "min-h-11";
+const ESTADOS_OBSOLETOS: readonly string[] = ["EN_TRAMITE_EXTERNO", "PENDIENTE_RESOLUCION", "DERIVADO_COMERCIALIZACION"];
 
 function consulta(filtros: FiltrosReporte): string {
   const params = new URLSearchParams({ desde: filtros.desde, hasta: filtros.hasta });
@@ -42,7 +43,7 @@ export function FiltrosReporteForm({ filtros, distritos }: Props) {
           <Label htmlFor="estado">Estado</Label>
           <select id="estado" name="estado" defaultValue={filtros.estado ?? ""} className={SELECT}>
             <option value="">Todos</option>
-            {ESTADOS_ORDEN.map((e) => (
+            {ESTADOS_ORDEN.filter((e) => !ESTADOS_OBSOLETOS.includes(e)).map((e) => (
               <option key={e} value={e}>
                 {ESTADO_LABELS[e].label}
               </option>

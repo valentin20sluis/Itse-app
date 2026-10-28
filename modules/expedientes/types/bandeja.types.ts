@@ -16,6 +16,7 @@ export type ExpedientePanelItem = {
   nivelRiesgo: NivelRiesgo | null;
   estado: EstadoExpediente;
   presentadoAt: Date | null;
+  noCumple: boolean;
 };
 
 export type BandejaResultado = {

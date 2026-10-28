@@ -92,6 +92,14 @@ export async function confirmarPago(actor: Actor, sessionId: string): Promise<Co
 
   if (exp.estado !== "BORRADOR") return yaPresentado(exp, session.id);
 
+  if (
+    !exp.nivelRiesgo ||
+    session.amount_total !== montoTasa(exp.nivelRiesgo) ||
+    session.currency?.toLowerCase() !== MONEDA
+  ) {
+    return { status: "no_pagado" };
+  }
+
   const res = await presentarExpediente(actor, exp.id, {
     stripeSessionId: session.id,
     pagadoAt: new Date(),

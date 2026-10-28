@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { estadoExpedienteEnum } from "@/db/schema";
 
-import { ESTADO_LABELS } from "./estado-labels";
+import { ESTADO_LABELS, etiquetaEstado } from "./estado-labels";
 
 describe("ESTADO_LABELS", () => {
   it("tiene etiqueta y variante para cada estado del enum", () => {
@@ -17,5 +17,16 @@ describe("ESTADO_LABELS", () => {
     expect(ESTADO_LABELS.PRESENTADO.label).toBe("Presentado");
     expect(ESTADO_LABELS.BORRADOR.label).toBe("Borrador");
     expect(ESTADO_LABELS.OBSERVADO_REQUISITOS.label).toBe("Observado");
+  });
+});
+
+describe("etiquetaEstado", () => {
+  it("FINALIZADO con resolución de no cumple es «Resolución Aprobada»", () => {
+    expect(etiquetaEstado("FINALIZADO", { noCumple: true })).toBe("Resolución Aprobada");
+    expect(etiquetaEstado("FINALIZADO")).toBe("Certificado y Resolución Aprobado");
+  });
+
+  it("el resto de estados no cambia", () => {
+    expect(etiquetaEstado("ENTREGADO", { noCumple: true })).toBe("Finalizado");
   });
 });

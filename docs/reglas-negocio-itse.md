@@ -197,7 +197,7 @@ plazoSubsanacion(tipoItse) → tipoItse === "POSTERIOR" ? 3 : 20   // días háb
 
 ### 7.3 Observaciones NO relevantes en términos de riesgo (catálogo)
 
-Lista cerrada que se carga en `catalogo_observaciones`. Solo estas permiten subsanación en ITSE posterior. Ejemplos tomados del Anexo 9:
+Lista cerrada definida como constante en código (`modules/inspecciones/constants/observaciones-no-relevantes.ts`; no hay tabla). Solo estas permiten subsanación en ITSE posterior. Ejemplos tomados del Anexo 9:
 
 - Retirar obstáculos de los medios de evacuación (pasadizos, escaleras, accesos, salidas).
 - Colocar señalización de seguridad (salida, zona segura en caso de sismo, riesgo eléctrico, extintores).
@@ -206,7 +206,7 @@ Lista cerrada que se carga en `catalogo_observaciones`. Solo estas permiten subs
 - Colocar tapa a las cajas de paso de conductores eléctricos.
 - Instalar iluminación general y de emergencia en la zona de los tableros eléctricos.
 
-> **Pendiente:** copiar la lista completa y textual del Anexo 9 oficial del CENEPRED al seed del catálogo.
+> **Pendiente:** copiar la lista completa y textual del Anexo 9 oficial del CENEPRED a la constante del catálogo.
 
 ### 7.4 Observaciones relevantes en términos de riesgo (ejemplos)
 
@@ -276,7 +276,7 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 - Datos: número, expediente, establecimiento, nivel de riesgo, inspector(es) designado(s) con su profesión si existe, fecha, nombre del jefe de GRDyDC.
 - Jefe: el usuario que aprobó el expediente en Jefatura (`APROBADO_JEFATURA`); si no consta, solo «Jefe de GRDyDC».
 - Validar que la cantidad de inspectores coincida con `inspectoresRequeridos(riesgo)`.
-- Validar que el inspector esté activo y autorizado para ese nivel de riesgo.
+- Validar que el inspector esté activo. **Pospuesto:** la validación de que esté «autorizado para ese nivel de riesgo» no se aplica por ahora; cualquier inspector activo puede ir a cualquier nivel (la cantidad sí es exacta: 1/1/2/3). El campo `habilitadoPrevia` y la columna «Habilitado» se conservan sin efecto hasta definir la restricción.
 
 ---
 
@@ -299,9 +299,11 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 | Generar la resolución de no cumple | | | ✅ |
 | Enviar certificado y resolución (o la resolución de no cumple) al cliente | | ✅ | ✅ |
 | Anular expedientes | | | ✅ |
-| Gestionar usuarios y roles | | | ✅ |
-| Gestionar catálogo de observaciones y feriados | | | ✅ |
+| Gestionar usuarios y roles *(Próximamente: no implementado)* | | | ✅ |
+| Gestionar catálogo de observaciones y feriados *(Próximamente: no implementado)* | | | ✅ |
 | Ver reportes | | ✅ | ✅ |
+
+> El catálogo de observaciones y los feriados viven como constantes en código, no como tablas editables. `usuarios.activo` aún no se cambia desde la aplicación (las pantallas de usuarios y configuración muestran «Próximamente»). El cliente ve el nombre del inspector designado, pero no el del personal (admin/superadmin) que actúa en el expediente.
 
 ---
 

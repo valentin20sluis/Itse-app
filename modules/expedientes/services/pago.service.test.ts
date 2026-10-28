@@ -39,6 +39,8 @@ const borrador = (extra: Partial<Expediente> = {}) =>
 const sesionPagada = (extra: Record<string, unknown> = {}) => ({
   id: SID,
   payment_status: "paid",
+  amount_total: montoTasa("ALTO"),
+  currency: MONEDA,
   client_reference_id: "u-1",
   metadata: { expedienteId: EXP_ID },
   ...extra,
@@ -153,6 +155,9 @@ describe("confirmarPago", () => {
     ["sesión de otro usuario", sesionPagada({ client_reference_id: "u-2" }), borrador({ stripeSessionId: SID }), "no_encontrado"],
     ["sin pagar", sesionPagada({ payment_status: "unpaid" }), borrador({ stripeSessionId: SID }), "no_pagado"],
     ["expedienteId no uuid", sesionPagada({ metadata: { expedienteId: "x" } }), borrador({ stripeSessionId: SID }), "no_encontrado"],
+    ["monto menor al del riesgo actual", sesionPagada({ amount_total: 15000 }), borrador({ stripeSessionId: SID }), "no_pagado"],
+    ["monto mayor al del riesgo actual", sesionPagada({ amount_total: 30000 }), borrador({ stripeSessionId: SID, nivelRiesgo: "BAJO" }), "no_pagado"],
+    ["moneda distinta", sesionPagada({ currency: "usd" }), borrador({ stripeSessionId: SID }), "no_pagado"],
     ["expediente ajeno", sesionPagada(), null, "no_encontrado"],
     ["sesión distinta de la guardada", sesionPagada(), borrador({ stripeSessionId: "cs_test_otra" }), "no_encontrado"],
   ])("%s: no presenta", async (_n, sesion, exp, status) => {

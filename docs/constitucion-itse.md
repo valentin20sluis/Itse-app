@@ -20,7 +20,9 @@ El template ya trae Next.js 16, React 19, TypeScript, Tailwind v4, shadcn/ui (`b
 | Base de datos | **Neon** (PostgreSQL serverless) | Branch `dev` para desarrollo |
 | ORM | **Drizzle ORM** + `drizzle-kit` | Driver `@neondatabase/serverless` |
 | Archivos | **UploadThing** | PDFs e imágenes |
-| PDF | **@react-pdf/renderer** | Certificado ITSE y Constancia de Designación |
+| Pagos | **Stripe Checkout** (`stripe`) | Pago de la tasa en modo prueba, sin webhooks: el retorno se confirma en `/mi-cuenta/pago/confirmar` |
+| PDF | **@react-pdf/renderer** | Constancia de Designación, Certificado ITSE y Resolución (generados al vuelo, no se almacenan) |
+| Gráficos | **Recharts** | Dashboard y reportes del panel |
 | QR | **qrcode** | En el certificado, apunta a la verificación pública |
 | Fechas | **date-fns** con locale `es` | Zona horaria `America/Lima` |
 | Iconos | **lucide-react** | Si no viene ya con shadcn |
@@ -38,7 +40,7 @@ El template ya trae Next.js 16, React 19, TypeScript, Tailwind v4, shadcn/ui (`b
 
 ## 2. Estructura de carpetas
 
-La estructura la define **`docs/SETUP.md`** (módulos de dominio en `modules/`). Este proyecto tendrá, como mínimo, estos módulos de dominio:
+La estructura la define **`docs/SETUP.md`** (módulos de dominio en `modules/`). Módulos reales en `modules/`:
 
 | Módulo | Contenido |
 |---|---|
@@ -47,10 +49,14 @@ La estructura la define **`docs/SETUP.md`** (módulos de dominio en `modules/`).
 | `expedientes` | solicitud, estados, historial, documentos |
 | `inspecciones` | inspectores, designación, diligencia, observaciones, subsanación |
 | `certificados` | emisión, aprobación, PDF, QR, verificación |
-| `reportes` | métricas del dashboard |
+| `reportes` | métricas del dashboard y reportes |
+| `navigation` | menú lateral por rol |
+| `landing` | landing pública del trámite |
+
+Además existen `client-area` y `panel`, de composición de páginas por área.
 
 Elementos transversales (ubicarlos según `docs/SETUP.md`; si no los define, usar esta propuesta en la raíz):
-- `db/schema.ts`, `db/index.ts`, `db/seed.ts` → esquema y cliente de Drizzle
+- `db/schema.ts`, `db/index.ts` → esquema y cliente de Drizzle (migraciones en `drizzle/`; no hay `db/seed.ts`)
 - Reglas de negocio puras del dominio ITSE (`tipoItsePorRiesgo`, `inspectoresRequeridos`, `plazoSubsanacion`, cálculo de días hábiles, vigencia) → en el módulo que corresponda o en un módulo `itse-core`, siempre como **funciones puras y testeables**, nunca dentro de componentes.
 
 Imports con el alias `@/*` (raíz del repo).
@@ -58,7 +64,12 @@ Imports con el alias `@/*` (raíz del repo).
 ## 3. Convenciones propias
 
 - **Server Components por defecto.** `"use client"` solo cuando haya interactividad.
-- **Mutaciones con Server Actions.** API routes solo para webhooks, UploadThing y la descarga protegida de documentos (`/api/documentos`).
+- **Mutaciones con Server Actions.** Route Handlers solo en estos casos (los webhooks no se usan):
+  - `/api/uploadthing`: subida de archivos.
+  - Descargas protegidas por rol y propiedad: `/api/documentos/[id]`, `/api/expedientes/[id]/{constancia,certificado,resolucion}`.
+  - `/api/reportes/expedientes`: exportación CSV (personal).
+  - `/mi-cuenta/pago/confirmar`: retorno de Stripe Checkout.
+  - **Límite conocido y aceptado:** la descarga de documentos redirige a la URL pública de UploadThing (plan gratuito, sin archivos privados ni URL firmadas). Es apto para datos ficticios; con documentos reales habría que usar ACL privada con URL firmada o streaming desde el servidor.
 - **Toda Server Action:**
   1. Obtiene el usuario actual.
   2. Verifica el rol en servidor.
@@ -67,7 +78,7 @@ Imports con el alias `@/*` (raíz del repo).
   5. Registra en `historial_estados` si cambia el estado del expediente.
   6. Revalida las rutas afectadas.
   7. Devuelve un resultado tipado: `{ ok: true, data } | { ok: false, error }`.
-- **Términos del dominio en español** (`expediente`, `establecimiento`, `subsanacion`, `diligencia`), porque son términos legales peruanos. El resto, según `docs/SETUP.md`.
+- **Términos del dominio ITSE en español** (`expediente`, `establecimiento`, `subsanacion`, `diligencia`, `inspector`, `certificado`), porque son términos legales peruanos. Es la excepción documentada en `docs/SETUP.md` §1.1; la infraestructura y la sintaxis (hooks, utilidades, prefijos `get`/`create`) van en inglés.
 - **Enums** como `pgEnum` en Drizzle, reutilizados en los esquemas Zod.
 - TypeScript estricto: sin `any` ni `@ts-ignore`.
 
@@ -87,7 +98,7 @@ Clerk no puede enviar webhooks a `localhost`. Usar **sincronización al primer a
 ## 6. Plazos y fechas
 
 - Los estados vencidos se **calculan al leer**, no dependen de un cron.
-- Los días hábiles excluyen sábados, domingos y los registros de la tabla `feriados`.
+- Los días hábiles excluyen sábados, domingos y los feriados definidos como constante en código (`modules/inspecciones/constants/feriados.ts`; no hay tabla).
 - Formato de fecha `dd/MM/yyyy`, zona horaria `America/Lima`.
 
 ## 7. Pruebas
@@ -115,9 +126,12 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+STRIPE_SECRET_KEY=
 UPLOADTHING_TOKEN=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
+`NEXT_PUBLIC_APP_URL` se usa para el QR del certificado y las URLs de retorno de Stripe. No se usan clave pública de Stripe ni `STRIPE_WEBHOOK_SECRET`.
 
 ## 10. Datos y privacidad
 

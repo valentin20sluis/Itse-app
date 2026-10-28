@@ -46,6 +46,7 @@ const fila = (extra = {}) => ({
   nivelRiesgo: "ALTO",
   estado: "PRESENTADO",
   presentadoAt: new Date("2026-01-01"),
+  resolucionNoCumpleNumero: null,
   ...extra,
 });
 
@@ -143,5 +144,29 @@ describe("getExpedienteDetalle", () => {
     mocks.resultados = [[{ expediente: exp, establecimiento: { id: "s" } }], [], historial];
     const d = await getExpedienteDetalle(cliente, "e1");
     expect(d?.historial.every((h) => h.actorNombre === undefined)).toBe(true);
+  });
+
+  describe("comentarios internos", () => {
+    const h = (id: string, ant: string, nuevo: string, comentario: string) => ({
+      id, estadoAnterior: ant, estadoNuevo: nuevo, comentario, createdAt: new Date(), nombres: "", apellidos: "", email: "b@x.pe",
+    });
+    const filas = [
+      h("riesgo", "EN_REVISION", "EN_REVISION", "Nota de riesgo"),
+      h("devol", "ENVIADO_JEFATURA", "EN_REVISION", "Motivo interno"),
+      h("obs", "EN_REVISION", "OBSERVADO_REQUISITOS", "Falta plano"),
+    ];
+
+    it("el cliente no ve la nota de riesgo ni el motivo de devolución", async () => {
+      mocks.resultados = [[{ expediente: exp, establecimiento: { id: "s" } }], [], filas];
+      const d = await getExpedienteDetalle(cliente, "e1");
+      expect(d?.historial.map((x) => x.id)).toEqual(["devol", "obs"]);
+      expect(d?.historial.map((x) => x.comentario)).toEqual([null, "Falta plano"]);
+    });
+
+    it("el personal ve todos los comentarios", async () => {
+      mocks.resultados = [[{ expediente: exp, establecimiento: { id: "s" } }], [], filas];
+      const d = await getExpedienteDetalle(admin, "e1");
+      expect(d?.historial.map((x) => x.comentario)).toEqual(["Nota de riesgo", "Motivo interno", "Falta plano"]);
+    });
   });
 });

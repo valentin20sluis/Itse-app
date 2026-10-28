@@ -23,7 +23,10 @@ import type { BandejaResultado, ExpedientePanelItem } from "@/modules/expediente
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
 
 const BASE = "/panel/expedientes";
-const ESTADOS = Object.keys(ESTADO_LABELS).filter((e) => e !== "BORRADOR") as (keyof typeof ESTADO_LABELS)[];
+const ESTADOS_OBSOLETOS = ["BORRADOR", "EN_TRAMITE_EXTERNO", "PENDIENTE_RESOLUCION", "DERIVADO_COMERCIALIZACION"];
+const ESTADOS = Object.keys(ESTADO_LABELS).filter(
+  (e) => !ESTADOS_OBSOLETOS.includes(e),
+) as (keyof typeof ESTADO_LABELS)[];
 
 type Props = { resultado: BandejaResultado; filtros: FiltrosBandeja };
 
@@ -182,7 +185,7 @@ export function BandejaView({ resultado, filtros }: Props) {
                     <TableCell className="whitespace-normal">{TIPO_TRAMITE_LABELS[e.tipoTramite]}</TableCell>
                     <TableCell className="whitespace-normal">{riesgo(e)}</TableCell>
                     <TableCell className="whitespace-normal">
-                      <EstadoBadge estado={e.estado} />
+                      <EstadoBadge estado={e.estado} noCumple={e.noCumple} />
                     </TableCell>
                     <TableCell className="whitespace-normal">{presentado(e)}</TableCell>
                     <TableCell className="whitespace-normal text-right">{verLink(e)}</TableCell>
@@ -210,7 +213,7 @@ export function BandejaView({ resultado, filtros }: Props) {
                     <dd>{riesgo(e)}</dd>
                     <dt className="text-muted-foreground">Estado</dt>
                     <dd>
-                      <EstadoBadge estado={e.estado} />
+                      <EstadoBadge estado={e.estado} noCumple={e.noCumple} />
                     </dd>
                     <dt className="text-muted-foreground">Presentado</dt>
                     <dd>{presentado(e)}</dd>

@@ -28,3 +28,8 @@ export const ESTADO_LABELS: Record<
   ENVIADO_JEFATURA: { label: "Enviado a Jefatura", variant: "secondary" },
   APROBADO_JEFATURA: { label: "Aprobado por Jefatura", variant: "default" },
 };
+
+/** En el flujo de «No cumple» no hay certificado: FINALIZADO es solo la resolución aprobada. */
+export function etiquetaEstado(estado: EstadoExpediente, opciones: { noCumple?: boolean } = {}): string {
+  return estado === "FINALIZADO" && opciones.noCumple ? "Resolución Aprobada" : ESTADO_LABELS[estado].label;
+}
