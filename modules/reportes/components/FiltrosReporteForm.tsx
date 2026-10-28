@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,7 +81,8 @@ export function FiltrosReporteForm({ filtros, distritos }: Props) {
         <Link href={BASE} className={buttonVariants({ variant: "outline", className: ENLACE })}>
           Quitar filtros
         </Link>
-        <a href={`${CSV}?${consulta(filtros)}`} className={buttonVariants({ variant: "outline", className: ENLACE })}>
+        <a href={`${CSV}?${consulta(filtros)}`} className={buttonVariants({ className: ENLACE })}>
+          <Download data-icon="inline-start" aria-hidden="true" />
           Descargar CSV
         </a>
       </div>

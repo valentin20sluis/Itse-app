@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { buttonVariants } from "@/components/ui/button";
 import { CertificadoEstadoBadge } from "@/modules/certificados/components/CertificadoEstadoBadge";
+import { DescargasCertificado } from "@/modules/certificados/components/DescargasCertificado";
 import type { FiltroCertificados } from "@/modules/certificados/schemas/filtro-certificados.schema";
 import type { CertificadoPanelFila } from "@/modules/certificados/services/certificado-lista.service";
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
@@ -52,7 +53,7 @@ export function CertificadosPanelView({
       ) : (
         <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filas.map((f) => (
-            <li key={f.expedienteId} className="min-w-0 rounded-xl border border-border bg-card p-4 text-sm">
+            <li key={f.expedienteId} className="min-w-0 rounded-xl border border-foreground/20 bg-card shadow-sm p-4 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-medium">Certificado N.° {f.numero}</p>
                 <CertificadoEstadoBadge estado={f.estado} />
@@ -70,6 +71,11 @@ export function CertificadosPanelView({
                 Vence el {formatFecha(f.venceAt)}
                 {f.estado !== "REVOCADO" && <> ({textoDias(f.diasRestantes)})</>}
               </p>
+              {f.estado !== "REVOCADO" && (
+                <div className="mt-3">
+                  <DescargasCertificado expedienteId={f.expedienteId} numero={f.numero} />
+                </div>
+              )}
             </li>
           ))}
         </ul>

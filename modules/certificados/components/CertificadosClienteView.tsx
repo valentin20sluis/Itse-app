@@ -1,4 +1,4 @@
-import { Award } from "lucide-react";
+import { Award, Download } from "lucide-react";
 import Link from "next/link";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -47,7 +47,7 @@ export function CertificadosClienteView({ filas, resoluciones = [] }: Props) {
                 return (
                   <li
                     key={f.expedienteId}
-                    className="min-w-0 space-y-3 rounded-xl border border-border bg-card p-4 text-sm"
+                    className="min-w-0 space-y-3 rounded-xl border border-foreground/20 bg-card shadow-sm p-4 text-sm"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="font-medium">Certificado N.° {f.numero}</p>
@@ -92,7 +92,7 @@ export function CertificadosClienteView({ filas, resoluciones = [] }: Props) {
                 {resoluciones.map((r) => (
                   <li
                     key={r.expedienteId}
-                    className="min-w-0 space-y-3 rounded-xl border border-border bg-card p-4 text-sm"
+                    className="min-w-0 space-y-3 rounded-xl border border-foreground/20 bg-card shadow-sm p-4 text-sm"
                   >
                     <p className="break-words font-medium">
                       {r.nombreComercial}
@@ -106,10 +106,10 @@ export function CertificadosClienteView({ filas, resoluciones = [] }: Props) {
                       download
                       aria-label={`Descargar resolución de no cumple de ${r.nombreComercial}`}
                       className={buttonVariants({
-                        variant: "outline",
                         className: "inline-flex min-h-11 w-fit",
                       })}
                     >
+                      <Download data-icon="inline-start" aria-hidden="true" />
                       Descargar resolución
                     </a>
                   </li>

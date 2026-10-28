@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import type { ReactNode } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { GenerarResolucionNoCumpleButton } from "@/modules/certificados/components/GenerarResolucionNoCumpleButton";
@@ -42,8 +43,9 @@ export async function PanelResolucionNoCumple({ usuario, expedienteId, estado }:
         <a
           href={`/api/expedientes/${expedienteId}/resolucion`}
           aria-label={`Descargar resolución de no cumple N.° ${data.resolucionNumero}`}
-          className={buttonVariants({ variant: "outline", className: "inline-flex min-h-11 w-fit" })}
+          className={buttonVariants({ className: "inline-flex min-h-11 w-fit" })}
         >
+          <Download data-icon="inline-start" aria-hidden="true" />
           Descargar resolución
         </a>
       </>

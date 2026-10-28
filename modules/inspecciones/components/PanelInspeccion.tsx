@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import type { Establecimiento } from "@/db/schema";
 import type { EstadoExpediente } from "@/modules/expedientes/constants/estado-labels";
@@ -58,8 +59,9 @@ export async function PanelInspeccion({ usuario, expediente, establecimiento }: 
         <a
           href={`/api/expedientes/${expediente.id}/constancia`}
           aria-label={`Descargar constancia de designación del expediente ${expediente.numero ?? ""}`.trim()}
-          className={buttonVariants({ variant: "outline", className: "inline-flex min-h-11 w-fit" })}
+          className={buttonVariants({ className: "inline-flex min-h-11 w-fit" })}
         >
+          <Download data-icon="inline-start" aria-hidden="true" />
           Descargar constancia
         </a>
       ) : null}

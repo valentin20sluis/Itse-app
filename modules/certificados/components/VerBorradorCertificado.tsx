@@ -7,7 +7,7 @@ export function VerBorradorCertificado({ expedienteId, numero }: { expedienteId:
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`Ver certificado N.° ${numero} (borrador), se abre en una pestaña nueva`}
-      className={buttonVariants({ variant: "outline", className: "inline-flex min-h-11 w-fit" })}
+      className={buttonVariants({ className: "inline-flex min-h-11 w-fit" })}
     >
       Ver certificado (borrador)
     </a>

@@ -69,7 +69,9 @@ export function BarsChart({ data, orientation = "horizontal", valueLabel, height
   const horizontal = orientation === "horizontal";
   const alto = height ?? (horizontal ? Math.max(120, data.length * ALTO_BARRA + 16) : 260);
   // Con muchos meses se muestra una etiqueta de cada N para que no se monten unas sobre otras.
-  const intervaloX = data.length > ETIQUETAS_X_VISIBLES ? Math.ceil(data.length / ETIQUETAS_X_VISIBLES) - 1 : 0;
+  // El conteo parte del final: la última etiqueta (el mes más reciente) siempre se ve.
+  const pasoX = Math.max(1, Math.ceil(data.length / ETIQUETAS_X_VISIBLES));
+  const ticksX = data.map((d) => d.label).filter((_, i) => (data.length - 1 - i) % pasoX === 0);
   const config: ChartConfig = { value: { label: valueLabel, color: "var(--chart-1)" } };
 
   return (
@@ -86,7 +88,7 @@ export function BarsChart({ data, orientation = "horizontal", valueLabel, height
           </>
         ) : (
           <>
-            <XAxis type="category" dataKey="label" tickLine={false} axisLine={false} tick={TickCategoriaX} interval={intervaloX} />
+            <XAxis type="category" dataKey="label" tickLine={false} axisLine={false} tick={TickCategoriaX} ticks={ticksX} interval={0} height={44} />
             <YAxis type="number" hide />
           </>
         )}
