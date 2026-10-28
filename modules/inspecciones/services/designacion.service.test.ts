@@ -127,10 +127,10 @@ describe("getResumenInspeccion", () => {
     expect(await getResumenInspeccion(admin, "e")).toEqual({ total: 1, inspectores: filas });
   });
 
-  it("cliente dueño: solo total, sin propiedad inspectores", async () => {
-    h.lecturas = [[{ id: "e" }], [{ total: 2 }]];
+  it("cliente dueño: total y solo nombres, sin propiedad inspectores", async () => {
+    h.lecturas = [[{ id: "e" }], [{ nombre: "Ana Pérez" }, { nombre: "Luis Soto" }]];
     const r = await getResumenInspeccion(cliente, "e");
-    expect(r).toEqual({ total: 2 });
+    expect(r).toEqual({ total: 2, nombres: ["Ana Pérez", "Luis Soto"] });
     expect("inspectores" in r).toBe(false);
   });
 

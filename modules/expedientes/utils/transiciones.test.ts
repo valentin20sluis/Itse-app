@@ -20,6 +20,9 @@ const ESPERADAS = new Set<string>([
   "ENVIADO_JEFATURA>APROBADO_JEFATURA",
   "ENVIADO_JEFATURA>EN_REVISION",
   "APROBADO_JEFATURA>INSPECTOR_DESIGNADO",
+  "INSPECTOR_DESIGNADO>DILIGENCIA_PROGRAMADA",
+  "DILIGENCIA_PROGRAMADA>CUMPLE",
+  "DILIGENCIA_PROGRAMADA>NO_CUMPLE",
   ...ESTADOS.filter((e) => e !== "BORRADOR" && !ESTADOS_FINALES.includes(e)).map(
     (e) => `${e}>ANULADO`,
   ),
@@ -56,8 +59,11 @@ describe("transiciones", () => {
       "INSPECTOR_DESIGNADO",
       "ANULADO",
     ]);
-    expect(transicionesPermitidas("INSPECTOR_DESIGNADO", "admin")).toEqual([]);
-    expect(transicionesPermitidas("INSPECTOR_DESIGNADO", "superadmin")).toEqual(["ANULADO"]);
+    expect(transicionesPermitidas("INSPECTOR_DESIGNADO", "admin")).toEqual(["DILIGENCIA_PROGRAMADA"]);
+    expect(transicionesPermitidas("INSPECTOR_DESIGNADO", "superadmin")).toEqual([
+      "DILIGENCIA_PROGRAMADA",
+      "ANULADO",
+    ]);
     expect(puedeTransicionar("PRESENTADO", "EN_REVISION", "admin")).toBe(true);
     expect(puedeTransicionar("EN_REVISION", "ENVIADO_JEFATURA", "admin")).toBe(true);
   });
@@ -106,10 +112,30 @@ describe("transiciones", () => {
   });
 
   it("transicionesGenericas excluye los destinos con flujo propio", () => {
-    expect(DESTINOS_CON_FLUJO_PROPIO).toEqual(["INSPECTOR_DESIGNADO"]);
+    expect([...DESTINOS_CON_FLUJO_PROPIO].sort()).toEqual(
+      ["CUMPLE", "DILIGENCIA_PROGRAMADA", "INSPECTOR_DESIGNADO", "NO_CUMPLE"],
+    );
     expect(transicionesGenericas("APROBADO_JEFATURA", "admin")).toEqual([]);
     expect(transicionesGenericas("APROBADO_JEFATURA", "superadmin")).toEqual(["ANULADO"]);
     expect(transicionesGenericas("PRESENTADO", "admin")).toEqual(["EN_REVISION"]);
+    for (const e of ["INSPECTOR_DESIGNADO", "DILIGENCIA_PROGRAMADA", "CUMPLE", "NO_CUMPLE"] as const) {
+      expect(transicionesGenericas(e, "admin")).toEqual([]);
+      expect(transicionesGenericas(e, "superadmin")).toEqual(["ANULADO"]);
+    }
+  });
+
+  it("diligencia: programar y resultado; EN_SUBSANACION no es destino", () => {
+    expect(transicionesPermitidas("DILIGENCIA_PROGRAMADA", "admin")).toEqual(["CUMPLE", "NO_CUMPLE"]);
+    expect(transicionesPermitidas("DILIGENCIA_PROGRAMADA", "superadmin")).toEqual([
+      "CUMPLE",
+      "NO_CUMPLE",
+      "ANULADO",
+    ]);
+    for (const e of ["CUMPLE", "NO_CUMPLE"] as const) {
+      expect(transicionesPermitidas(e, "admin")).toEqual([]);
+      expect(transicionesPermitidas(e, "superadmin")).toEqual(["ANULADO"]);
+    }
+    for (const e of ESTADOS) expect(TRANSICIONES[e]).not.toContain("EN_SUBSANACION");
   });
 
   it("requiereMotivo: OBSERVADO_REQUISITOS, ANULADO y devolución desde Jefatura", () => {

@@ -1,4 +1,4 @@
-import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { designaciones, expedientes, inspectores } from "@/db/schema";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
@@ -18,6 +18,8 @@ export type InspectorElegible = { id: string; nombre: string; documento: string 
 
 export type ResumenInspeccion = {
   total: number;
+  // Solo para el cliente dueño: nombres «Nombres Apellidos», sin más datos.
+  nombres?: string[];
   inspectores?: { nombre: string; documento: string; telefono: string }[];
 };
 
@@ -94,11 +96,14 @@ export async function getResumenInspeccion(
       .where(and(eq(expedientes.id, expedienteId), eq(expedientes.usuarioId, actor.id)))
       .limit(1);
     if (!propio) return { total: 0 };
-    const [{ total }] = await db
-      .select({ total: count() })
+    // Al cliente solo llega el nombre («Nombres Apellidos»): ningún otro dato del inspector.
+    const filas = await db
+      .select({ nombre: sql<string>`${inspectores.nombres} || ' ' || ${inspectores.apellidos}` })
       .from(designaciones)
-      .where(eq(designaciones.expedienteId, expedienteId));
-    return { total };
+      .innerJoin(inspectores, eq(designaciones.inspectorId, inspectores.id))
+      .where(eq(designaciones.expedienteId, expedienteId))
+      .orderBy(asc(inspectores.apellidos), asc(inspectores.nombres));
+    return { total: filas.length, nombres: filas.map((f) => f.nombre) };
   }
   const filas = await db
     .select({ nombre: nombreCompleto, documento: inspectores.documento, telefono: inspectores.telefono })

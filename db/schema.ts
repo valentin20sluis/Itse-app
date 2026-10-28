@@ -152,6 +152,7 @@ export const expedientes = pgTable(
     pagadoAt: timestamp("pagado_at", { withTimezone: true }),
     declaracionAceptadaAt: timestamp("declaracion_aceptada_at", { withTimezone: true }),
     presentadoAt: timestamp("presentado_at", { withTimezone: true }),
+    diligenciaProgramadaPara: timestamp("diligencia_programada_para", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

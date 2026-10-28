@@ -42,7 +42,17 @@ export function ExpedienteDetalleCliente({
 
       <div className="flex flex-col gap-4">
         <ExpedienteDatos detalle={detalle} />
-        <InspeccionResumen total={inspeccion.total} />
+        <InspeccionResumen
+          total={inspeccion.total}
+          nombres={inspeccion.nombres}
+          avisoContacto={
+            e.estado === "INSPECTOR_DESIGNADO" || e.estado === "DILIGENCIA_PROGRAMADA"
+              ? { telefono: e.solicitanteTelefono }
+              : undefined
+          }
+          programadaPara={e.diligenciaProgramadaPara}
+          lugar={detalle.establecimiento.direccion}
+        />
         <Card>
           <CardHeader>
             <h2 className="font-heading text-base font-medium">Historial</h2>

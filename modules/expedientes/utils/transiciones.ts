@@ -14,10 +14,17 @@ const FLUJO: Partial<Record<EstadoExpediente, EstadoExpediente[]>> = {
   EN_REVISION: ["OBSERVADO_REQUISITOS", "ENVIADO_JEFATURA"],
   ENVIADO_JEFATURA: ["APROBADO_JEFATURA", "EN_REVISION"],
   APROBADO_JEFATURA: ["INSPECTOR_DESIGNADO"],
+  INSPECTOR_DESIGNADO: ["DILIGENCIA_PROGRAMADA"],
+  DILIGENCIA_PROGRAMADA: ["CUMPLE", "NO_CUMPLE"],
 };
 
-// Destinos que exigen datos propios (inspectores): no se alcanzan con el cambio de estado genérico.
-export const DESTINOS_CON_FLUJO_PROPIO: readonly EstadoExpediente[] = ["INSPECTOR_DESIGNADO"];
+// Destinos que exigen datos propios (inspectores, fecha, informe): no se alcanzan con el cambio de estado genérico.
+export const DESTINOS_CON_FLUJO_PROPIO: readonly EstadoExpediente[] = [
+  "INSPECTOR_DESIGNADO",
+  "DILIGENCIA_PROGRAMADA",
+  "CUMPLE",
+  "NO_CUMPLE",
+];
 
 const SOLO_SUPERADMIN = (desde: EstadoExpediente, hasta: EstadoExpediente) =>
   hasta === "ANULADO" ||
