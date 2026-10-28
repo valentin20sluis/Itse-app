@@ -30,6 +30,7 @@ const ESPERADAS = new Set<string>([
   "EN_SUBSANACION>NO_CUMPLE",
   "CUMPLE>CERTIFICADO_PENDIENTE_FIRMA",
   "CERTIFICADO_PENDIENTE_FIRMA>FINALIZADO",
+  "NO_CUMPLE>FINALIZADO",
   "FINALIZADO>ENTREGADO",
   ...ESTADOS.filter((e) => e !== "BORRADOR" && !ESTADOS_FINALES.includes(e)).map(
     (e) => `${e}>ANULADO`,
@@ -183,10 +184,13 @@ describe("transiciones", () => {
     expect(transicionesGenericas("EN_SUBSANACION", "superadmin")).toEqual(["ANULADO"]);
   });
 
-  it("NO_CUMPLE es final: sin salidas salvo ANULADO del superadmin", () => {
+  it("NO_CUMPLE: solo el superadmin genera la resolución (FINALIZADO) o anula", () => {
     expect(transicionesPermitidas("NO_CUMPLE", "admin")).toEqual([]);
-    expect(transicionesPermitidas("NO_CUMPLE", "superadmin")).toEqual(["ANULADO"]);
+    expect([...transicionesPermitidas("NO_CUMPLE", "superadmin")].sort()).toEqual(["ANULADO", "FINALIZADO"]);
     expect(transicionesPermitidas("NO_CUMPLE", "cliente")).toEqual([]);
+    expect(puedeTransicionar("NO_CUMPLE", "FINALIZADO", "admin")).toBe(false);
+    expect(puedeTransicionar("NO_CUMPLE", "FINALIZADO", "superadmin")).toBe(true);
+    expect(transicionesGenericas("NO_CUMPLE", "superadmin")).toEqual(["ANULADO"]);
   });
 
   it("certificado: lo genera el admin, solo el superadmin aprueba, el admin envía al cliente", () => {

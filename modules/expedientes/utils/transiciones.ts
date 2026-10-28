@@ -20,6 +20,7 @@ const FLUJO: Partial<Record<EstadoExpediente, EstadoExpediente[]>> = {
   EN_SUBSANACION: ["CUMPLE", "NO_CUMPLE"],
   CUMPLE: ["CERTIFICADO_PENDIENTE_FIRMA"],
   CERTIFICADO_PENDIENTE_FIRMA: ["FINALIZADO"],
+  NO_CUMPLE: ["FINALIZADO"],
   FINALIZADO: ["ENTREGADO"],
 };
 
@@ -42,6 +43,7 @@ const SOLO_SUPERADMIN = (desde: EstadoExpediente, hasta: EstadoExpediente) =>
   hasta === "ANULADO" ||
   hasta === "APROBADO_JEFATURA" ||
   (desde === "CERTIFICADO_PENDIENTE_FIRMA" && hasta === "FINALIZADO") ||
+  (desde === "NO_CUMPLE" && hasta === "FINALIZADO") ||
   (desde === "ENVIADO_JEFATURA" && hasta === "EN_REVISION");
 
 export const TRANSICIONES: Record<EstadoExpediente, EstadoExpediente[]> = Object.fromEntries(

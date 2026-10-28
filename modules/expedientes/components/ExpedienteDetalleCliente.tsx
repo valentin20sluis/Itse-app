@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { CertificadoCliente } from "@/modules/certificados/components/CertificadoCliente";
+import { ResolucionNoCumpleCliente } from "@/modules/certificados/components/ResolucionNoCumpleCliente";
 import type { ResumenCertificado } from "@/modules/certificados/services/certificado.service";
 import { EstadoBadge } from "@/modules/expedientes/components/EstadoBadge";
 import { ExpedienteDatos } from "@/modules/expedientes/components/ExpedienteDatos";
@@ -26,11 +27,13 @@ export function ExpedienteDetalleCliente({
   inspeccion,
   subsanacion,
   certificado = null,
+  resolucionNoCumple = null,
 }: {
   detalle: ExpedienteDetalle;
   inspeccion: ResumenInspeccion;
   subsanacion: ResumenSubsanacion;
   certificado?: ResumenCertificado | null;
+  resolucionNoCumple?: { resolucionAt: Date } | null;
 }) {
   const { expediente: e, historial } = detalle;
   const vencido = subsanacion.limite ? estadoPlazo(subsanacion.limite, new Date()).vencido : true;
@@ -88,6 +91,9 @@ export function ExpedienteDetalleCliente({
           <PlazoSubsanacion limite={subsanacion.limite} />
         )}
         {certificado && <CertificadoCliente expedienteId={e.id} resumen={certificado} />}
+        {resolucionNoCumple && (
+          <ResolucionNoCumpleCliente expedienteId={e.id} resolucionAt={resolucionNoCumple.resolucionAt} />
+        )}
         <Card>
           <CardHeader>
             <h2 className="font-heading text-base font-medium">Historial</h2>

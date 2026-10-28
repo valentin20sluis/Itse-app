@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
 
+import { getResolucionNoCumplePdfData } from "@/modules/certificados/services/resolucion-pdf.service";
 import { getResumenCertificado } from "@/modules/certificados/services/certificado.service";
 import { ExpedienteDetalleCliente } from "@/modules/expedientes/components/ExpedienteDetalleCliente";
 import { getExpedienteDetalle } from "@/modules/expedientes/services/bandeja.service";
@@ -20,10 +21,11 @@ export default async function ExpedienteDetallePage({
   const detalle = await getExpedienteDetalle(usuario, id);
   if (!detalle) notFound();
 
-  const [inspeccion, subsanacion, certificado] = await Promise.all([
+  const [inspeccion, subsanacion, certificado, resolucionNoCumple] = await Promise.all([
     getResumenInspeccion(usuario, id),
     getResumenSubsanacion(usuario, id),
     getResumenCertificado(usuario, id),
+    getResolucionNoCumplePdfData(usuario, id),
   ]);
 
   return (
@@ -32,6 +34,7 @@ export default async function ExpedienteDetallePage({
       inspeccion={inspeccion}
       subsanacion={subsanacion}
       certificado={certificado}
+      resolucionNoCumple={resolucionNoCumple ? { resolucionAt: resolucionNoCumple.resolucionAt } : null}
     />
   );
 }

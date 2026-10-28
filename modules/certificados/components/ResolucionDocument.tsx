@@ -1,5 +1,8 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
-import type { ResolucionPdfData } from "@/modules/certificados/services/resolucion-pdf.service";
+import type {
+  ResolucionNoCumplePdfData,
+  ResolucionPdfData,
+} from "@/modules/certificados/services/resolucion-pdf.service";
 import { RIESGO_LABELS } from "@/modules/expedientes/constants/expediente-labels";
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
 
@@ -15,7 +18,7 @@ const styles = StyleSheet.create({
   pie: { position: "absolute", bottom: 28, left: 48, right: 48, fontSize: 9, textAlign: "center", color: "#555555" },
 });
 
-export function ResolucionDocument({ data }: { data: ResolucionPdfData }) {
+export function ResolucionDocument({ data }: { data: ResolucionPdfData | ResolucionNoCumplePdfData }) {
   const { establecimiento: est, solicitante } = data;
   const quien = solicitante.razonSocial
     ? `${solicitante.nombre} (${solicitante.razonSocial})`
@@ -27,20 +30,37 @@ export function ResolucionDocument({ data }: { data: ResolucionPdfData }) {
         <Text style={styles.numero}>N.° {data.resolucionNumero}</Text>
         <Text style={styles.fecha}>Fecha: {formatFecha(data.resolucionAt)}</Text>
 
-        <Text style={styles.parrafo}>
-          Visto el expediente {data.expedienteNumero} presentado por {quien}, y habiéndose verificado que el
-          establecimiento cumple con las condiciones de seguridad exigidas, se resuelve:
-        </Text>
-        <Text style={styles.parrafo}>
-          <Text style={styles.negrita}>Aprobar</Text> el Certificado de Inspección Técnica de Seguridad en
-          Edificaciones N.° {data.certificadoNumero} a favor de {quien}, para el establecimiento{" "}
-          {est.nombreComercial}, ubicado en {est.direccion}, {est.distrito}, giro {est.giro}, con nivel de
-          riesgo {RIESGO_LABELS[data.nivelRiesgo].toLowerCase()}.
-        </Text>
-        <Text style={styles.parrafo}>
-          El certificado fue expedido el {formatFecha(data.emitidoAt)} y tiene vigencia hasta el{" "}
-          {formatFecha(data.venceAt)}.
-        </Text>
+        {"tipo" in data ? (
+          <>
+            <Text style={styles.parrafo}>
+              Visto el expediente {data.expedienteNumero} presentado por {quien}, y habiéndose verificado que
+              el establecimiento no cumple las condiciones de seguridad exigidas, se resuelve:
+            </Text>
+            <Text style={styles.parrafo}>
+              <Text style={styles.negrita}>Declarar que no cumple</Text> las condiciones de seguridad
+              exigidas el establecimiento {est.nombreComercial}, ubicado en {est.direccion}, {est.distrito},
+              giro {est.giro}, con nivel de riesgo {RIESGO_LABELS[data.nivelRiesgo].toLowerCase()}. No se
+              emite Certificado de Inspección Técnica de Seguridad en Edificaciones.
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.parrafo}>
+              Visto el expediente {data.expedienteNumero} presentado por {quien}, y habiéndose verificado que
+              el establecimiento cumple con las condiciones de seguridad exigidas, se resuelve:
+            </Text>
+            <Text style={styles.parrafo}>
+              <Text style={styles.negrita}>Aprobar</Text> el Certificado de Inspección Técnica de Seguridad
+              en Edificaciones N.° {data.certificadoNumero} a favor de {quien}, para el establecimiento{" "}
+              {est.nombreComercial}, ubicado en {est.direccion}, {est.distrito}, giro {est.giro}, con nivel
+              de riesgo {RIESGO_LABELS[data.nivelRiesgo].toLowerCase()}.
+            </Text>
+            <Text style={styles.parrafo}>
+              El certificado fue expedido el {formatFecha(data.emitidoAt)} y tiene vigencia hasta el{" "}
+              {formatFecha(data.venceAt)}.
+            </Text>
+          </>
+        )}
 
         <View style={styles.firma}>
           <Text style={styles.firmaLinea}>Jefe de GRDyDC</Text>

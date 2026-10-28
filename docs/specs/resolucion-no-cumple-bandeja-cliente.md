@@ -46,7 +46,7 @@ Hacer visible el motor de la parte 1: los expedientes en `NO_CUMPLE` (derivació
 - Grupo paralelo: G1
 - Cubre: AC-1, AC-2
 - Tests: `filtros-bandeja.schema.test.ts` (AC-1); `bandeja.service.test.ts` (AC-2).
-- [ ] Completada
+- [x] Completada
 
 ### T2 — Menú y acceso rápido
 - Archivos: `modules/navigation/constants/nav-items.ts` (modificar), `modules/navigation/utils/nav-utils.test.ts` (modificar), `modules/expedientes/components/BandejaView.tsx` (modificar)
@@ -55,7 +55,7 @@ Hacer visible el motor de la parte 1: los expedientes en `NO_CUMPLE` (derivació
 - Cubre: AC-3
 - Detalle: el type de `BandejaView` ya recibe `FiltrosBandeja`; `href()` suma `pendientes`; `hayFiltros` lo considera.
 - Tests: `nav-utils.test.ts` (href del ítem «Por aprobar»). `BandejaView` es presentacional (SETUP.md 3.2).
-- [ ] Completada
+- [x] Completada
 
 ### T3 — Panel del expediente (personal)
 - Archivos: `app/panel/expedientes/[id]/page.tsx` (modificar), `app/panel/expedientes/[id]/page.test.tsx` (modificar)
@@ -64,7 +64,7 @@ Hacer visible el motor de la parte 1: los expedientes en `NO_CUMPLE` (derivació
 - Cubre: AC-4
 - Detalle: agrega `<PanelResolucionNoCumple … />` dentro de `AccionesExpediente`, junto a `PanelCertificado`.
 - Tests: el `page.test.tsx` existente mockea `PanelResolucionNoCumple` (como `PanelCertificado`) y verifica que se pasan `usuario`, `expedienteId` y `estado`.
-- [ ] Completada
+- [x] Completada
 
 ### T4 — Bloque del cliente
 - Archivos: `modules/certificados/components/ResolucionNoCumpleCliente.tsx` (crear), `modules/expedientes/components/ExpedienteDetalleCliente.tsx` (modificar), `app/mi-cuenta/expedientes/[id]/page.tsx` (modificar), `app/mi-cuenta/expedientes/[id]/page.test.tsx` (modificar)
@@ -73,7 +73,7 @@ Hacer visible el motor de la parte 1: los expedientes en `NO_CUMPLE` (derivació
 - Cubre: AC-5, AC-6, AC-7
 - Detalle: la página suma `getResolucionNoCumplePdfData(usuario, id)` al `Promise.all` y pasa solo `{ resolucionAt }` (no el número ni el objeto completo) al componente por una prop opcional.
 - Tests: `page.test.tsx` — con datos se pasa la prop; con `null` no; sin número en las props. El componente es presentacional (SETUP.md 3.2).
-- [ ] Completada
+- [x] Completada
 
 ## Grupos paralelos
 - G1: T1, T3 (archivos disjuntos). G2: T2, T4 (disjuntos; T2 consume T1; T4 consume la parte 1 y `certificado-pdf-verificacion` T6).

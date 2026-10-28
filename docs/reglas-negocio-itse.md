@@ -101,7 +101,7 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 
 **Pago de la tasa:** no hay comprobante de pago como archivo ni número de boleta. El cliente paga en línea con Stripe (Checkout hospedado, **modo prueba**, dinero ficticio). El monto lo fija el servidor según el nivel de riesgo y la solicitud solo se presenta cuando Stripe confirma el pago.
 
-**Un solo expediente en curso por establecimiento:** un establecimiento no puede tener 2 o más expedientes en curso (cualquier estado salvo ANULADO, ENTREGADO y NO_CUMPLE; el BORRADOR cuenta). En el paso 1 de la solicitud esos establecimientos aparecen deshabilitados y el servidor lo valida al crear o editar el borrador. Al editar un borrador, ese mismo borrador no cuenta.
+**Un solo expediente en curso por establecimiento:** un establecimiento no puede tener 2 o más expedientes en curso (cualquier estado salvo ANULADO y ENTREGADO; el BORRADOR cuenta, y un NO_CUMPLE sigue en curso hasta que la resolución se envía al cliente). En el paso 1 de la solicitud esos establecimientos aparecen deshabilitados y el servidor lo valida al crear o editar el borrador. Al editar un borrador, ese mismo borrador no cuenta.
 
 **Anular un borrador:** el cliente puede anular un borrador no pagado (BORRADOR pasa a ANULADO), libera el establecimiento y se borran de UploadThing los archivos que había subido (mejor esfuerzo).
 
@@ -119,7 +119,7 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 6. El inspector coordina la fecha con el administrado y realiza la diligencia.
 7. El inspector entrega el **Informe de ITSE** con anexos y fotos.
 8. **Si cumple:** GRDyDC emite el **Certificado de ITSE** firmado por el jefe y solicita a Servicios Públicos la **Resolución Gerencial**. Con ambos documentos, se llama al administrado para la entrega. En el MVP la Resolución es ficticia y la genera el sistema al aprobar el certificado (no se solicita a Servicios Públicos ni se sube como archivo).
-9. **Si no cumple:** no se emite certificado. En el sistema el expediente queda cerrado en `NO_CUMPLE` (estado final, sin derivación a ninguna área: la derivación a Comercialización ya no forma parte del proceso). El administrado, si corresponde, inicia un trámite nuevo.
+9. **Si no cumple:** no se emite certificado. En el sistema el expediente queda en `NO_CUMPLE`, que lo deriva automáticamente a Jefatura: el superadmin genera la **Resolución de no cumple** (`FINALIZADO`) y el admin la envía al cliente (`ENTREGADO`). No se emite certificado. La derivación a Comercialización ya no forma parte del proceso. El administrado, si corresponde, inicia un trámite nuevo.
 
 ---
 
@@ -138,12 +138,12 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 | `DILIGENCIA_PROGRAMADA` | admin | Fecha de visita acordada |
 | `EN_SUBSANACION` | admin | Diligencia suspendida con observaciones subsanables y plazo activo |
 | `CUMPLE` | admin | Informe favorable registrado |
-| `NO_CUMPLE` | admin | Informe desfavorable registrado. **Estado final**: no se emite certificado y no tiene salidas (solo el superadmin puede anularlo) |
+| `NO_CUMPLE` | admin | Informe desfavorable registrado; en espera de la Resolución de no cumple de Jefatura; no se emite certificado |
 | `CERTIFICADO_PENDIENTE_FIRMA` | admin | Certificado generado y enviado a Jefatura; espera aprobación del superadmin |
 | `PENDIENTE_RESOLUCION` | — | **En desuso**: la Resolución Gerencial se genera al aprobar el certificado; nadie entra a este estado |
-| `FINALIZADO` | superadmin | Certificado aprobado y Resolución generada; pendiente de enviar al cliente |
-| `ENTREGADO` | admin | Certificado y resolución enviados al cliente |
-| `DERIVADO_COMERCIALIZACION` | admin | **En desuso**: ya no forma parte del flujo (el área de Comercialización no interviene; `NO_CUMPLE` es final) |
+| `FINALIZADO` | superadmin | Certificado aprobado y Resolución generada (o Resolución de no cumple generada); pendiente de enviar al cliente |
+| `ENTREGADO` | admin | Certificado y resolución (o solo la Resolución de no cumple) enviados al cliente |
+| `DERIVADO_COMERCIALIZACION` | admin | **En desuso**: ya no forma parte del flujo (el área de Comercialización no interviene; `NO_CUMPLE` lo resuelve Jefatura) |
 | `ANULADO` | superadmin | Expediente anulado (con motivo obligatorio) |
 
 ### 6.1 Transiciones permitidas
@@ -161,7 +161,7 @@ EN_SUBSANACION → CUMPLE | NO_CUMPLE
 CUMPLE → CERTIFICADO_PENDIENTE_FIRMA
 CERTIFICADO_PENDIENTE_FIRMA → FINALIZADO   [solo superadmin; genera la Resolución Gerencial]
 FINALIZADO → ENTREGADO
-(NO_CUMPLE es estado final: sin salidas, salvo ANULADO por el superadmin)
+NO_CUMPLE → FINALIZADO   [solo superadmin; genera la Resolución de no cumple]
 (cualquier estado no final) → ANULADO   [solo superadmin]
 ```
 
@@ -258,6 +258,12 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 - Estado del certificado: `VIGENTE`, `POR_VENCER` (≤ 60 días), `VENCIDO`, `REVOCADO`. Se calcula al leer; `REVOCADO` equivale a que el expediente esté `ANULADO` (en pantalla se muestra «Anulado»).
 - El certificado y la resolución solo son visibles y descargables para el cliente cuando el expediente llega a `ENTREGADO`; el personal los ve desde `FINALIZADO`.
 
+### Resolución de no cumple
+
+- Cuando la inspección termina en `NO_CUMPLE` no hay certificado, QR, código de verificación ni vigencia.
+- El expediente queda con Jefatura: el superadmin genera la Resolución de no cumple (`NO_CUMPLE → FINALIZADO`), con número `RG-AAAA-NNNN` compartido con la Resolución Gerencial del flujo exitoso (mismo correlativo anual).
+- El admin la envía al cliente (`FINALIZADO → ENTREGADO`). El cliente solo la ve y descarga en `ENTREGADO`; el personal desde `FINALIZADO`.
+
 ---
 
 ## 10. Constancia de Designación
@@ -280,7 +286,7 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 | Crear y enviar solicitud | ✅ | | |
 | Ver sus expedientes | ✅ | | |
 | Subir subsanación (DJ + fotos) | ✅ | | |
-| Descargar su certificado y resolución (solo tras el envío, en `ENTREGADO`) | ✅ | | |
+| Descargar su certificado y resolución, o su resolución de no cumple (solo tras el envío, en `ENTREGADO`) | ✅ | | |
 | Ver todos los expedientes | | ✅ | ✅ |
 | Cambiar estados (según transiciones) | | ✅ | ✅ |
 | Gestionar inspectores | | ✅ | ✅ |
@@ -288,7 +294,8 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 | Aprobar / devolver expedientes en Jefatura | | | ✅ |
 | Generar certificado y enviarlo a Jefatura | | ✅ | ✅ |
 | Aprobar certificados y generar la resolución | | | ✅ |
-| Enviar certificado y resolución al cliente | | ✅ | ✅ |
+| Generar la resolución de no cumple | | | ✅ |
+| Enviar certificado y resolución (o la resolución de no cumple) al cliente | | ✅ | ✅ |
 | Anular expedientes | | | ✅ |
 | Gestionar usuarios y roles | | | ✅ |
 | Gestionar catálogo de observaciones y feriados | | | ✅ |

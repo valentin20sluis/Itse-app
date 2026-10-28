@@ -1,6 +1,7 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { certificados, expedientes } from "@/db/schema";
+import { resolucionSiguiente } from "@/modules/certificados/utils/resolucion-siguiente";
 import { calcularVencimiento } from "@/modules/certificados/utils/vigencia";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
 import {
@@ -13,13 +14,6 @@ import { puedeTransicionar } from "@/modules/expedientes/utils/transiciones";
 
 export const COMENTARIO_APROBADO =
   "Certificado aprobado y Resolución Gerencial generada. Pendiente de entrega.";
-
-// Correlativo RG-AAAA-NNNN del año dentro del UPDATE (max + 1); el índice único detecta choques concurrentes.
-function resolucionSiguiente(anio: number) {
-  return sql`(select 'RG-' || ${String(anio)}::text || '-' || lpad(n::text, greatest(4, length(n::text)), '0')
-    from (select coalesce(max(split_part(resolucion_numero, '-', 3)::int), 0) + 1 as n
-      from certificados where resolucion_numero like ${`RG-${anio}-%`}) t)`;
-}
 
 export async function aprobarCertificado(
   actor: Actor,

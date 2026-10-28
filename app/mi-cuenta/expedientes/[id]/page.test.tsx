@@ -5,6 +5,7 @@ const getExpedienteDetalle = vi.hoisted(() => vi.fn());
 const getResumenInspeccion = vi.hoisted(() => vi.fn());
 const getResumenSubsanacion = vi.hoisted(() => vi.fn());
 const getResumenCertificado = vi.hoisted(() => vi.fn());
+const getResolucionNoCumplePdfData = vi.hoisted(() => vi.fn());
 const notFound = vi.hoisted(() =>
   vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
@@ -17,6 +18,7 @@ vi.mock("@/modules/expedientes/services/bandeja.service", () => ({ getExpediente
 vi.mock("@/modules/inspecciones/services/designacion.service", () => ({ getResumenInspeccion }));
 vi.mock("@/modules/inspecciones/services/diligencia.service", () => ({ getResumenSubsanacion }));
 vi.mock("@/modules/certificados/services/certificado.service", () => ({ getResumenCertificado }));
+vi.mock("@/modules/certificados/services/resolucion-pdf.service", () => ({ getResolucionNoCumplePdfData }));
 vi.mock("@/modules/expedientes/components/ExpedienteDetalleCliente", () => ({
   ExpedienteDetalleCliente: () => null,
 }));
@@ -50,6 +52,29 @@ describe("/mi-cuenta/expedientes/[id]", () => {
     expect(getResumenSubsanacion).toHaveBeenCalledWith(usuario, ID);
     expect(element.props.inspeccion).toEqual({ total: 2 });
     expect(element.props.subsanacion).toEqual({ tipoItse: "POSTERIOR", limite: null, observaciones: [] });
+  });
+
+  it("pasa solo la fecha de la resolución de no cumple, nunca el número", async () => {
+    const resolucionAt = new Date("2026-11-01T12:00:00.000Z");
+    requireRole.mockResolvedValue({ id: "u1" });
+    getExpedienteDetalle.mockResolvedValue({ expediente: { id: ID } });
+    getResolucionNoCumplePdfData.mockResolvedValue({ resolucionNumero: "RG-2026-0001", resolucionAt });
+
+    const element = await ExpedienteDetallePage({ params: params(ID) });
+
+    expect(getResolucionNoCumplePdfData).toHaveBeenCalledWith({ id: "u1" }, ID);
+    expect(element.props.resolucionNoCumple).toEqual({ resolucionAt });
+    expect(JSON.stringify(element.props.resolucionNoCumple)).not.toContain("RG-");
+  });
+
+  it("sin resolución visible (no dueño o no ENTREGADO) la prop es null", async () => {
+    requireRole.mockResolvedValue({ id: "u1" });
+    getExpedienteDetalle.mockResolvedValue({ expediente: { id: ID } });
+    getResolucionNoCumplePdfData.mockResolvedValue(null);
+
+    const element = await ExpedienteDetallePage({ params: params(ID) });
+
+    expect(element.props.resolucionNoCumple).toBeNull();
   });
 
   it("si requireRole redirige no consulta el servicio", async () => {

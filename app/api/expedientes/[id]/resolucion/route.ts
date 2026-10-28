@@ -2,7 +2,10 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { ResolucionDocument } from "@/modules/certificados/components/ResolucionDocument";
-import { getResolucionPdfData } from "@/modules/certificados/services/resolucion-pdf.service";
+import {
+  getResolucionNoCumplePdfData,
+  getResolucionPdfData,
+} from "@/modules/certificados/services/resolucion-pdf.service";
 import { getOrCreateUser } from "@/modules/usuarios/services/user.service";
 
 const idSchema = z.uuid();
@@ -18,7 +21,8 @@ export async function GET(_request: Request, ctx: { params: Promise<{ id: string
   // 404 idéntico para id inválido, ajeno, inexistente o aún no entregado: no se revela que existe.
   if (!idSchema.safeParse(id).success) return notFound();
 
-  const data = await getResolucionPdfData(usuario, id);
+  const data =
+    (await getResolucionPdfData(usuario, id)) ?? (await getResolucionNoCumplePdfData(usuario, id));
   if (!data) return notFound();
 
   const buffer = await renderToBuffer(ResolucionDocument({ data }));

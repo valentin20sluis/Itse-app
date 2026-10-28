@@ -29,6 +29,7 @@ type Props = { resultado: BandejaResultado; filtros: FiltrosBandeja };
 
 function href(filtros: FiltrosBandeja, page: number) {
   const params = new URLSearchParams();
+  if (filtros.pendientes) params.set("pendientes", filtros.pendientes);
   if (filtros.estado) params.set("estado", filtros.estado);
   if (filtros.q) params.set("q", filtros.q);
   if (page > 1) params.set("page", String(page));
@@ -52,7 +53,7 @@ const riesgo = (e: ExpedientePanelItem) => (e.nivelRiesgo ? RIESGO_LABELS[e.nive
 const presentado = (e: ExpedientePanelItem) => (e.presentadoAt ? formatFecha(e.presentadoAt) : "—");
 
 function Filtros({ filtros }: { filtros: FiltrosBandeja }) {
-  const hayFiltros = Boolean(filtros.estado || filtros.q);
+  const hayFiltros = Boolean(filtros.estado || filtros.q || filtros.pendientes);
   return (
     <form method="get" action={BASE} className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -121,14 +122,14 @@ function Paginacion({ resultado, filtros }: Props) {
 
 export function BandejaView({ resultado, filtros }: Props) {
   const { items } = resultado;
-  const hayFiltros = Boolean(filtros.estado || filtros.q);
+  const hayFiltros = Boolean(filtros.estado || filtros.q || filtros.pendientes);
 
   return (
     <div className="min-w-0">
       <PageHeader title="Expedientes" description="Expedientes presentados por los administrados." />
       <Filtros filtros={filtros} />
       <Link
-        href={`${BASE}?estado=ENVIADO_JEFATURA`}
+        href={`${BASE}?pendientes=jefatura`}
         className={buttonVariants({ variant: "outline", className: "-mt-2 mb-6 h-11" })}
       >
         Pendientes de Jefatura

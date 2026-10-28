@@ -32,7 +32,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Certificados", href: "/panel/certificados", icon: Award, roles: [...gestion], section: "main", area: "panel" },
   { label: "Reportes", href: "/panel/reportes", icon: BarChart3, roles: [...gestion], section: "main", area: "panel" },
 
-  { label: "Por aprobar", href: "/panel/expedientes?estado=ENVIADO_JEFATURA", icon: ClipboardCheck, roles: [...jefatura], section: "jefatura", area: "panel" },
+  { label: "Por aprobar", href: "/panel/expedientes?pendientes=jefatura", icon: ClipboardCheck, roles: [...jefatura], section: "jefatura", area: "panel" },
   { label: "Usuarios", href: "/panel/usuarios", icon: Users, roles: [...jefatura], section: "jefatura", area: "panel" },
   { label: "Configuración", href: "/panel/configuracion", icon: Settings, roles: [...jefatura], section: "jefatura", area: "panel" },
 ];

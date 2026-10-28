@@ -24,6 +24,11 @@ describe("getNavSections", () => {
     expect(s[1].items.map((i) => i.label)).toEqual(["Por aprobar", "Usuarios", "Configuración"]);
   });
 
+  it("Por aprobar apunta a los pendientes de Jefatura", () => {
+    const item = getNavSections("panel", "superadmin")[1].items.find((i) => i.label === "Por aprobar");
+    expect(item?.href).toBe("/panel/expedientes?pendientes=jefatura");
+  });
+
   it("cliente no recibe ítems del panel", () => {
     expect(getNavSections("panel", "cliente")).toEqual([]);
   });

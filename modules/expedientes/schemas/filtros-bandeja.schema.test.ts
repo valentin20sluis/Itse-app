@@ -31,6 +31,19 @@ describe("filtrosBandejaSchema", () => {
     },
   );
 
+  it("acepta pendientes=jefatura y descarta cualquier otro valor", () => {
+    expect(filtrosBandejaSchema.parse({ pendientes: "jefatura" }).pendientes).toBe("jefatura");
+    for (const pendientes of ["", "x", ["jefatura", "x"], undefined]) {
+      expect(filtrosBandejaSchema.parse({ pendientes }).pendientes).toBeUndefined();
+    }
+    expect(filtrosBandejaSchema.parse({ pendientes: "jefatura", estado: "EN_REVISION", q: "a" })).toEqual({
+      pendientes: "jefatura",
+      estado: "EN_REVISION",
+      q: "a",
+      page: 1,
+    });
+  });
+
   it("recorta q y descarta si queda vacío", () => {
     expect(filtrosBandejaSchema.parse({ q: "  abc  " }).q).toBe("abc");
     expect(filtrosBandejaSchema.parse({ q: "x".repeat(50) }).q).toHaveLength(30);

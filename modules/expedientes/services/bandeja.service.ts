@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ilike, isNotNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, isNotNull } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -19,6 +19,9 @@ import type {
 const nombreCompleto = (nombres: string, apellidos: string, email: string) =>
   `${nombres} ${apellidos}`.trim() || email;
 
+// Lo que espera una acción del superadmin: aprobar el expediente, aprobar el certificado o generar la resolución de no cumple.
+const ESTADOS_PENDIENTES_JEFATURA = ["ENVIADO_JEFATURA", "CERTIFICADO_PENDIENTE_FIRMA", "NO_CUMPLE"] as const;
+
 export async function listExpedientesPanel(
   actor: Actor,
   filtros: FiltrosBandeja,
@@ -27,7 +30,11 @@ export async function listExpedientesPanel(
 
   const where = and(
     isNotNull(expedientes.numero),
-    filtros.estado ? eq(expedientes.estado, filtros.estado) : undefined,
+    filtros.pendientes
+      ? inArray(expedientes.estado, [...ESTADOS_PENDIENTES_JEFATURA])
+      : filtros.estado
+        ? eq(expedientes.estado, filtros.estado)
+        : undefined,
     filtros.q ? ilike(expedientes.numero, `%${filtros.q.replace(/[\\%_]/g, "\\$&")}%`) : undefined,
   );
 

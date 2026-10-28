@@ -157,12 +157,15 @@ export const expedientes = pgTable(
     diligenciaProgramadaPara: timestamp("diligencia_programada_para", { withTimezone: true }),
     subsanacionLimite: timestamp("subsanacion_limite", { withTimezone: true }),
     subsanacionPresentadaAt: timestamp("subsanacion_presentada_at", { withTimezone: true }),
+    resolucionNoCumpleNumero: text("resolucion_no_cumple_numero"),
+    resolucionNoCumpleAt: timestamp("resolucion_no_cumple_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index("expedientes_usuario_id_idx").on(t.usuarioId),
     index("expedientes_establecimiento_id_idx").on(t.establecimientoId),
+    uniqueIndex("expedientes_resolucion_no_cumple_numero_uidx").on(t.resolucionNoCumpleNumero),
   ],
 );
 

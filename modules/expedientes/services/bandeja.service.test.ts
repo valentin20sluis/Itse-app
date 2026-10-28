@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ resultados: [] as unknown[], ilike: vi.fn() }));
+const mocks = vi.hoisted(() => ({ resultados: [] as unknown[], ilike: vi.fn(), inArray: vi.fn(), eq: vi.fn() }));
 
 vi.mock("drizzle-orm", async (importOriginal) => {
   const orig = await importOriginal<typeof import("drizzle-orm")>();
-  return { ...orig, ilike: (...args: unknown[]) => (mocks.ilike(...args), orig.ilike(...(args as [never, never]))) };
+  return {
+    ...orig,
+    inArray: (...args: unknown[]) => (mocks.inArray(...args), orig.inArray(...(args as [never, never]))),
+    eq: (...args: unknown[]) => (mocks.eq(...args), orig.eq(...(args as [never, never]))),
+    ilike: (...args: unknown[]) => (mocks.ilike(...args), orig.ilike(...(args as [never, never]))) };
 });
 
 // Cada consulta se resuelve en el orden en que se inicia, con el siguiente resultado encolado.
@@ -48,6 +52,8 @@ const fila = (extra = {}) => ({
 beforeEach(() => {
   mocks.resultados = [];
   mocks.ilike.mockClear();
+  mocks.inArray.mockClear();
+  mocks.eq.mockClear();
 });
 
 describe("listExpedientesPanel", () => {
@@ -67,6 +73,31 @@ describe("listExpedientesPanel", () => {
     mocks.resultados = [[fila({ nombres: "", apellidos: "" })], [{ total: 1 }]];
     const r = await listExpedientesPanel(admin, { page: 1 });
     expect(r.items[0].clienteNombre).toBe("ana@x.pe");
+  });
+
+  it("pendientes=jefatura rechaza al cliente", async () => {
+    await expect(listExpedientesPanel(cliente, { page: 1, pendientes: "jefatura" })).rejects.toThrow(
+      "No autorizado",
+    );
+  });
+
+  it("pendientes=jefatura filtra por los tres estados y gana sobre estado", async () => {
+    mocks.resultados = [[fila()], [{ total: 1 }]];
+    mocks.eq.mockClear();
+    await listExpedientesPanel(admin, { page: 1, pendientes: "jefatura", estado: "PRESENTADO" });
+    expect(mocks.inArray).toHaveBeenCalledTimes(1);
+    expect(mocks.inArray.mock.calls[0][1]).toEqual([
+      "ENVIADO_JEFATURA",
+      "CERTIFICADO_PENDIENTE_FIRMA",
+      "NO_CUMPLE",
+    ]);
+    expect(mocks.eq.mock.calls.some((c) => c[1] === "PRESENTADO")).toBe(false);
+  });
+
+  it("sin pendientes no usa inArray", async () => {
+    mocks.resultados = [[], [{ total: 0 }]];
+    await listExpedientesPanel(admin, { page: 1, estado: "PRESENTADO" });
+    expect(mocks.inArray).not.toHaveBeenCalled();
   });
 
   it("escapa % y _ en la búsqueda", async () => {

@@ -61,7 +61,7 @@ Cuando la inspección termina en `NO_CUMPLE`, el expediente deja de ser un calle
 - Cubre: AC-1, AC-11
 - Detalle: columnas con el índice único `expedientes_resolucion_no_cumple_numero_uidx` (patrón de `certificados`). Docs según AC-11.
 - Tests: no aplica (esquema generado y documentación; SETUP.md 3.2).
-- [ ] Completada
+- [x] Completada
 
 ### T2 — Máquina de estados y bloqueo del establecimiento
 - Archivos: `modules/expedientes/utils/transiciones.ts` (modificar), `modules/expedientes/utils/transiciones.test.ts` (modificar), `modules/establecimientos/services/establecimiento.service.ts` (modificar), `modules/establecimientos/services/establecimiento.service.test.ts` (modificar), `modules/expedientes/services/expediente.service.test.ts` (modificar)
@@ -70,7 +70,7 @@ Cuando la inspección termina en `NO_CUMPLE`, el expediente deja de ser un calle
 - Cubre: AC-2, AC-3
 - Detalle: `FLUJO.NO_CUMPLE = ["FINALIZADO"]`; `SOLO_SUPERADMIN` suma el par `NO_CUMPLE → FINALIZADO`; `FINALIZADO` ya está en `DESTINOS_CON_FLUJO_PROPIO` (no tocar). `ESTADOS_NO_BLOQUEANTES` sin `NO_CUMPLE`. `expediente.service.test.ts` solo actualiza su mock de la lista (línea 124) y los casos que dependan de `NO_CUMPLE`; `expediente.service.ts` no cambia (deriva la lista).
 - Tests: `transiciones.test.ts` (matriz y casos de AC-2, actualizando los pares de `NO_CUMPLE`); `establecimiento.service.test.ts` y `expediente.service.test.ts` (AC-3: `NO_CUMPLE` y `FINALIZADO` ocupan, `ENTREGADO` libera).
-- [ ] Completada
+- [x] Completada
 
 ### T3 — Correlativo compartido de resoluciones
 - Archivos: `modules/certificados/utils/resolucion-siguiente.ts` (crear), `modules/certificados/utils/resolucion-siguiente.test.ts` (crear), `modules/certificados/services/aprobacion.service.ts` (modificar), `modules/certificados/services/aprobacion.service.test.ts` (modificar)
@@ -79,7 +79,7 @@ Cuando la inspección termina en `NO_CUMPLE`, el expediente deja de ser un calle
 - Cubre: AC-4
 - Detalle: extrae `resolucionSiguiente(anio)` de `aprobacion.service.ts`, ahora con el máximo de ambas tablas (misma forma `RG-AAAA-NNNN`, `lpad` a 4 mínimo), y lo exporta; `aprobacion.service.ts` lo importa y borra su copia privada. Sin cambio de comportamiento observable.
 - Tests: `resolucion-siguiente.test.ts` (SQL generado referencia ambas tablas y el patrón del año); `aprobacion.service.test.ts` solo se ajusta si el mock lo exige, sin debilitar sus casos.
-- [ ] Completada
+- [x] Completada
 
 ### T4 — Servicio de generación de la resolución de no cumple
 - Archivos: `modules/certificados/services/resolucion-no-cumple.service.ts` (crear), `modules/certificados/services/resolucion-no-cumple.service.test.ts` (crear)
@@ -88,7 +88,7 @@ Cuando la inspección termina en `NO_CUMPLE`, el expediente deja de ser un calle
 - Cubre: AC-5, AC-10
 - Detalle: sigue la forma de `aprobarCertificado` (lectura del expediente, validaciones en orden, bucle de reintento, `aplicar` con `extras`), pero sin `certificados`. Exporta `COMENTARIO_RESOLUCION_NO_CUMPLE`.
 - Tests: cliente rechazado, admin `no_permitido` sin `batch`, orden de resultados, `ok` con un solo `db.batch`, comentario neutro, reintento ante `23505` (hasta 3) y relanzamiento, `conflicto`, segundo intento sin cambiar número. `db` mockeado como en `aprobacion.service.test.ts`.
-- [ ] Completada
+- [x] Completada
 
 ### T5 — Datos, documento y ruta del PDF (variante no cumple)
 - Archivos: `modules/certificados/services/resolucion-pdf.service.ts` (modificar), `modules/certificados/services/resolucion-pdf.service.test.ts` (modificar), `modules/certificados/components/ResolucionDocument.tsx` (modificar), `app/api/expedientes/[id]/resolucion/route.ts` (modificar), `app/api/expedientes/[id]/resolucion/route.test.ts` (modificar)
@@ -97,7 +97,7 @@ Cuando la inspección termina en `NO_CUMPLE`, el expediente deja de ser un calle
 - Cubre: AC-7, AC-8
 - Detalle: agrega `getResolucionNoCumplePdfData` y su tipo (`tipo: "NO_CUMPLE"`) en el mismo archivo; `ResolucionDocument` acepta la unión y ramifica por `tipo` (la variante de certificado mantiene su texto); la ruta usa `await getResolucionPdfData(...) ?? await getResolucionNoCumplePdfData(...)`. El nombre de archivo de descarga usa `resolucionNumero` en ambos casos.
 - Tests: `resolucion-pdf.service.test.ts` (casos de AC-7: cada `null`, cliente propio solo en `ENTREGADO` y ajeno `null`, personal en `FINALIZADO`, `NO_CUMPLE` y `ANULADO` `null`, `jefeNombre` nulo, ausencia de campos sensibles); `route.test.ts` (401, 404 si ambos `null`, 200 con la variante de no cumple y cabeceras, y el caso previo con certificado intacto; `renderToBuffer` mockeado). El documento es presentacional (SETUP.md 3.2).
-- [ ] Completada
+- [x] Completada
 
 ### T6 — Acción y panel de la resolución de no cumple
 - Archivos: `modules/certificados/actions/resolucion-no-cumple.actions.ts` (crear), `modules/certificados/actions/resolucion-no-cumple.actions.test.ts` (crear), `modules/certificados/components/GenerarResolucionNoCumpleButton.tsx` (crear), `modules/certificados/components/PanelResolucionNoCumple.tsx` (crear)
@@ -106,7 +106,7 @@ Cuando la inspección termina en `NO_CUMPLE`, el expediente deja de ser un calle
 - Cubre: AC-6, AC-9
 - Detalle: la acción replica `aprobarCertificadoAction`. El botón es `"use client"` (`useActionState` + `AlertDialog`, patrón de `AprobarCertificadoButton`). `PanelResolucionNoCumple` es un Server Component `{ usuario, expedienteId, estado }`: devuelve `null` para `cliente` o fuera de `NO_CUMPLE`/`FINALIZADO`/`ENTREGADO`; en `FINALIZADO`/`ENTREGADO` lee `getResolucionNoCumplePdfData` (si `null`, no renderiza). No se cablea en la página del panel: lo hace la parte 2.
 - Tests: `resolucion-no-cumple.actions.test.ts` — `requireRole("superadmin")` primero, id no uuid, mapeo de mensajes, revalidación solo en éxito, usuario de `requireRole` al servicio. Los componentes son presentacionales (SETUP.md 3.2).
-- [ ] Completada
+- [x] Completada
 
 ## Grupos paralelos
 - G1: T1, T2 (archivos disjuntos). G2: T3, T5 (disjuntos; ambos consumen T1). G3: T4 (consume T2 y T3). G4: T6 (consume T4 y T5).

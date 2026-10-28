@@ -12,7 +12,10 @@ function cadena() {
 
 vi.mock("@/db", () => ({ db: { select: () => cadena() } }));
 
-import { getResolucionPdfData } from "@/modules/certificados/services/resolucion-pdf.service";
+import {
+  getResolucionNoCumplePdfData,
+  getResolucionPdfData,
+} from "@/modules/certificados/services/resolucion-pdf.service";
 
 const admin = { id: "u1", rol: "admin" as const };
 const cliente = { id: "u3", rol: "cliente" as const };
@@ -91,5 +94,61 @@ describe("getResolucionPdfData", () => {
   it("jefeNombre es null sin fila de historial", async () => {
     h.lecturas = [[fila()], []];
     expect((await getResolucionPdfData(admin, "e"))?.jefeNombre).toBeNull();
+  });
+});
+
+const filaNC = (extra: Record<string, unknown> = {}) => {
+  const base: Record<string, unknown> = fila();
+  for (const k of ["certificadoNumero", "emitidoAt", "venceAt"]) delete base[k];
+  return { ...base, ...extra };
+};
+
+describe("getResolucionNoCumplePdfData", () => {
+  it.each([
+    ["sin fila", undefined],
+    ["sin número", filaNC({ resolucionNumero: null })],
+    ["sin fecha", filaNC({ resolucionAt: null })],
+    ["NO_CUMPLE", filaNC({ estado: "NO_CUMPLE" })],
+    ["anulado", filaNC({ estado: "ANULADO" })],
+  ])("null: %s", async (_n, f) => {
+    h.lecturas = [f ? [f] : []];
+    expect(await getResolucionNoCumplePdfData(admin, "e")).toBeNull();
+  });
+
+  it("cliente: solo propio y solo en ENTREGADO", async () => {
+    h.lecturas = [[filaNC({ estado: "FINALIZADO" })]];
+    expect(await getResolucionNoCumplePdfData(cliente, "e")).toBeNull();
+    h.lecturas = [[filaNC({ usuarioId: "otro" })]];
+    expect(await getResolucionNoCumplePdfData(cliente, "e")).toBeNull();
+    h.lecturas = [[filaNC()], []];
+    expect((await getResolucionNoCumplePdfData(cliente, "e"))?.tipo).toBe("NO_CUMPLE");
+  });
+
+  it("personal en FINALIZADO: datos de la variante, sin campos sensibles ni de certificado", async () => {
+    h.lecturas = [[filaNC({ estado: "FINALIZADO" })], [{ nombres: "Rosa", apellidos: "Díaz" }]];
+    const r = await getResolucionNoCumplePdfData(admin, "e");
+    expect(r).toEqual({
+      tipo: "NO_CUMPLE",
+      resolucionNumero: "RG-2026-0001",
+      resolucionAt: emitido,
+      expedienteNumero: "EXP-2026-00001",
+      solicitante: { nombre: "Ana Quispe", razonSocial: null },
+      establecimiento: {
+        nombreComercial: "Bodega Sol",
+        direccion: "Av. Ficticia 123",
+        distrito: "Distrito Uno",
+        giro: "Bodega",
+      },
+      nivelRiesgo: "MEDIO",
+      jefeNombre: "Rosa Díaz",
+    });
+    for (const k of ["codigo", "documento", "telefono", "email", "venceAt", "certificado"]) {
+      expect(JSON.stringify(r)).not.toContain(k);
+    }
+  });
+
+  it("jefeNombre es null sin historial", async () => {
+    h.lecturas = [[filaNC()], []];
+    expect((await getResolucionNoCumplePdfData(admin, "e"))?.jefeNombre).toBeNull();
   });
 });

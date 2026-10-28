@@ -1,0 +1,62 @@
+import { and, eq, isNull } from "drizzle-orm";
+import { db } from "@/db";
+import { expedientes } from "@/db/schema";
+import { resolucionSiguiente } from "@/modules/certificados/utils/resolucion-siguiente";
+import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
+import {
+  codigoPg,
+  getAnioLima,
+  MAX_INTENTOS_NUMERO,
+} from "@/modules/expedientes/services/expediente.service";
+import { aplicar, type TransicionResultado } from "@/modules/expedientes/services/transicion.service";
+import { puedeTransicionar } from "@/modules/expedientes/utils/transiciones";
+
+export const COMENTARIO_RESOLUCION_NO_CUMPLE = "Resolución de no cumple generada. Pendiente de entrega.";
+
+export async function generarResolucionNoCumple(
+  actor: Actor,
+  id: string,
+  ahora: Date = new Date(),
+): Promise<TransicionResultado> {
+  if (actor.rol === "cliente") throw new Error("No autorizado");
+  if (actor.rol !== "superadmin") return { status: "no_permitido" };
+  const [exp] = await db
+    .select({
+      estado: expedientes.estado,
+      numero: expedientes.numero,
+      resolucionNumero: expedientes.resolucionNoCumpleNumero,
+    })
+    .from(expedientes)
+    .where(eq(expedientes.id, id))
+    .limit(1);
+  if (!exp?.numero) return { status: "no_encontrado" };
+  if (
+    exp.estado !== "NO_CUMPLE" ||
+    exp.resolucionNumero ||
+    !puedeTransicionar(exp.estado, "FINALIZADO", actor.rol)
+  ) {
+    return { status: "no_permitido" };
+  }
+  const anio = getAnioLima(ahora);
+  for (let intento = 1; ; intento++) {
+    try {
+      return await aplicar(
+        actor,
+        id,
+        "NO_CUMPLE",
+        "FINALIZADO",
+        { estado: "FINALIZADO" },
+        undefined,
+        COMENTARIO_RESOLUCION_NO_CUMPLE,
+        (gano) => [
+          db
+            .update(expedientes)
+            .set({ resolucionNoCumpleNumero: resolucionSiguiente(anio), resolucionNoCumpleAt: ahora })
+            .where(and(eq(expedientes.id, id), isNull(expedientes.resolucionNoCumpleNumero), gano)),
+        ],
+      );
+    } catch (e) {
+      if (codigoPg(e) !== "23505" || intento >= MAX_INTENTOS_NUMERO) throw e;
+    }
+  }
+}

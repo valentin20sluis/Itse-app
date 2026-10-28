@@ -13,6 +13,8 @@ vi.mock("@/modules/usuarios/services/authorization.service", () => ({ requireRol
 vi.mock("@/modules/expedientes/services/bandeja.service", () => ({ getExpedienteDetalle }));
 vi.mock("@/modules/inspecciones/components/PanelInspeccion", () => ({ PanelInspeccion: () => null }));
 vi.mock("@/modules/certificados/components/PanelCertificado", () => ({ PanelCertificado: () => null }));
+const PanelResolucionNoCumple = vi.hoisted(() => vi.fn(() => null));
+vi.mock("@/modules/certificados/components/PanelResolucionNoCumple", () => ({ PanelResolucionNoCumple }));
 vi.mock("@/modules/expedientes/components/AccionesExpediente", () => ({ AccionesExpediente: () => null }));
 vi.mock("@/modules/expedientes/components/ExpedienteDatos", () => ({ ExpedienteDatos: () => null }));
 vi.mock("@/modules/expedientes/components/HistorialTimeline", () => ({ HistorialTimeline: () => null }));
@@ -38,6 +40,25 @@ describe("/panel/expedientes/[id]", () => {
 
     expect(requireRole).toHaveBeenCalledWith("admin", "superadmin");
     expect(getExpedienteDetalle).toHaveBeenCalledWith(usuario, ID);
+  });
+
+  it("renderiza PanelResolucionNoCumple con usuario, expedienteId y estado", async () => {
+    const usuario = { id: "u1", rol: "admin" };
+    requireRole.mockResolvedValue(usuario);
+    getExpedienteDetalle.mockResolvedValue({
+      expediente: { id: ID, numero: "EXP-2026-00001", estado: "NO_CUMPLE", nivelRiesgo: "BAJO" },
+      historial: [],
+    });
+
+    const arbol = await ExpedienteDetallePage(props(ID));
+
+    const buscar = (nodo: unknown): { props: Record<string, unknown> } | null => {
+      if (Array.isArray(nodo)) return nodo.map(buscar).find(Boolean) ?? null;
+      if (!nodo || typeof nodo !== "object" || !("props" in nodo)) return null;
+      const el = nodo as { type: unknown; props: { children?: unknown } & Record<string, unknown> };
+      return el.type === PanelResolucionNoCumple ? el : buscar(el.props.children);
+    };
+    expect(buscar(arbol)?.props).toEqual({ usuario, expedienteId: ID, estado: "NO_CUMPLE" });
   });
 
   it("id que no es uuid llama notFound sin consultar", async () => {

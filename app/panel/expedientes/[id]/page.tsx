@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PanelCertificado } from "@/modules/certificados/components/PanelCertificado";
+import { PanelResolucionNoCumple } from "@/modules/certificados/components/PanelResolucionNoCumple";
 import { AccionesExpediente } from "@/modules/expedientes/components/AccionesExpediente";
 import { EstadoBadge } from "@/modules/expedientes/components/EstadoBadge";
 import { ExpedienteDatos } from "@/modules/expedientes/components/ExpedienteDatos";
@@ -71,6 +72,7 @@ export default async function ExpedienteDetallePage({
             />
           )}
           <PanelCertificado usuario={usuario} expedienteId={expediente.id} estado={expediente.estado} />
+          <PanelResolucionNoCumple usuario={usuario} expedienteId={expediente.id} estado={expediente.estado} />
         </AccionesExpediente>
       </div>
     </div>

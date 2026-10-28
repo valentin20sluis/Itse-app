@@ -173,13 +173,20 @@ describe("guardia de archivado con expedientes", () => {
     expect(store.rows[0].archivadoAt).toBeNull();
   });
 
+  it.each(["NO_CUMPLE", "FINALIZADO"])("con un expediente en %s no archiva", async (estado) => {
+    const e = await createEstablecimiento(A, input);
+    store.expedientes = [{ establecimientoId: e.id, estado }];
+    await expect(archiveEstablecimiento(A, e.id)).rejects.toBeInstanceOf(
+      EstablecimientoConExpedientesError,
+    );
+  });
+
   it("con solo borradores o finalizados archiva", async () => {
     const e = await createEstablecimiento(A, input);
     store.expedientes = [
       { establecimientoId: e.id, estado: "BORRADOR" },
       { establecimientoId: e.id, estado: "ENTREGADO" },
       { establecimientoId: e.id, estado: "ANULADO" },
-      { establecimientoId: e.id, estado: "NO_CUMPLE" },
       { establecimientoId: e.id, estado: "DERIVADO_COMERCIALIZACION" },
     ];
     expect((await archiveEstablecimiento(A, e.id))?.archivadoAt).toBeInstanceOf(Date);
