@@ -6,8 +6,19 @@ import { AccionesExpediente } from "@/modules/expedientes/components/AccionesExp
 import { EstadoBadge } from "@/modules/expedientes/components/EstadoBadge";
 import { ExpedienteDatos } from "@/modules/expedientes/components/ExpedienteDatos";
 import { HistorialTimeline } from "@/modules/expedientes/components/HistorialTimeline";
+import type { EstadoExpediente } from "@/modules/expedientes/constants/estado-labels";
 import { getExpedienteDetalle } from "@/modules/expedientes/services/bandeja.service";
+import { PanelInspeccion } from "@/modules/inspecciones/components/PanelInspeccion";
 import { requireRole } from "@/modules/usuarios/services/authorization.service";
+
+// Antes de la aprobación de Jefatura no hay designación que mostrar.
+const ESTADOS_SIN_INSPECCION: EstadoExpediente[] = [
+  "BORRADOR",
+  "PRESENTADO",
+  "EN_REVISION",
+  "OBSERVADO_REQUISITOS",
+  "ENVIADO_JEFATURA",
+];
 
 export const metadata = { title: "Detalle del expediente" };
 
@@ -50,7 +61,15 @@ export default async function ExpedienteDetallePage({
           estado={expediente.estado}
           rol={usuario.rol}
           nivelRiesgo={expediente.nivelRiesgo}
-        />
+        >
+          {!ESTADOS_SIN_INSPECCION.includes(expediente.estado) && (
+            <PanelInspeccion
+              usuario={usuario}
+              expediente={expediente}
+              establecimiento={detalle.establecimiento}
+            />
+          )}
+        </AccionesExpediente>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { ExpedienteDetalleCliente } from "@/modules/expedientes/components/ExpedienteDetalleCliente";
 import { getExpedienteDetalle } from "@/modules/expedientes/services/bandeja.service";
+import { getResumenInspeccion } from "@/modules/inspecciones/services/designacion.service";
 import { requireRole } from "@/modules/usuarios/services/authorization.service";
 
 export default async function ExpedienteDetallePage({
@@ -17,5 +18,7 @@ export default async function ExpedienteDetallePage({
   const detalle = await getExpedienteDetalle(usuario, id);
   if (!detalle) notFound();
 
-  return <ExpedienteDetalleCliente detalle={detalle} />;
+  const inspeccion = await getResumenInspeccion(usuario, id);
+
+  return <ExpedienteDetalleCliente detalle={detalle} inspeccion={inspeccion} />;
 }

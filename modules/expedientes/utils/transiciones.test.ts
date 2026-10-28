@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { ESTADO_LABELS, type EstadoExpediente } from "@/modules/expedientes/constants/estado-labels";
 import {
+  DESTINOS_CON_FLUJO_PROPIO,
   ESTADOS_FINALES,
   TRANSICIONES,
   puedeTransicionar,
   requiereMotivo,
+  transicionesGenericas,
   transicionesPermitidas,
 } from "@/modules/expedientes/utils/transiciones";
 
@@ -17,6 +19,7 @@ const ESPERADAS = new Set<string>([
   "EN_REVISION>ENVIADO_JEFATURA",
   "ENVIADO_JEFATURA>APROBADO_JEFATURA",
   "ENVIADO_JEFATURA>EN_REVISION",
+  "APROBADO_JEFATURA>INSPECTOR_DESIGNADO",
   ...ESTADOS.filter((e) => e !== "BORRADOR" && !ESTADOS_FINALES.includes(e)).map(
     (e) => `${e}>ANULADO`,
   ),
@@ -48,8 +51,13 @@ describe("transiciones", () => {
       "APROBADO_JEFATURA",
       "EN_REVISION",
     ]);
-    expect(transicionesPermitidas("APROBADO_JEFATURA", "admin")).toEqual([]);
-    expect(transicionesPermitidas("APROBADO_JEFATURA", "superadmin")).toEqual(["ANULADO"]);
+    expect(transicionesPermitidas("APROBADO_JEFATURA", "admin")).toEqual(["INSPECTOR_DESIGNADO"]);
+    expect(transicionesPermitidas("APROBADO_JEFATURA", "superadmin")).toEqual([
+      "INSPECTOR_DESIGNADO",
+      "ANULADO",
+    ]);
+    expect(transicionesPermitidas("INSPECTOR_DESIGNADO", "admin")).toEqual([]);
+    expect(transicionesPermitidas("INSPECTOR_DESIGNADO", "superadmin")).toEqual(["ANULADO"]);
     expect(puedeTransicionar("PRESENTADO", "EN_REVISION", "admin")).toBe(true);
     expect(puedeTransicionar("EN_REVISION", "ENVIADO_JEFATURA", "admin")).toBe(true);
   });
@@ -97,6 +105,13 @@ describe("transiciones", () => {
     expect(puedeTransicionar("EN_REVISION", "INSPECTOR_DESIGNADO", "superadmin")).toBe(false);
   });
 
+  it("transicionesGenericas excluye los destinos con flujo propio", () => {
+    expect(DESTINOS_CON_FLUJO_PROPIO).toEqual(["INSPECTOR_DESIGNADO"]);
+    expect(transicionesGenericas("APROBADO_JEFATURA", "admin")).toEqual([]);
+    expect(transicionesGenericas("APROBADO_JEFATURA", "superadmin")).toEqual(["ANULADO"]);
+    expect(transicionesGenericas("PRESENTADO", "admin")).toEqual(["EN_REVISION"]);
+  });
+
   it("requiereMotivo: OBSERVADO_REQUISITOS, ANULADO y devolución desde Jefatura", () => {
     for (const e of ESTADOS) {
       expect(requiereMotivo(e)).toBe(e === "OBSERVADO_REQUISITOS" || e === "ANULADO");
@@ -105,5 +120,6 @@ describe("transiciones", () => {
     expect(requiereMotivo("EN_REVISION", "PRESENTADO")).toBe(false);
     expect(requiereMotivo("ENVIADO_JEFATURA", "EN_REVISION")).toBe(false);
     expect(requiereMotivo("APROBADO_JEFATURA", "ENVIADO_JEFATURA")).toBe(false);
+    expect(requiereMotivo("INSPECTOR_DESIGNADO")).toBe(false);
   });
 });

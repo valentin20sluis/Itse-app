@@ -9,6 +9,17 @@ export function tipoItsePorRiesgo(nivel: NivelRiesgo): "POSTERIOR" | "PREVIA" {
   return nivel === "BAJO" || nivel === "MEDIO" ? "POSTERIOR" : "PREVIA";
 }
 
+const INSPECTORES_REQUERIDOS: Record<NivelRiesgo, number> = {
+  BAJO: 1,
+  MEDIO: 1,
+  ALTO: 2,
+  MUY_ALTO: 3,
+};
+
+export function inspectoresRequeridos(nivel: NivelRiesgo): number {
+  return INSPECTORES_REQUERIDOS[nivel];
+}
+
 export type DatosRiesgo = {
   areaM2: number;
   numeroPisos: number;

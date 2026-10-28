@@ -13,7 +13,11 @@ const FLUJO: Partial<Record<EstadoExpediente, EstadoExpediente[]>> = {
   PRESENTADO: ["EN_REVISION"],
   EN_REVISION: ["OBSERVADO_REQUISITOS", "ENVIADO_JEFATURA"],
   ENVIADO_JEFATURA: ["APROBADO_JEFATURA", "EN_REVISION"],
+  APROBADO_JEFATURA: ["INSPECTOR_DESIGNADO"],
 };
+
+// Destinos que exigen datos propios (inspectores): no se alcanzan con el cambio de estado genérico.
+export const DESTINOS_CON_FLUJO_PROPIO: readonly EstadoExpediente[] = ["INSPECTOR_DESIGNADO"];
 
 const SOLO_SUPERADMIN = (desde: EstadoExpediente, hasta: EstadoExpediente) =>
   hasta === "ANULADO" ||
@@ -32,6 +36,10 @@ export function transicionesPermitidas(estado: EstadoExpediente, rol: Role): Est
   return TRANSICIONES[estado].filter(
     (hasta) => rol === "superadmin" || !SOLO_SUPERADMIN(estado, hasta),
   );
+}
+
+export function transicionesGenericas(estado: EstadoExpediente, rol: Role): EstadoExpediente[] {
+  return transicionesPermitidas(estado, rol).filter((h) => !DESTINOS_CON_FLUJO_PROPIO.includes(h));
 }
 
 export function puedeTransicionar(

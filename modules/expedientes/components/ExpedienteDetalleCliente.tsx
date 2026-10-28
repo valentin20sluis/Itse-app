@@ -6,11 +6,19 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EstadoBadge } from "@/modules/expedientes/components/EstadoBadge";
 import { ExpedienteDatos } from "@/modules/expedientes/components/ExpedienteDatos";
+import { InspeccionResumen } from "@/modules/inspecciones/components/InspeccionResumen";
+import type { ResumenInspeccion } from "@/modules/inspecciones/services/designacion.service";
 import { HistorialTimeline } from "@/modules/expedientes/components/HistorialTimeline";
 import type { ExpedienteDetalle } from "@/modules/expedientes/types/bandeja.types";
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
 
-export function ExpedienteDetalleCliente({ detalle }: { detalle: ExpedienteDetalle }) {
+export function ExpedienteDetalleCliente({
+  detalle,
+  inspeccion,
+}: {
+  detalle: ExpedienteDetalle;
+  inspeccion: ResumenInspeccion;
+}) {
   const { expediente: e, historial } = detalle;
 
   return (
@@ -34,6 +42,7 @@ export function ExpedienteDetalleCliente({ detalle }: { detalle: ExpedienteDetal
 
       <div className="flex flex-col gap-4">
         <ExpedienteDatos detalle={detalle} />
+        <InspeccionResumen total={inspeccion.total} />
         <Card>
           <CardHeader>
             <h2 className="font-heading text-base font-medium">Historial</h2>

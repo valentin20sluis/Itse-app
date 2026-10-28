@@ -85,6 +85,20 @@
       "when": 1793159402353,
       "tag": "0011_wakeful_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793161427296,
+      "tag": "0012_tiny_vivisector",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793161659252,
+      "tag": "0013_open_smasher",
+      "breakpoints": true
     }
   ]
 }

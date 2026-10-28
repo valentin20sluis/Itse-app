@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireRole = vi.hoisted(() => vi.fn());
 const getExpedienteDetalle = vi.hoisted(() => vi.fn());
+const getResumenInspeccion = vi.hoisted(() => vi.fn());
 const notFound = vi.hoisted(() =>
   vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
@@ -11,6 +12,7 @@ const notFound = vi.hoisted(() =>
 vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("@/modules/usuarios/services/authorization.service", () => ({ requireRole }));
 vi.mock("@/modules/expedientes/services/bandeja.service", () => ({ getExpedienteDetalle }));
+vi.mock("@/modules/inspecciones/services/designacion.service", () => ({ getResumenInspeccion }));
 vi.mock("@/modules/expedientes/components/ExpedienteDetalleCliente", () => ({
   ExpedienteDetalleCliente: () => null,
 }));
@@ -28,12 +30,15 @@ describe("/mi-cuenta/expedientes/[id]", () => {
     const detalle = { expediente: { id: ID } };
     requireRole.mockResolvedValue(usuario);
     getExpedienteDetalle.mockResolvedValue(detalle);
+    getResumenInspeccion.mockResolvedValue({ total: 2 });
 
     const element = await ExpedienteDetallePage({ params: params(ID) });
 
     expect(requireRole).toHaveBeenCalledWith("cliente");
     expect(getExpedienteDetalle).toHaveBeenCalledWith(usuario, ID);
+    expect(getResumenInspeccion).toHaveBeenCalledWith(usuario, ID);
     expect(element.props.detalle).toBe(detalle);
+    expect(element.props.inspeccion).toEqual({ total: 2 });
   });
 
   it("si requireRole redirige no consulta el servicio", async () => {
@@ -62,5 +67,6 @@ describe("/mi-cuenta/expedientes/[id]", () => {
 
     await expect(ExpedienteDetallePage({ params: params(ID) })).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFound).toHaveBeenCalled();
+    expect(getResumenInspeccion).not.toHaveBeenCalled();
   });
 });

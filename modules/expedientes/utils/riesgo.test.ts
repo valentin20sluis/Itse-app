@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_AREA_MEDIO_M2,
   MAX_PISOS_MEDIO,
+  inspectoresRequeridos,
   sugerirNivelRiesgo,
   tipoItsePorRiesgo,
 } from "./riesgo";
@@ -155,5 +156,14 @@ describe("sugerirNivelRiesgo - otras funciones", () => {
     expect(
       sugerirNivelRiesgo({ ...base, funcion: null, tieneSotano: true }),
     ).toBe("ALTO");
+  });
+});
+
+describe("inspectoresRequeridos", () => {
+  it("1, 1, 2 y 3 según el nivel de riesgo", () => {
+    expect(inspectoresRequeridos("BAJO")).toBe(1);
+    expect(inspectoresRequeridos("MEDIO")).toBe(1);
+    expect(inspectoresRequeridos("ALTO")).toBe(2);
+    expect(inspectoresRequeridos("MUY_ALTO")).toBe(3);
   });
 });

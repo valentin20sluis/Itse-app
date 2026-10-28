@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId, useRef, useState } from "react";
+import { useActionState, useId, useRef, useState, type ReactNode } from "react";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -23,7 +23,7 @@ import type { EstadoExpediente } from "@/modules/expedientes/constants/estado-la
 import type { NivelRiesgo } from "@/modules/expedientes/types/expediente.types";
 import {
   requiereMotivo,
-  transicionesPermitidas,
+  transicionesGenericas,
 } from "@/modules/expedientes/utils/transiciones";
 import type { Role } from "@/modules/usuarios/types/user.types";
 
@@ -32,6 +32,7 @@ type Props = {
   estado: EstadoExpediente;
   rol: Role;
   nivelRiesgo: NivelRiesgo | null;
+  children?: ReactNode;
 };
 
 const ACCION_LABELS: Partial<Record<EstadoExpediente, string>> = {
@@ -44,7 +45,6 @@ const ACCION_LABELS: Partial<Record<EstadoExpediente, string>> = {
 
 const SIN_ACCIONES: Partial<Record<EstadoExpediente, string>> = {
   ENVIADO_JEFATURA: "Esperando aprobación de Jefatura.",
-  APROBADO_JEFATURA: "Esperando designación de inspector.",
 };
 
 function accionLabel(hasta: EstadoExpediente, desde: EstadoExpediente) {
@@ -273,8 +273,9 @@ export function AccionesExpediente({
   estado,
   rol,
   nivelRiesgo,
+  children,
 }: Props) {
-  const permitidas = transicionesPermitidas(estado, rol);
+  const permitidas = transicionesGenericas(estado, rol);
   const [elegida, setElegida] = useState<EstadoExpediente | null>(null);
   const directas = permitidas.filter((h) => !requiereMotivo(h, estado));
   const conMotivo = permitidas.filter((h) => requiereMotivo(h, estado));
@@ -286,9 +287,11 @@ export function AccionesExpediente({
         Acciones
       </h2>
       {permitidas.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {SIN_ACCIONES[estado] ?? "No hay acciones disponibles en este estado."}
-        </p>
+        (SIN_ACCIONES[estado] || !children) && (
+          <p className="text-sm text-muted-foreground">
+            {SIN_ACCIONES[estado] ?? "No hay acciones disponibles en este estado."}
+          </p>
+        )
       ) : (
         <div className="space-y-4">
           {directas.length > 0 && (
@@ -327,6 +330,7 @@ export function AccionesExpediente({
           )}
         </div>
       )}
+      {children}
       {puedeRiesgo && (
         <FormRiesgo expedienteId={expedienteId} nivelRiesgo={nivelRiesgo} />
       )}

@@ -201,3 +201,42 @@ export const historialEstados = pgTable(
 );
 
 export type HistorialEstado = typeof historialEstados.$inferSelect;
+
+export const inspectores = pgTable(
+  "inspectores",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    nombres: text("nombres").notNull(),
+    apellidos: text("apellidos").notNull(),
+    documento: text("documento").notNull(),
+    telefono: text("telefono").notNull(),
+    email: text("email").notNull(),
+    habilitadoPrevia: boolean("habilitado_previa").notNull().default(false),
+    activo: boolean("activo").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("inspectores_documento_uidx").on(t.documento)],
+);
+
+export type Inspector = typeof inspectores.$inferSelect;
+
+export const designaciones = pgTable(
+  "designaciones",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    expedienteId: uuid("expediente_id")
+      .notNull()
+      .references(() => expedientes.id, { onDelete: "restrict" }),
+    inspectorId: uuid("inspector_id")
+      .notNull()
+      .references(() => inspectores.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("designaciones_expediente_inspector_uidx").on(t.expedienteId, t.inspectorId),
+    index("designaciones_expediente_id_idx").on(t.expedienteId),
+  ],
+);
+
+export type Designacion = typeof designaciones.$inferSelect;

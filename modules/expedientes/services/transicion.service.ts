@@ -1,11 +1,16 @@
 import { and, eq, sql, type SQL } from "drizzle-orm";
+import type { BatchItem } from "drizzle-orm/batch";
 import { db } from "@/db";
 import { expedientes, historialEstados } from "@/db/schema";
 import { RIESGO_LABELS } from "@/modules/expedientes/constants/expediente-labels";
 import type { EstadoExpediente } from "@/modules/expedientes/constants/estado-labels";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
 import type { NivelRiesgo } from "@/modules/expedientes/types/expediente.types";
-import { puedeTransicionar, requiereMotivo } from "@/modules/expedientes/utils/transiciones";
+import {
+  DESTINOS_CON_FLUJO_PROPIO,
+  puedeTransicionar,
+  requiereMotivo,
+} from "@/modules/expedientes/utils/transiciones";
 
 export type TransicionResultado =
   | { status: "ok" }
@@ -30,16 +35,24 @@ async function leer(id: string) {
 // UPDATE condicionado al estado leído + INSERT del historial solo si ese UPDATE ganó, en una
 // única transacción (db.batch). Si otro admin se adelantó, el UPDATE afecta 0 filas y no hay historial.
 // ponytail: control optimista, sin bloqueo pesimista; basta para 2 admins.
-async function aplicar(
+// `extras` recibe la condición "el UPDATE ganó" para que sus INSERT viajen en el mismo batch y dependan de él.
+export async function aplicar(
   actor: Actor,
   id: string,
   desde: EstadoExpediente,
   hasta: EstadoExpediente,
-  cambios: { estado?: EstadoExpediente; nivelRiesgo?: NivelRiesgo },
+  cambios: Partial<typeof expedientes.$inferInsert>,
   guardas: SQL | undefined,
   comentario: string | null,
+  extras?: (ganoUpdate: SQL) => BatchItem<"pg">[],
 ): Promise<TransicionResultado> {
   const ahora = new Date();
+  const ganoUpdate = sql`exists (
+    select 1 from ${expedientes}
+    where ${expedientes.id} = ${id}::uuid
+      and ${expedientes.updatedAt} = ${ahora.toISOString()}::timestamptz
+      and ${expedientes.estado} = ${hasta}::estado_expediente
+  )`;
   const [actualizados] = await db.batch([
     db
       .update(expedientes)
@@ -49,12 +62,8 @@ async function aplicar(
     db.insert(historialEstados).select(sql`
       select gen_random_uuid(), ${id}::uuid, ${desde}::estado_expediente, ${hasta}::estado_expediente,
         ${actor.id}::uuid, ${comentario}::text, now()
-      where exists (
-        select 1 from ${expedientes}
-        where ${expedientes.id} = ${id}::uuid
-          and ${expedientes.updatedAt} = ${ahora.toISOString()}::timestamptz
-          and ${expedientes.estado} = ${hasta}::estado_expediente
-      )`),
+      where ${ganoUpdate}`),
+    ...(extras?.(ganoUpdate) ?? []),
   ]);
   return { status: actualizados.length > 0 ? "ok" : "conflicto" };
 }
@@ -65,6 +74,7 @@ export async function cambiarEstado(
   input: { hasta: EstadoExpediente; comentario?: string },
 ): Promise<TransicionResultado> {
   assertStaff(actor);
+  if (DESTINOS_CON_FLUJO_PROPIO.includes(input.hasta)) return { status: "no_permitido" };
   const exp = await leer(id);
   if (!exp) return { status: "no_encontrado" };
   if (!puedeTransicionar(exp.estado, input.hasta, actor.rol)) return { status: "no_permitido" };

@@ -16,7 +16,7 @@ vi.mock("@/db", () => ({
   },
 }));
 
-import { actualizarRiesgo, cambiarEstado } from "@/modules/expedientes/services/transicion.service";
+import { actualizarRiesgo, aplicar, cambiarEstado } from "@/modules/expedientes/services/transicion.service";
 
 const admin = { id: "u1", rol: "admin" as const };
 const superadmin = { id: "u2", rol: "superadmin" as const };
@@ -186,5 +186,27 @@ describe("actualizarRiesgo", () => {
     expect(await actualizarRiesgo(admin, "e", { nivelRiesgo: "ALTO", nota: "x".repeat(10) })).toEqual({
       status: "no_encontrado",
     });
+  });
+});
+
+describe("cambiarEstado - flujo propio y aplicar con extras", () => {
+  it("INSPECTOR_DESIGNADO no se alcanza con cambiarEstado", async () => {
+    h.fila = { estado: "APROBADO_JEFATURA", nivelRiesgo: "MEDIO", numero: "n" };
+    expect(await cambiarEstado(superadmin, "e", { hasta: "INSPECTOR_DESIGNADO" })).toEqual({
+      status: "no_permitido",
+    });
+    expect(h.batch).not.toHaveBeenCalled();
+  });
+
+  it("extras viajan en la misma llamada a db.batch", async () => {
+    await aplicar(admin, "e", "PRESENTADO", "EN_REVISION", {}, undefined, null, () => [
+      { kind: "extra" } as never,
+    ]);
+    expect(h.batch).toHaveBeenCalledTimes(1);
+    expect(h.batch.mock.calls[0][0].map((s: { kind: string }) => s.kind)).toEqual([
+      "update",
+      "insert",
+      "extra",
+    ]);
   });
 });
