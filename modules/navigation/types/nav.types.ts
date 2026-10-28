@@ -5,6 +5,8 @@ export type NavArea = "cliente" | "panel";
 
 export type NavItem = {
   label: string;
+  /** Texto breve para la barra inferior del celular (6 ítems en 360 px); el nombre completo va en aria-label. */
+  labelCorto?: string;
   href: string;
   icon: LucideIcon;
   roles: Role[];

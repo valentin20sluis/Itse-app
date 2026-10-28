@@ -20,11 +20,11 @@ const jefatura = ["superadmin"] as const;
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Inicio", href: "/mi-cuenta", icon: Home, roles: [...cliente], section: "main", area: "cliente" },
-  { label: "Mis establecimientos", href: "/mi-cuenta/establecimientos", icon: Building2, roles: [...cliente], section: "main", area: "cliente" },
-  { label: "Nueva solicitud", href: "/mi-cuenta/nueva-solicitud", icon: FilePlus2, roles: [...cliente], section: "main", area: "cliente" },
-  { label: "Mis expedientes", href: "/mi-cuenta/expedientes", icon: FolderOpen, roles: [...cliente], section: "main", area: "cliente" },
-  { label: "Mis certificados", href: "/mi-cuenta/certificados", icon: Award, roles: [...cliente], section: "main", area: "cliente" },
-  { label: "Mi perfil", href: "/mi-cuenta/perfil", icon: UserCircle, roles: [...cliente], section: "main", area: "cliente" },
+  { label: "Mis establecimientos", labelCorto: "Locales", href: "/mi-cuenta/establecimientos", icon: Building2, roles: [...cliente], section: "main", area: "cliente" },
+  { label: "Nueva solicitud", labelCorto: "Solicitar", href: "/mi-cuenta/nueva-solicitud", icon: FilePlus2, roles: [...cliente], section: "main", area: "cliente" },
+  { label: "Mis expedientes", labelCorto: "Trámites", href: "/mi-cuenta/expedientes", icon: FolderOpen, roles: [...cliente], section: "main", area: "cliente" },
+  { label: "Mis certificados", labelCorto: "Certif.", href: "/mi-cuenta/certificados", icon: Award, roles: [...cliente], section: "main", area: "cliente" },
+  { label: "Mi perfil", labelCorto: "Perfil", href: "/mi-cuenta/perfil", icon: UserCircle, roles: [...cliente], section: "main", area: "cliente" },
 
   { label: "Dashboard", href: "/panel", icon: LayoutDashboard, roles: [...gestion], section: "main", area: "panel" },
   { label: "Expedientes", href: "/panel/expedientes", icon: FolderOpen, roles: [...gestion], section: "main", area: "panel" },

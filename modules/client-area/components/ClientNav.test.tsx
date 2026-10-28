@@ -10,7 +10,9 @@ describe("ClientNav", () => {
   it("renderiza las 6 etiquetas y marca solo la ruta actual", () => {
     pathname.value = "/mi-cuenta/perfil";
     render(<ClientNav />);
-    expect(screen.getAllByText("Mi perfil")).toHaveLength(2);
+    expect(screen.getAllByText("Mi perfil")).toHaveLength(1);
+    expect(screen.getByText("Perfil")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Mi perfil", current: "page", hidden: true })).toHaveLength(2);
     expect(screen.getAllByText("Inicio")).toHaveLength(2);
     const current = document.querySelectorAll('[aria-current="page"]');
     expect(current).toHaveLength(2);

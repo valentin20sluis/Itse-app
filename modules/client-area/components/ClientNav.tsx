@@ -42,20 +42,21 @@ export function ClientNav() {
         aria-label="Menú móvil"
         className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-border bg-card md:hidden"
       >
-        {items.map(({ href, label, icon: Icon }) => {
+        {items.map(({ href, label, labelCorto, icon: Icon }) => {
           const active = isActivePath(pathname, href);
           return (
             <Link
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
+              aria-label={label}
               className={cn(
                 "flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-xs font-medium leading-tight",
                 active ? "text-primary" : "text-muted-foreground",
               )}
             >
               <Icon className="size-5 shrink-0" aria-hidden="true" />
-              <span className="w-full truncate text-center">{label}</span>
+              <span className="w-full text-center">{labelCorto ?? label}</span>
             </Link>
           );
         })}
