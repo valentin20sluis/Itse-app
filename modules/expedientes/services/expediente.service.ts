@@ -12,10 +12,7 @@ import {
 } from "drizzle-orm";
 import { db } from "@/db";
 import { establecimientos, expedienteDocumentos, expedientes, historialEstados } from "@/db/schema";
-import {
-  ESTADOS_NO_BLOQUEANTES,
-  getEstablecimientoById,
-} from "@/modules/establecimientos/services/establecimiento.service";
+import { getEstablecimientoById } from "@/modules/establecimientos/services/establecimiento.service";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
 import {
   declaracionSchema,
@@ -90,13 +87,15 @@ function patchToValues(patch: PatchBorrador) {
 
 export class EstablecimientoOcupadoError extends Error {
   constructor() {
-    super("El establecimiento ya tiene una solicitud en trámite");
+    super("El establecimiento ya tiene una solicitud");
     this.name = "EstablecimientoOcupadoError";
   }
 }
 
-// Un expediente está "en curso" si no terminó; BORRADOR sí cuenta (a diferencia del archivado).
-const ESTADOS_TERMINADOS = ESTADOS_NO_BLOQUEANTES.filter((e) => e !== "BORRADOR");
+// Un establecimiento admite un solo expediente: solo anularlo lo libera (distinto de la regla de archivar).
+export const ESTADOS_QUE_LIBERAN_ESTABLECIMIENTO: (typeof expedientes.$inferSelect.estado)[] = [
+  "ANULADO",
+];
 
 async function ocupados(actor: Actor, excluirId?: string, establecimientoId?: string) {
   const filas = await db
@@ -105,7 +104,7 @@ async function ocupados(actor: Actor, excluirId?: string, establecimientoId?: st
     .where(
       and(
         eq(expedientes.usuarioId, actor.id),
-        notInArray(expedientes.estado, ESTADOS_TERMINADOS),
+        notInArray(expedientes.estado, ESTADOS_QUE_LIBERAN_ESTABLECIMIENTO),
         excluirId ? ne(expedientes.id, excluirId) : undefined,
         establecimientoId ? eq(expedientes.establecimientoId, establecimientoId) : undefined,
       ),

@@ -101,7 +101,9 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 
 **Pago de la tasa:** no hay comprobante de pago como archivo ni número de boleta. El cliente paga en línea con Stripe (Checkout hospedado, **modo prueba**, dinero ficticio). El monto lo fija el servidor según el nivel de riesgo y la solicitud solo se presenta cuando Stripe confirma el pago.
 
-**Un solo expediente en curso por establecimiento:** un establecimiento no puede tener 2 o más expedientes en curso (cualquier estado salvo ANULADO y ENTREGADO; el BORRADOR cuenta, y un NO_CUMPLE sigue en curso hasta que la resolución se envía al cliente). En el paso 1 de la solicitud esos establecimientos aparecen deshabilitados y el servidor lo valida al crear o editar el borrador. Al editar un borrador, ese mismo borrador no cuenta.
+**Un solo expediente por establecimiento:** un establecimiento no puede tener 2 o más expedientes. Solo vuelve a estar disponible si su expediente se anula (ANULADO); cualquier otro estado, incluidos BORRADOR, ENTREGADO («Finalizado» en pantalla) y NO_CUMPLE, lo mantiene ocupado. En el paso 1 de la solicitud esos establecimientos aparecen deshabilitados y el servidor lo valida al crear o editar el borrador. Al editar un borrador, ese mismo borrador no cuenta. La regla de archivar un establecimiento es distinta y no cambia.
+
+**Pendiente de definir (renovaciones):** hoy no hay forma de renovar un establecimiento con certificado vigente, porque su expediente lo mantiene ocupado. Es una limitación aceptada por decisión del usuario; el flujo de renovación se definirá más adelante.
 
 **Anular un borrador:** el cliente puede anular un borrador no pagado (BORRADOR pasa a ANULADO), libera el establecimiento y se borran de UploadThing los archivos que había subido (mejor esfuerzo).
 

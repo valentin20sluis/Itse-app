@@ -98,7 +98,7 @@ describe("SolicitudWizard", () => {
     const radio = screen.getByLabelText(/Bodega Central/) as HTMLInputElement;
     expect(radio.disabled).toBe(true);
     const motivo = document.getElementById(radio.getAttribute("aria-describedby")!);
-    expect(motivo?.textContent).toContain("Ya tiene una solicitud en trámite.");
+    expect(motivo?.textContent).toContain("Este establecimiento ya tiene una solicitud. Revísala en Mis expedientes.");
     expect((screen.getByLabelText(/Kiosco/) as HTMLInputElement).disabled).toBe(false);
     expect((screen.getByRole("button", { name: "Siguiente" }) as HTMLButtonElement).disabled).toBe(false);
   });

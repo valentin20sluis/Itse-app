@@ -132,7 +132,7 @@ describe("saveBorradorAction", () => {
 
   it("paso 1 con establecimiento ocupado devuelve el fieldError", async () => {
     mocks.createBorrador.mockRejectedValue(new mocks.OcupadoError());
-    const msg = "Este establecimiento ya tiene una solicitud en trámite.";
+    const msg = "Este establecimiento ya tiene una solicitud. Revísala en Mis expedientes.";
     expect(await saveBorradorAction(1, null, null, paso1())).toEqual({
       ok: false,
       error: msg,

@@ -23,9 +23,6 @@ type Props = {
   onSaved: (expediente: Expediente) => void;
 };
 
-const TEXTO_OCUPADO =
-  "Ya tiene una solicitud en trámite. Continúa o termina esa solicitud desde Mis expedientes.";
-
 export function StepEstablecimiento({ establecimientos, expediente, ocupados = [], onSaved }: Props) {
   const [state, action, pending] = useActionState<ActionResult<Expediente> | null, FormData>(
     async (prev, formData) => {
@@ -67,7 +64,7 @@ export function StepEstablecimiento({ establecimientos, expediente, ocupados = [
         <legend className="mb-2 text-sm font-medium">Establecimiento</legend>
         {todosOcupados && (
           <p role="status" className="rounded-lg border border-input bg-muted p-3 text-sm">
-            Todos tus establecimientos ya tienen una solicitud en trámite.{" "}
+            Todos tus establecimientos ya tienen una solicitud.{" "}
             <Link href="/mi-cuenta/expedientes" className="font-medium underline underline-offset-4">
               Ir a Mis expedientes
             </Link>
@@ -99,7 +96,11 @@ export function StepEstablecimiento({ establecimientos, expediente, ocupados = [
               <span className="block font-medium">{e.nombreComercial}</span>
               {ocupado && (
                 <span id={ocupadoId} className="block">
-                  {TEXTO_OCUPADO}
+                  Este establecimiento ya tiene una solicitud. Revísala en{" "}
+                  <Link href="/mi-cuenta/expedientes" className="font-medium underline underline-offset-4">
+                    Mis expedientes
+                  </Link>
+                  .
                 </span>
               )}
               {establecimientoId === e.id && (

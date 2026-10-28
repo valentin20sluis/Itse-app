@@ -18,31 +18,58 @@ type BarsChartProps = {
 };
 
 const ANCHO_EJE = 110;
-const MAX_CARACTERES = 16;
-const ALTO_BARRA = 36;
+const ALTO_BARRA = 44;
+const LINEA_Y = 18; // caracteres por línea en el eje de categorías (110 px)
+const LINEA_X = 7; // caracteres por línea en el eje de meses
+const ETIQUETAS_X_VISIBLES = 6;
 
 type TickProps = { x?: number | string; y?: number | string; payload?: { value?: string | number } };
 
-// El texto largo se abrevia y el <title> conserva el nombre completo.
-function crearTick(anchor: "start" | "middle" | "end") {
+// Parte la etiqueta en hasta 2 líneas por palabras; si aún no cabe, la segunda se abrevia.
+export function partirEtiqueta(texto: string, max: number): string[] {
+  const lineas: string[] = [];
+  let actual = "";
+  for (const palabra of texto.split(" ")) {
+    const prueba = actual ? `${actual} ${palabra}` : palabra;
+    if (prueba.length <= max || !actual) actual = prueba;
+    else {
+      lineas.push(actual);
+      actual = palabra;
+    }
+  }
+  lineas.push(actual);
+  if (lineas.length <= 2) return lineas;
+  const resto = lineas.slice(1).join(" ");
+  return [lineas[0], resto.length > max ? `${resto.slice(0, max - 1)}…` : resto];
+}
+
+// El texto se reparte en 2 líneas y el <title> conserva el nombre completo.
+function crearTick(anchor: "end" | "middle", max: number) {
   return function Tick({ x, y, payload }: TickProps) {
     const texto = String(payload?.value ?? "");
-    const corto = texto.length > MAX_CARACTERES ? `${texto.slice(0, MAX_CARACTERES - 1)}…` : texto;
+    const lineas = partirEtiqueta(texto, max);
+    const dy0 = anchor === "end" ? (lineas.length > 1 ? -2 : 4) : 12;
     return (
-      <text x={x} y={y} dy={anchor === "end" ? 4 : 12} textAnchor={anchor} className="fill-muted-foreground">
+      <text x={x} y={y} textAnchor={anchor} className="fill-muted-foreground">
         <title>{texto}</title>
-        {corto}
+        {lineas.map((linea, i) => (
+          <tspan key={i} x={x} dy={i === 0 ? dy0 : 13}>
+            {linea}
+          </tspan>
+        ))}
       </text>
     );
   };
 }
 
-const TickCategoriaY = crearTick("end");
-const TickCategoriaX = crearTick("middle");
+const TickCategoriaY = crearTick("end", LINEA_Y);
+const TickCategoriaX = crearTick("middle", LINEA_X);
 
 export function BarsChart({ data, orientation = "horizontal", valueLabel, height }: BarsChartProps) {
   const horizontal = orientation === "horizontal";
   const alto = height ?? (horizontal ? Math.max(120, data.length * ALTO_BARRA + 16) : 260);
+  // Con muchos meses se muestra una etiqueta de cada N para que no se monten unas sobre otras.
+  const intervaloX = data.length > ETIQUETAS_X_VISIBLES ? Math.ceil(data.length / ETIQUETAS_X_VISIBLES) - 1 : 0;
   const config: ChartConfig = { value: { label: valueLabel, color: "var(--chart-1)" } };
 
   return (
@@ -59,7 +86,7 @@ export function BarsChart({ data, orientation = "horizontal", valueLabel, height
           </>
         ) : (
           <>
-            <XAxis type="category" dataKey="label" tickLine={false} axisLine={false} tick={TickCategoriaX} interval={0} />
+            <XAxis type="category" dataKey="label" tickLine={false} axisLine={false} tick={TickCategoriaX} interval={intervaloX} />
             <YAxis type="number" hide />
           </>
         )}

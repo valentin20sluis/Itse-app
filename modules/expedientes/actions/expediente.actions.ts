@@ -24,7 +24,7 @@ import { requireRole } from "@/modules/usuarios/services/authorization.service";
 
 const NO_SOLICITUD = "No se encontró la solicitud.";
 const NO_ESTABLECIMIENTO = "No se encontró el establecimiento.";
-const OCUPADO = "Este establecimiento ya tiene una solicitud en trámite.";
+const OCUPADO = "Este establecimiento ya tiene una solicitud. Revísala en Mis expedientes.";
 const ERROR_GENERICO = "No se pudo completar la operación. Inténtalo de nuevo.";
 
 const idSchema = z.uuid();

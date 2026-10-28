@@ -14,7 +14,7 @@ vi.mock("recharts", async (importOriginal) => {
   };
 });
 
-import { BarsChart } from "@/components/shared/BarsChart";
+import { BarsChart, partirEtiqueta } from "@/components/shared/BarsChart";
 
 afterEach(cleanup);
 
@@ -59,5 +59,25 @@ describe("BarsChart", () => {
     const { container } = render(<BarsChart data={muchas} valueLabel="Expedientes" />);
     const alto = (container.querySelector('[data-slot="chart"]') as HTMLElement).style.height;
     expect(parseInt(alto)).toBeGreaterThanOrEqual(20 * 36);
+  });
+});
+
+describe("partirEtiqueta", () => {
+  it("deja una línea si cabe", () => {
+    expect(partirEtiqueta("Vigentes", 18)).toEqual(["Vigentes"]);
+  });
+
+  it("reparte en dos líneas por palabras", () => {
+    expect(partirEtiqueta("Vencen en 30 días o menos", 18)).toEqual(["Vencen en 30 días", "o menos"]);
+    expect(partirEtiqueta("Vencen entre 31 y 60 días", 18)).toEqual(["Vencen entre 31 y", "60 días"]);
+    expect(partirEtiqueta("oct 2026", 7)).toEqual(["oct", "2026"]);
+  });
+
+  it("abrevia la segunda línea si aún no cabe y no parte palabras sueltas largas", () => {
+    expect(partirEtiqueta("Una etiqueta realmente muy larga que no cabe en dos líneas", 18)).toEqual([
+      "Una etiqueta",
+      "realmente muy lar…",
+    ]);
+    expect(partirEtiqueta("Superlongpalabraunica", 7)).toEqual(["Superlongpalabraunica"]);
   });
 });

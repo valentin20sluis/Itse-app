@@ -121,7 +121,6 @@ vi.mock("@/db", async () => {
 });
 
 vi.mock("@/modules/establecimientos/services/establecimiento.service", () => ({
-  ESTADOS_NO_BLOQUEANTES: ["BORRADOR", "ANULADO", "ENTREGADO", "DERIVADO_COMERCIALIZACION"],
   getEstablecimientoById: async (actor: { id: string; rol: string }, id: string) =>
     store.establecimientos.find(
       (e) =>
@@ -279,16 +278,20 @@ describe("un solo expediente en curso por establecimiento", () => {
     await expect(createBorrador(A, paso1)).rejects.toBeInstanceOf(EstablecimientoOcupadoError);
   });
 
-  it.each(["ANULADO", "ENTREGADO", "DERIVADO_COMERCIALIZACION"])("%s no bloquea", async (estado) => {
-    enCurso(estado);
+  it("ANULADO libera el establecimiento", async () => {
+    enCurso("ANULADO");
+    expect(await listEstablecimientosOcupados(A)).toEqual([]);
     expect(await createBorrador(A, paso1)).not.toBeNull();
-    expect(await listEstablecimientosOcupados(A)).toEqual([ESTAB]);
   });
 
-  it.each(["NO_CUMPLE", "FINALIZADO"])("%s bloquea", async (estado) => {
-    enCurso(estado);
-    await expect(createBorrador(A, paso1)).rejects.toBeInstanceOf(EstablecimientoOcupadoError);
-  });
+  it.each(["ENTREGADO", "NO_CUMPLE", "FINALIZADO", "DERIVADO_COMERCIALIZACION"])(
+    "%s ocupa el establecimiento",
+    async (estado) => {
+      enCurso(estado);
+      expect(await listEstablecimientosOcupados(A)).toEqual([ESTAB]);
+      await expect(createBorrador(A, paso1)).rejects.toBeInstanceOf(EstablecimientoOcupadoError);
+    },
+  );
 
   it("updateBorrador lanza al cambiar a un establecimiento ocupado", async () => {
     store.establecimientos.push({ id: OTRO, usuarioId: "user-a", archivadoAt: null });
