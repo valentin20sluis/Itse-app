@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { AnularBorradorButton } from "@/modules/expedientes/components/AnularBorradorButton";
 import { EstadoBadge } from "@/modules/expedientes/components/EstadoBadge";
 import type { ExpedienteListItem, TipoTramite } from "@/modules/expedientes/types/expediente.types";
 
@@ -55,7 +56,7 @@ function ExpedienteCard({ expediente: e }: { expediente: ExpedienteListItem }) {
         </dl>
       </CardContent>
       {esBorrador && (
-        <CardFooter>
+        <CardFooter className="flex gap-2">
           <Link
             href={`${NUEVA_SOLICITUD}?borrador=${e.id}`}
             className={buttonVariants({ variant: "outline", className: "h-11 flex-1" })}
@@ -63,6 +64,7 @@ function ExpedienteCard({ expediente: e }: { expediente: ExpedienteListItem }) {
           >
             Continuar
           </Link>
+          <AnularBorradorButton expedienteId={e.id} establecimientoNombre={e.establecimientoNombre} />
         </CardFooter>
       )}
     </Card>

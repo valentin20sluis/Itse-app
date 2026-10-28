@@ -19,14 +19,15 @@ type Props = {
   borrador: Expediente | null;
   documentos: ExpedienteDocumento[];
   defaultsSolicitante: DefaultsSolicitante;
+  establecimientosOcupados?: string[];
 };
-
 
 export function SolicitudWizard({
   establecimientos,
   borrador,
   documentos,
   defaultsSolicitante,
+  establecimientosOcupados = [],
 }: Props) {
   const [expediente, setExpediente] = useState<Expediente | null>(borrador);
   const establecimiento = establecimientos.find((e) => e.id === expediente?.establecimientoId);
@@ -53,6 +54,7 @@ export function SolicitudWizard({
         <StepEstablecimiento
           establecimientos={establecimientos}
           expediente={expediente}
+          ocupados={establecimientosOcupados}
           onSaved={siguiente}
         />
       )}

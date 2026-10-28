@@ -21,7 +21,9 @@ vi.mock("drizzle-orm", async (importOriginal) => {
     eq: (col: { name: string }, v: unknown): Pred => (r) =>
       typeof v === "object" && v !== null ? true : r[key(col)] === v,
     inArray: (col: { name: string }, vs: unknown[]): Pred => (r) => vs.includes(r[key(col)]),
-    and: (...ps: Pred[]): Pred => (r) => ps.every((p) => p(r)),
+    ne: (col: { name: string }, v: unknown): Pred => (r) => r[key(col)] !== v,
+    notInArray: (col: { name: string }, vs: unknown[]): Pred => (r) => !vs.includes(r[key(col)]),
+    and: (...ps: (Pred | undefined)[]): Pred => (r) => ps.every((p) => !p || p(r)),
     desc: () => "desc",
     sql: (_s: TemplateStringsArray, ...values: unknown[]) => ({ isSql: true, values }),
   };
@@ -117,6 +119,7 @@ vi.mock("@/db", async () => {
 });
 
 vi.mock("@/modules/establecimientos/services/establecimiento.service", () => ({
+  ESTADOS_NO_BLOQUEANTES: ["BORRADOR", "ANULADO", "ENTREGADO", "DERIVADO_COMERCIALIZACION"],
   getEstablecimientoById: async (actor: { id: string; rol: string }, id: string) =>
     store.establecimientos.find(
       (e) =>
@@ -127,8 +130,11 @@ vi.mock("@/modules/establecimientos/services/establecimiento.service", () => ({
 }));
 
 import {
+  anularBorrador,
   createBorrador,
+  EstablecimientoOcupadoError,
   formatNumeroExpediente,
+  listEstablecimientosOcupados,
   getAnioLima,
   getExpedienteById,
   guardarSesionPago,
@@ -163,8 +169,14 @@ const paso3 = {
 } as const;
 const pago = () => ({ stripeSessionId: "cs_test_abc", pagadoAt: new Date() });
 
-async function borradorCompleto(conDocs = true) {
-  const e = (await createBorrador(A, paso1))!;
+function otroEstab() {
+  const id = `est-${store.establecimientos.length}`;
+  store.establecimientos.push({ id, usuarioId: "user-a", nombreComercial: "Bodega Ficticia", numeroPisos: 1, archivadoAt: null });
+  return { ...paso1, establecimientoId: id };
+}
+
+async function borradorCompleto(conDocs = true, input: { establecimientoId: string; tipoTramite: "NUEVA" } = paso1) {
+  const e = (await createBorrador(A, input))!;
   await updateBorrador(A, e.id, paso2);
   await updateBorrador(A, e.id, paso3);
   if (conDocs) TIPOS.forEach((tipo) => store.documentos.push({ expedienteId: e.id, tipo }));
@@ -213,6 +225,30 @@ describe("autorización por rol", () => {
   }
 });
 
+describe("anularBorrador", () => {
+  it("anula un borrador propio y libera el establecimiento", async () => {
+    const e = (await createBorrador(A, paso1))!;
+    await expect(createBorrador(A, paso1)).rejects.toBeInstanceOf(EstablecimientoOcupadoError);
+    expect((await anularBorrador(A, e.id))?.estado).toBe("ANULADO");
+    expect(await listEstablecimientosOcupados(A)).toEqual([]);
+    expect(await createBorrador(A, paso1)).not.toBeNull();
+  });
+
+  it("no anula ajeno, inexistente ni presentado", async () => {
+    const e = (await createBorrador(A, paso1))!;
+    expect(await anularBorrador(B, e.id)).toBeNull();
+    expect(await anularBorrador(A, "no-existe")).toBeNull();
+    expect(store.expedientes[0].estado).toBe("BORRADOR");
+    await presentarExpediente(A, e.id, pago());
+    expect(await anularBorrador(A, e.id)).toBeNull();
+    expect(store.expedientes[0].estado).toBe("PRESENTADO");
+  });
+
+  it("admin lanza No autorizado", async () => {
+    await expect(anularBorrador({ id: "s", rol: "admin" }, "x")).rejects.toThrow("No autorizado");
+  });
+});
+
 describe("createBorrador", () => {
   it("usa actor.id, ignora usuarioId del input y crea BORRADOR", async () => {
     const e = await createBorrador(A, { ...paso1, usuarioId: "user-b" } as typeof paso1);
@@ -225,6 +261,52 @@ describe("createBorrador", () => {
     expect(await createBorrador(A, { ...paso1, establecimientoId: "no-existe" })).toBeNull();
     store.establecimientos[0].archivadoAt = new Date();
     expect(await createBorrador(A, paso1)).toBeNull();
+  });
+});
+
+describe("un solo expediente en curso por establecimiento", () => {
+  const OTRO = "22222222-2222-4222-8222-222222222222";
+  const enCurso = (estado: string, establecimientoId = ESTAB) =>
+    store.expedientes.push({ id: `x-${estado}`, usuarioId: "user-a", establecimientoId, estado });
+
+  it("createBorrador lanza si hay un borrador u otro estado en curso", async () => {
+    await createBorrador(A, paso1);
+    await expect(createBorrador(A, paso1)).rejects.toBeInstanceOf(EstablecimientoOcupadoError);
+    store.expedientes = [];
+    enCurso("PRESENTADO");
+    await expect(createBorrador(A, paso1)).rejects.toBeInstanceOf(EstablecimientoOcupadoError);
+  });
+
+  it.each(["ANULADO", "ENTREGADO", "DERIVADO_COMERCIALIZACION"])("%s no bloquea", async (estado) => {
+    enCurso(estado);
+    expect(await createBorrador(A, paso1)).not.toBeNull();
+    expect(await listEstablecimientosOcupados(A)).toEqual([ESTAB]);
+  });
+
+  it("updateBorrador lanza al cambiar a un establecimiento ocupado", async () => {
+    store.establecimientos.push({ id: OTRO, usuarioId: "user-a", archivadoAt: null });
+    enCurso("EN_REVISION", OTRO);
+    const e = (await createBorrador(A, paso1))!;
+    await expect(
+      updateBorrador(A, e.id, { ...paso1, establecimientoId: OTRO }),
+    ).rejects.toBeInstanceOf(EstablecimientoOcupadoError);
+  });
+
+  it("el propio borrador no cuenta al editarlo", async () => {
+    const e = (await createBorrador(A, paso1))!;
+    expect((await updateBorrador(A, e.id, { ...paso1, tipoTramite: "RENOVACION" }))?.tipoTramite).toBe(
+      "RENOVACION",
+    );
+    expect(await listEstablecimientosOcupados(A, e.id)).toEqual([]);
+    expect(await listEstablecimientosOcupados(A)).toEqual([ESTAB]);
+  });
+
+  it("listEstablecimientosOcupados solo ve los expedientes del actor", async () => {
+    await createBorrador(A, paso1);
+    expect(await listEstablecimientosOcupados(B)).toEqual([]);
+    await expect(listEstablecimientosOcupados({ id: "s", rol: "admin" })).rejects.toThrow(
+      "No autorizado",
+    );
   });
 });
 
@@ -295,7 +377,7 @@ describe("IDOR", () => {
 describe("listOwnExpedientes", () => {
   it("devuelve solo los propios, recientes primero, con nombre del establecimiento", async () => {
     const e1 = (await createBorrador(A, paso1))!;
-    const e2 = (await createBorrador(A, paso1))!;
+    const e2 = (await createBorrador(A, otroEstab()))!;
     store.expedientes.push({ id: "ajeno", seq: 99, usuarioId: "user-b", establecimientoId: ESTAB });
     const lista = await listOwnExpedientes(A);
     expect(lista.map((r) => r.id)).toEqual([e2.id, e1.id]);
@@ -304,8 +386,8 @@ describe("listOwnExpedientes", () => {
 
   it("pagoPendiente solo en borradores completos", async () => {
     const completo = await borradorCompleto();
-    const incompleto = (await createBorrador(A, paso1))!;
-    const presentado = await borradorCompleto();
+    const incompleto = (await createBorrador(A, otroEstab()))!;
+    const presentado = await borradorCompleto(true, otroEstab());
     await presentarExpediente(A, presentado.id, pago());
     const lista = await listOwnExpedientes(A);
     const pend = (id: string) => lista.find((r) => r.id === id)?.pagoPendiente;
@@ -440,7 +522,7 @@ describe("presentarExpediente", () => {
 
   it("correlativo sigue al máximo", async () => {
     const e1 = await borradorCompleto();
-    const e2 = await borradorCompleto();
+    const e2 = await borradorCompleto(true, otroEstab());
     await presentarExpediente(A, e1.id, pago());
     await presentarExpediente(A, e2.id, pago());
     expect(store.expedientes[1].numero).toBe(`EXP-${getAnioLima()}-00002`);

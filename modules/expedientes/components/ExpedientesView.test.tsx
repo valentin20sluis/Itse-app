@@ -1,0 +1,63 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+
+const anularBorradorAction = vi.hoisted(() => vi.fn());
+vi.mock("@/modules/expedientes/actions/expediente.actions", () => ({ anularBorradorAction }));
+
+import { ExpedientesView } from "./ExpedientesView";
+import type { ExpedienteListItem } from "@/modules/expedientes/types/expediente.types";
+
+const base = {
+  id: "e1",
+  numero: null,
+  tipoTramite: "NUEVA",
+  estado: "BORRADOR",
+  establecimientoNombre: "Bodega Ficticia",
+  pagoPendiente: false,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  presentadoAt: null,
+} as unknown as ExpedienteListItem;
+
+beforeEach(() => {
+  cleanup();
+  vi.resetAllMocks();
+});
+
+describe("ExpedientesView: anular borrador", () => {
+  it("muestra Continuar y Anular en BORRADOR (con o sin falta de pago)", () => {
+    render(<ExpedientesView expedientes={[base, { ...base, id: "e2", pagoPendiente: true }]} />);
+    expect(screen.getAllByRole("link", { name: /Continuar solicitud/ })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Anular solicitud de Bodega Ficticia" })).toHaveLength(2);
+  });
+
+  it("no muestra botones en otros estados", () => {
+    render(<ExpedientesView expedientes={[{ ...base, estado: "PRESENTADO" }]} />);
+    expect(screen.queryByRole("button", { name: /Anular/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Continuar/ })).toBeNull();
+  });
+
+  it("pide confirmación y llama a la acción solo al confirmar", async () => {
+    anularBorradorAction.mockResolvedValue({ ok: true, data: { id: "e1" } });
+    render(<ExpedientesView expedientes={[base]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Anular solicitud/ }));
+    expect(await screen.findByText("¿Anular esta solicitud?")).toBeInTheDocument();
+    expect(anularBorradorAction).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(anularBorradorAction).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /Anular solicitud/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sí, anular" }));
+    await waitFor(() => expect(anularBorradorAction).toHaveBeenCalledWith("e1"));
+  });
+
+  it("muestra el error de la acción", async () => {
+    anularBorradorAction.mockResolvedValue({ ok: false, error: "No se encontró la solicitud." });
+    render(<ExpedientesView expedientes={[base]} />);
+    fireEvent.click(screen.getByRole("button", { name: /Anular solicitud/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Sí, anular" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se encontró la solicitud.");
+  });
+});

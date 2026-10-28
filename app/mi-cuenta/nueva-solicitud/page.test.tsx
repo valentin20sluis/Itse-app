@@ -10,7 +10,11 @@ vi.mock("@/modules/usuarios/services/authorization.service", () => ({ requireRol
 vi.mock("@/modules/establecimientos/services/establecimiento.service", () => ({
   listOwnEstablecimientos,
 }));
-vi.mock("@/modules/expedientes/services/expediente.service", () => ({ getExpedienteById }));
+const listEstablecimientosOcupados = vi.hoisted(() => vi.fn());
+vi.mock("@/modules/expedientes/services/expediente.service", () => ({
+  getExpedienteById,
+  listEstablecimientosOcupados,
+}));
 vi.mock("@/modules/expedientes/services/documento.service", () => ({ listDocumentos }));
 vi.mock("@/modules/expedientes/components/SolicitudWizard", () => ({
   SolicitudWizard: () => null,
@@ -42,6 +46,18 @@ describe("/mi-cuenta/nueva-solicitud", () => {
     vi.resetAllMocks();
     requireRole.mockResolvedValue(usuario);
     listOwnEstablecimientos.mockResolvedValue([{ id: "e1" }]);
+    listEstablecimientosOcupados.mockResolvedValue([]);
+  });
+
+  it("pasa los establecimientos ocupados excluyendo el borrador cargado", async () => {
+    getExpedienteById.mockResolvedValue({ id: ID, estado: "BORRADOR" });
+    listDocumentos.mockResolvedValue([]);
+    listEstablecimientosOcupados.mockResolvedValue(["e2"]);
+
+    const wizard = await render(ID);
+
+    expect(listEstablecimientosOcupados).toHaveBeenCalledWith(usuario, ID);
+    expect(wizard.props.establecimientosOcupados).toEqual(["e2"]);
   });
 
   it("exige cliente antes de leer datos y no consulta nada si redirige", async () => {

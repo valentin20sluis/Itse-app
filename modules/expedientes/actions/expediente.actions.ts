@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { tipoDocumentoEnum } from "@/db/schema";
 import type { ActionResult } from "@/lib/action-result";
@@ -10,9 +11,11 @@ import {
   paso3Schema,
   type Paso1Input,
 } from "@/modules/expedientes/schemas/solicitud.schema";
-import { removeDocumento } from "@/modules/expedientes/services/documento.service";
+import { listDocumentos, removeDocumento } from "@/modules/expedientes/services/documento.service";
 import {
+  anularBorrador,
   createBorrador,
+  EstablecimientoOcupadoError,
   updateBorrador,
   type PatchBorrador,
 } from "@/modules/expedientes/services/expediente.service";
@@ -21,6 +24,7 @@ import { requireRole } from "@/modules/usuarios/services/authorization.service";
 
 const NO_SOLICITUD = "No se encontró la solicitud.";
 const NO_ESTABLECIMIENTO = "No se encontró el establecimiento.";
+const OCUPADO = "Este establecimiento ya tiene una solicitud en trámite.";
 const ERROR_GENERICO = "No se pudo completar la operación. Inténtalo de nuevo.";
 
 const idSchema = z.uuid();
@@ -83,12 +87,31 @@ export async function saveBorradorAction(
         : await updateBorrador(usuario, id, parsed.data as PatchBorrador);
     if (!data) return { ok: false, error: id === null ? NO_ESTABLECIMIENTO : NO_SOLICITUD };
     return { ok: true, data };
+  } catch (e) {
+    if (e instanceof EstablecimientoOcupadoError) {
+      return { ok: false, error: OCUPADO, fieldErrors: { establecimientoId: [OCUPADO] } };
+    }
+    return { ok: false, error: ERROR_GENERICO };
+  }
+}
+
+export async function anularBorradorAction(id: string): Promise<ActionResult<{ id: string }>> {
+  const usuario = await requireRole("cliente");
+  if (!idSchema.safeParse(id).success) return { ok: false, error: NO_SOLICITUD };
+  try {
+    const documentos = await listDocumentos(usuario, id);
+    const anulado = await anularBorrador(usuario, id);
+    if (!anulado) return { ok: false, error: NO_SOLICITUD };
+    // Mejor esfuerzo: si el borrado remoto falla, la solicitud ya quedó anulada.
+    await Promise.allSettled(documentos.map((d) => deleteUploadedFile(d.fileKey)));
+    revalidatePath("/mi-cuenta/expedientes");
+    return { ok: true, data: { id: anulado.id } };
   } catch {
     return { ok: false, error: ERROR_GENERICO };
   }
 }
 
-const NO_DOCUMENTO = "No se encontró el documento.";
+const NO_DOCUMENTO ="No se encontró el documento.";
 
 export async function removeDocumentoAction(
   expedienteId: string,

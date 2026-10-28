@@ -101,6 +101,10 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 
 **Pago de la tasa:** no hay comprobante de pago como archivo ni número de boleta. El cliente paga en línea con Stripe (Checkout hospedado, **modo prueba**, dinero ficticio). El monto lo fija el servidor según el nivel de riesgo y la solicitud solo se presenta cuando Stripe confirma el pago.
 
+**Un solo expediente en curso por establecimiento:** un establecimiento no puede tener 2 o más expedientes en curso (cualquier estado salvo ANULADO, ENTREGADO y DERIVADO_COMERCIALIZACION; el BORRADOR cuenta). En el paso 1 de la solicitud esos establecimientos aparecen deshabilitados y el servidor lo valida al crear o editar el borrador. Al editar un borrador, ese mismo borrador no cuenta.
+
+**Anular un borrador:** el cliente puede anular un borrador no pagado (BORRADOR pasa a ANULADO), libera el establecimiento y se borran de UploadThing los archivos que había subido (mejor esfuerzo).
+
 **En el sistema** ya no se piden "2 juegos": los archivos digitales reemplazan las copias físicas.
 
 ---

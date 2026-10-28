@@ -1,7 +1,10 @@
-import { and, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, inArray, ne, notInArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { establecimientos, expedienteDocumentos, expedientes, historialEstados } from "@/db/schema";
-import { getEstablecimientoById } from "@/modules/establecimientos/services/establecimiento.service";
+import {
+  ESTADOS_NO_BLOQUEANTES,
+  getEstablecimientoById,
+} from "@/modules/establecimientos/services/establecimiento.service";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
 import {
   declaracionSchema,
@@ -74,10 +77,45 @@ function patchToValues(patch: PatchBorrador) {
   };
 }
 
+export class EstablecimientoOcupadoError extends Error {
+  constructor() {
+    super("El establecimiento ya tiene una solicitud en trámite");
+    this.name = "EstablecimientoOcupadoError";
+  }
+}
+
+// Un expediente está "en curso" si no terminó; BORRADOR sí cuenta (a diferencia del archivado).
+const ESTADOS_TERMINADOS = ESTADOS_NO_BLOQUEANTES.filter((e) => e !== "BORRADOR");
+
+async function ocupados(actor: Actor, excluirId?: string, establecimientoId?: string) {
+  const filas = await db
+    .select({ establecimientoId: expedientes.establecimientoId })
+    .from(expedientes)
+    .where(
+      and(
+        eq(expedientes.usuarioId, actor.id),
+        notInArray(expedientes.estado, ESTADOS_TERMINADOS),
+        excluirId ? ne(expedientes.id, excluirId) : undefined,
+        establecimientoId ? eq(expedientes.establecimientoId, establecimientoId) : undefined,
+      ),
+    );
+  return [...new Set(filas.map((f) => f.establecimientoId))];
+}
+
+export async function listEstablecimientosOcupados(
+  actor: Actor,
+  excluirExpedienteId?: string,
+): Promise<string[]> {
+  assertCliente(actor);
+  return ocupados(actor, excluirExpedienteId);
+}
+
 export async function createBorrador(actor: Actor, input: Paso1Input): Promise<Expediente | null> {
   assertCliente(actor);
   const est = await getEstablecimientoById(actor, input.establecimientoId);
   if (!est) return null;
+  // ponytail: sin transacciones (neon-http), dos pestañas simultáneas podrían crear dos expedientes en curso; remedio: índice único parcial.
+  if ((await ocupados(actor, undefined, est.id)).length > 0) throw new EstablecimientoOcupadoError();
   const [row] = await db
     .insert(expedientes)
     .values({
@@ -99,9 +137,26 @@ export async function updateBorrador(
   if ("establecimientoId" in patch && !(await getEstablecimientoById(actor, patch.establecimientoId))) {
     return null;
   }
+  if (
+    "establecimientoId" in patch &&
+    (await ocupados(actor, id, patch.establecimientoId)).length > 0
+  ) {
+    throw new EstablecimientoOcupadoError();
+  }
   const [row] = await db
     .update(expedientes)
     .set({ ...patchToValues(patch), updatedAt: new Date() })
+    .where(ownBorrador(actor, id))
+    .returning();
+  return row ?? null;
+}
+
+// El borrador nunca fue presentado, así que no genera historial (que arranca en PRESENTADO).
+export async function anularBorrador(actor: Actor, id: string): Promise<Expediente | null> {
+  assertCliente(actor);
+  const [row] = await db
+    .update(expedientes)
+    .set({ estado: "ANULADO", updatedAt: new Date() })
     .where(ownBorrador(actor, id))
     .returning();
   return row ?? null;

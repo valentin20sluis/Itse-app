@@ -11,7 +11,7 @@ export class EstablecimientoConExpedientesError extends Error {
   }
 }
 
-const ESTADOS_NO_BLOQUEANTES: (typeof expedientes.$inferSelect.estado)[] = [
+export const ESTADOS_NO_BLOQUEANTES: (typeof expedientes.$inferSelect.estado)[] = [
   "BORRADOR",
   "ANULADO",
   "ENTREGADO",

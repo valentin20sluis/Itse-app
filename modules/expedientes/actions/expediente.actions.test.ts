@@ -5,8 +5,11 @@ const mocks = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   createBorrador: vi.fn(),
   updateBorrador: vi.fn(),
+  anularBorrador: vi.fn(),
   removeDocumento: vi.fn(),
+  listDocumentos: vi.fn(),
   deleteUploadedFile: vi.fn(),
+  OcupadoError: class extends Error {},
 }));
 
 vi.mock("@/modules/usuarios/services/authorization.service", () => ({
@@ -16,14 +19,17 @@ vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("@/modules/expedientes/services/expediente.service", () => ({
   createBorrador: mocks.createBorrador,
   updateBorrador: mocks.updateBorrador,
+  anularBorrador: mocks.anularBorrador,
+  EstablecimientoOcupadoError: mocks.OcupadoError,
 }));
 
 vi.mock("@/modules/expedientes/services/documento.service", () => ({
   removeDocumento: mocks.removeDocumento,
+  listDocumentos: mocks.listDocumentos,
 }));
 vi.mock("@/lib/uploadthing-server", () => ({ deleteUploadedFile: mocks.deleteUploadedFile }));
 
-import { removeDocumentoAction, saveBorradorAction } from "./expediente.actions";
+import { anularBorradorAction, removeDocumentoAction, saveBorradorAction } from "./expediente.actions";
 
 const usuario = { id: "u-1", rol: "cliente" };
 const ID = "3f2b8c1e-5a4d-4e6f-8b7a-1c2d3e4f5a6b";
@@ -52,6 +58,54 @@ beforeEach(() => {
   mocks.requireRole.mockResolvedValue(usuario);
 });
 
+describe("anularBorradorAction", () => {
+  it("requireRole primero: si redirige no llega al servicio", async () => {
+    mocks.requireRole.mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(anularBorradorAction(ID)).rejects.toThrow("NEXT_REDIRECT");
+    expect(mocks.requireRole).toHaveBeenCalledWith("cliente");
+    expect(mocks.anularBorrador).not.toHaveBeenCalled();
+  });
+
+  it("id no uuid o null del servicio dan 'No se encontró la solicitud.' sin revalidar", async () => {
+    expect(await anularBorradorAction("x")).toEqual(NO_SOLICITUD);
+    expect(mocks.anularBorrador).not.toHaveBeenCalled();
+    mocks.anularBorrador.mockResolvedValue(null);
+    expect(await anularBorradorAction(ID)).toEqual(NO_SOLICITUD);
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("error inesperado da mensaje genérico sin revalidar", async () => {
+    mocks.anularBorrador.mockRejectedValue(new Error("db"));
+    const res = await anularBorradorAction(ID);
+    expect(res.ok).toBe(false);
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("éxito anula con el usuario de requireRole y revalida la lista", async () => {
+    mocks.listDocumentos.mockResolvedValue([]);
+    mocks.anularBorrador.mockResolvedValue({ id: ID });
+    expect(await anularBorradorAction(ID)).toEqual({ ok: true, data: { id: ID } });
+    expect(mocks.anularBorrador).toHaveBeenCalledWith(usuario, ID);
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/mi-cuenta/expedientes");
+  });
+
+  it("al anular borra de UploadThing los archivos del borrador, aunque un borrado falle", async () => {
+    mocks.listDocumentos.mockResolvedValue([{ fileKey: "k1" }, { fileKey: "k2" }]);
+    mocks.anularBorrador.mockResolvedValue({ id: ID });
+    mocks.deleteUploadedFile.mockRejectedValueOnce(new Error("remoto"));
+    expect(await anularBorradorAction(ID)).toEqual({ ok: true, data: { id: ID } });
+    expect(mocks.deleteUploadedFile).toHaveBeenCalledWith("k1");
+    expect(mocks.deleteUploadedFile).toHaveBeenCalledWith("k2");
+  });
+
+  it("si no se pudo anular, no borra ningún archivo", async () => {
+    mocks.listDocumentos.mockResolvedValue([{ fileKey: "k1" }]);
+    mocks.anularBorrador.mockResolvedValue(null);
+    expect(await anularBorradorAction(ID)).toEqual(NO_SOLICITUD);
+    expect(mocks.deleteUploadedFile).not.toHaveBeenCalled();
+  });
+});
+
 describe("saveBorradorAction", () => {
   it("si requireRole redirige, no llega al servicio", async () => {
     mocks.requireRole.mockRejectedValue(new Error("NEXT_REDIRECT"));
@@ -74,6 +128,16 @@ describe("saveBorradorAction", () => {
     mocks.createBorrador.mockResolvedValue(null);
     const res = await saveBorradorAction(1, null, null, paso1());
     expect(res).toEqual({ ok: false, error: "No se encontró el establecimiento." });
+  });
+
+  it("paso 1 con establecimiento ocupado devuelve el fieldError", async () => {
+    mocks.createBorrador.mockRejectedValue(new mocks.OcupadoError());
+    const msg = "Este establecimiento ya tiene una solicitud en trámite.";
+    expect(await saveBorradorAction(1, null, null, paso1())).toEqual({
+      ok: false,
+      error: msg,
+      fieldErrors: { establecimientoId: [msg] },
+    });
   });
 
   it("paso 1 con id actualiza", async () => {

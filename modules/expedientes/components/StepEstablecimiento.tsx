@@ -19,10 +19,14 @@ const OPCION =
 type Props = {
   establecimientos: Establecimiento[];
   expediente: Expediente | null;
+  ocupados?: string[];
   onSaved: (expediente: Expediente) => void;
 };
 
-export function StepEstablecimiento({ establecimientos, expediente, onSaved }: Props) {
+const TEXTO_OCUPADO =
+  "Ya tiene una solicitud en trámite. Continúa o termina esa solicitud desde Mis expedientes.";
+
+export function StepEstablecimiento({ establecimientos, expediente, ocupados = [], onSaved }: Props) {
   const [state, action, pending] = useActionState<ActionResult<Expediente> | null, FormData>(
     async (prev, formData) => {
       const res = await saveBorradorAction(1, expediente?.id ?? null, prev, formData);
@@ -48,6 +52,9 @@ export function StepEstablecimiento({ establecimientos, expediente, onSaved }: P
     );
   }
 
+  const estaOcupado = (id: string) => id !== expediente?.establecimientoId && ocupados.includes(id);
+  const todosOcupados = establecimientos.every((e) => estaOcupado(e.id));
+
   const fieldErrors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const errorEst = fieldErrors.establecimientoId?.[0];
   const errorTramite = fieldErrors.tipoTramite?.[0];
@@ -58,19 +65,43 @@ export function StepEstablecimiento({ establecimientos, expediente, onSaved }: P
     <form action={action} className="space-y-6" noValidate>
       <fieldset className="space-y-2">
         <legend className="mb-2 text-sm font-medium">Establecimiento</legend>
-        {establecimientos.map((e) => (
-          <label key={e.id} className={OPCION}>
+        {todosOcupados && (
+          <p role="status" className="rounded-lg border border-input bg-muted p-3 text-sm">
+            Todos tus establecimientos ya tienen una solicitud en trámite.{" "}
+            <Link href="/mi-cuenta/expedientes" className="font-medium underline underline-offset-4">
+              Ir a Mis expedientes
+            </Link>
+          </p>
+        )}
+        {establecimientos.map((e) => {
+          const ocupado = estaOcupado(e.id);
+          const ocupadoId = `ocupado-${e.id}`;
+          const describedBy =
+            [ocupado ? ocupadoId : null, errorEst ? "establecimientoId-error" : null]
+              .filter(Boolean)
+              .join(" ") || undefined;
+          return (
+          <label
+            key={e.id}
+            className={ocupado ? `${OPCION} cursor-not-allowed bg-muted text-muted-foreground opacity-60` : OPCION}
+          >
             <input
               type="radio"
               name="establecimientoId"
               value={e.id}
               checked={establecimientoId === e.id}
+              disabled={ocupado}
               onChange={() => setEstablecimientoId(e.id)}
-              aria-describedby={errorEst ? "establecimientoId-error" : undefined}
+              aria-describedby={describedBy}
               className="mt-0.5 size-5 shrink-0 accent-primary"
             />
             <span className="min-w-0">
               <span className="block font-medium">{e.nombreComercial}</span>
+              {ocupado && (
+                <span id={ocupadoId} className="block">
+                  {TEXTO_OCUPADO}
+                </span>
+              )}
               {establecimientoId === e.id && (
                 <span className="block text-muted-foreground">
                   {e.razonSocial ?? "Sin razón social"} · RUC {e.ruc ?? "—"}
@@ -82,7 +113,8 @@ export function StepEstablecimiento({ establecimientos, expediente, onSaved }: P
               </span>
             </span>
           </label>
-        ))}
+          );
+        })}
         {errorEst && (
           <p id="establecimientoId-error" className="text-sm text-destructive">
             {errorEst}
@@ -119,7 +151,7 @@ export function StepEstablecimiento({ establecimientos, expediente, onSaved }: P
         </p>
       )}
       <div className="flex justify-end">
-        <Button type="submit" className="h-11 px-6" disabled={pending}>
+        <Button type="submit" className="h-11 px-6" disabled={pending || todosOcupados}>
           {pending ? "Guardando…" : "Siguiente"}
         </Button>
       </div>

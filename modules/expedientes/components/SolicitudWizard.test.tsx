@@ -85,6 +85,40 @@ describe("SolicitudWizard", () => {
     expect(screen.getByText(/100.00 m² · 4 pisos/)).toBeTruthy();
   });
 
+  it("deshabilita el establecimiento ocupado y lo describe con el motivo", () => {
+    render(
+      <SolicitudWizard
+        establecimientos={establecimientos}
+        borrador={null}
+        documentos={[]}
+        defaultsSolicitante={defaults}
+        establecimientosOcupados={[EST_ID]}
+      />,
+    );
+    const radio = screen.getByLabelText(/Bodega Central/) as HTMLInputElement;
+    expect(radio.disabled).toBe(true);
+    const motivo = document.getElementById(radio.getAttribute("aria-describedby")!);
+    expect(motivo?.textContent).toContain("Ya tiene una solicitud en trámite.");
+    expect((screen.getByLabelText(/Kiosco/) as HTMLInputElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: "Siguiente" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("con todos ocupados muestra el aviso con enlace y bloquea Siguiente", () => {
+    render(
+      <SolicitudWizard
+        establecimientos={establecimientos}
+        borrador={null}
+        documentos={[]}
+        defaultsSolicitante={defaults}
+        establecimientosOcupados={[EST_ID, EST_CHICO_ID]}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "Ir a Mis expedientes" }).getAttribute("href")).toBe(
+      "/mi-cuenta/expedientes",
+    );
+    expect((screen.getByRole("button", { name: "Siguiente" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it("avanza al paso 2 cuando la acción responde ok", async () => {
     mocks.saveBorradorAction.mockResolvedValue({ ok: true, data: expediente });
     renderWizard();
