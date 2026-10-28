@@ -40,6 +40,7 @@ const ACCION_LABELS: Partial<Record<EstadoExpediente, string>> = {
   OBSERVADO_REQUISITOS: "Observar requisitos",
   ENVIADO_JEFATURA: "Enviar a Jefatura",
   APROBADO_JEFATURA: "Aprobar",
+  ENTREGADO: "Enviar al cliente",
   ANULADO: "Anular expediente",
 };
 

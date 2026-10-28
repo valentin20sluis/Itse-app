@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 
 import { PageHeader } from "@/components/shared/PageHeader";
+import { PanelCertificado } from "@/modules/certificados/components/PanelCertificado";
 import { AccionesExpediente } from "@/modules/expedientes/components/AccionesExpediente";
 import { EstadoBadge } from "@/modules/expedientes/components/EstadoBadge";
 import { ExpedienteDatos } from "@/modules/expedientes/components/ExpedienteDatos";
@@ -69,6 +70,7 @@ export default async function ExpedienteDetallePage({
               establecimiento={detalle.establecimiento}
             />
           )}
+          <PanelCertificado usuario={usuario} expedienteId={expediente.id} estado={expediente.estado} />
         </AccionesExpediente>
       </div>
     </div>

@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { CertificadoCliente } from "@/modules/certificados/components/CertificadoCliente";
+import type { ResumenCertificado } from "@/modules/certificados/services/certificado.service";
 import { EstadoBadge } from "@/modules/expedientes/components/EstadoBadge";
 import { ExpedienteDatos } from "@/modules/expedientes/components/ExpedienteDatos";
 import { SubsanacionRequisitos } from "@/modules/expedientes/components/SubsanacionRequisitos";
@@ -23,10 +25,12 @@ export function ExpedienteDetalleCliente({
   detalle,
   inspeccion,
   subsanacion,
+  certificado = null,
 }: {
   detalle: ExpedienteDetalle;
   inspeccion: ResumenInspeccion;
   subsanacion: ResumenSubsanacion;
+  certificado?: ResumenCertificado | null;
 }) {
   const { expediente: e, historial } = detalle;
   const vencido = subsanacion.limite ? estadoPlazo(subsanacion.limite, new Date()).vencido : true;
@@ -83,6 +87,7 @@ export function ExpedienteDetalleCliente({
         {e.estado === "EN_SUBSANACION" && subsanacion.limite && (
           <PlazoSubsanacion limite={subsanacion.limite} />
         )}
+        {certificado && <CertificadoCliente expedienteId={e.id} resumen={certificado} />}
         <Card>
           <CardHeader>
             <h2 className="font-heading text-base font-medium">Historial</h2>

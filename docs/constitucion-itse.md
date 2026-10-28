@@ -51,7 +51,7 @@ La estructura la define **`docs/SETUP.md`** (módulos de dominio en `modules/`).
 
 Elementos transversales (ubicarlos según `docs/SETUP.md`; si no los define, usar esta propuesta en la raíz):
 - `db/schema.ts`, `db/index.ts`, `db/seed.ts` → esquema y cliente de Drizzle
-- Reglas de negocio puras del dominio ITSE (`tipoItsePorRiesgo`, `inspectoresRequeridos`, `plazoSubsanacion`, `accionComercializacion`, cálculo de días hábiles, vigencia) → en el módulo que corresponda o en un módulo `itse-core`, siempre como **funciones puras y testeables**, nunca dentro de componentes.
+- Reglas de negocio puras del dominio ITSE (`tipoItsePorRiesgo`, `inspectoresRequeridos`, `plazoSubsanacion`, cálculo de días hábiles, vigencia) → en el módulo que corresponda o en un módulo `itse-core`, siempre como **funciones puras y testeables**, nunca dentro de componentes.
 
 Imports con el alias `@/*` (raíz del repo).
 
@@ -93,7 +93,7 @@ Clerk no puede enviar webhooks a `localhost`. Usar **sincronización al primer a
 ## 7. Pruebas
 
 - Vitest + Testing Library, pruebas **colocadas** junto al archivo (`*.test.ts` / `*.test.tsx`), como indica `CLAUDE.md`.
-- **Obligatorio** probar las reglas de negocio puras: tipo de ITSE por riesgo, inspectores requeridos, plazo de subsanación, acción de Comercialización, transiciones de estado permitidas, días hábiles con fines de semana y feriados, y vigencia del certificado.
+- **Obligatorio** probar las reglas de negocio puras: tipo de ITSE por riesgo, inspectores requeridos, plazo de subsanación, transiciones de estado permitidas, días hábiles con fines de semana y feriados, y vigencia del certificado.
 
 ## 8. UI y UX
 

@@ -136,6 +136,16 @@ describe("cambiarEstado", () => {
     });
   });
 
+  it("FINALIZADO es flujo propio (no_permitido sin batch); FINALIZADO -> ENTREGADO es genérico", async () => {
+    h.fila = { estado: "CERTIFICADO_PENDIENTE_FIRMA", nivelRiesgo: "MEDIO", numero: "n" };
+    expect(await cambiarEstado(admin, "e", { hasta: "FINALIZADO" })).toEqual({ status: "no_permitido" });
+    expect(await cambiarEstado(superadmin, "e", { hasta: "FINALIZADO" })).toEqual({ status: "no_permitido" });
+    expect(h.batch).not.toHaveBeenCalled();
+    h.fila = { estado: "FINALIZADO", nivelRiesgo: "MEDIO", numero: "n" };
+    expect(await cambiarEstado(admin, "e", { hasta: "ENTREGADO" })).toEqual({ status: "ok" });
+    expect(h.batch).toHaveBeenCalledTimes(1);
+  });
+
   it("inexistente o sin número: no_encontrado", async () => {
     h.fila = undefined;
     expect(await cambiarEstado(admin, "e", { hasta: "EN_REVISION" })).toEqual({ status: "no_encontrado" });

@@ -127,6 +127,20 @@
       "when": 1793167027282,
       "tag": "0017_narrow_namora",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793201411250,
+      "tag": "0018_calm_steve_rogers",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793201434357,
+      "tag": "0019_tense_jackal",
+      "breakpoints": true
     }
   ]
 }

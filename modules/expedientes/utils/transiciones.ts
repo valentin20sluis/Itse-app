@@ -18,9 +18,12 @@ const FLUJO: Partial<Record<EstadoExpediente, EstadoExpediente[]>> = {
   INSPECTOR_DESIGNADO: ["DILIGENCIA_PROGRAMADA"],
   DILIGENCIA_PROGRAMADA: ["EN_SUBSANACION", "CUMPLE", "NO_CUMPLE"],
   EN_SUBSANACION: ["CUMPLE", "NO_CUMPLE"],
+  CUMPLE: ["CERTIFICADO_PENDIENTE_FIRMA"],
+  CERTIFICADO_PENDIENTE_FIRMA: ["FINALIZADO"],
+  FINALIZADO: ["ENTREGADO"],
 };
 
-// Destinos que exigen datos propios (inspectores, fecha, informe): no se alcanzan con el cambio de estado genérico.
+// Destinos que exigen datos propios (inspectores, fecha, informe, certificado): no se alcanzan con el cambio de estado genérico.
 export const DESTINOS_CON_FLUJO_PROPIO: readonly EstadoExpediente[] = [
   "PRESENTADO",
   "INSPECTOR_DESIGNADO",
@@ -28,6 +31,8 @@ export const DESTINOS_CON_FLUJO_PROPIO: readonly EstadoExpediente[] = [
   "EN_SUBSANACION",
   "CUMPLE",
   "NO_CUMPLE",
+  "CERTIFICADO_PENDIENTE_FIRMA",
+  "FINALIZADO",
 ];
 
 const SOLO_CLIENTE = (desde: EstadoExpediente, hasta: EstadoExpediente) =>
@@ -36,6 +41,7 @@ const SOLO_CLIENTE = (desde: EstadoExpediente, hasta: EstadoExpediente) =>
 const SOLO_SUPERADMIN = (desde: EstadoExpediente, hasta: EstadoExpediente) =>
   hasta === "ANULADO" ||
   hasta === "APROBADO_JEFATURA" ||
+  (desde === "CERTIFICADO_PENDIENTE_FIRMA" && hasta === "FINALIZADO") ||
   (desde === "ENVIADO_JEFATURA" && hasta === "EN_REVISION");
 
 export const TRANSICIONES: Record<EstadoExpediente, EstadoExpediente[]> = Object.fromEntries(

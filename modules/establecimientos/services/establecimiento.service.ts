@@ -15,6 +15,7 @@ export const ESTADOS_NO_BLOQUEANTES: (typeof expedientes.$inferSelect.estado)[] 
   "BORRADOR",
   "ANULADO",
   "ENTREGADO",
+  "NO_CUMPLE",
   "DERIVADO_COMERCIALIZACION",
 ];
 

@@ -28,6 +28,9 @@ const ESPERADAS = new Set<string>([
   "DILIGENCIA_PROGRAMADA>NO_CUMPLE",
   "EN_SUBSANACION>CUMPLE",
   "EN_SUBSANACION>NO_CUMPLE",
+  "CUMPLE>CERTIFICADO_PENDIENTE_FIRMA",
+  "CERTIFICADO_PENDIENTE_FIRMA>FINALIZADO",
+  "FINALIZADO>ENTREGADO",
   ...ESTADOS.filter((e) => e !== "BORRADOR" && !ESTADOS_FINALES.includes(e)).map(
     (e) => `${e}>ANULADO`,
   ),
@@ -129,15 +132,26 @@ describe("transiciones", () => {
 
   it("transicionesGenericas excluye los destinos con flujo propio", () => {
     expect([...DESTINOS_CON_FLUJO_PROPIO].sort()).toEqual(
-      ["CUMPLE", "DILIGENCIA_PROGRAMADA", "EN_SUBSANACION", "INSPECTOR_DESIGNADO", "NO_CUMPLE", "PRESENTADO"],
+      [
+        "CERTIFICADO_PENDIENTE_FIRMA",
+        "CUMPLE",
+        "DILIGENCIA_PROGRAMADA",
+        "EN_SUBSANACION",
+        "FINALIZADO",
+        "INSPECTOR_DESIGNADO",
+        "NO_CUMPLE",
+        "PRESENTADO",
+      ],
     );
     expect(transicionesGenericas("APROBADO_JEFATURA", "admin")).toEqual([]);
     expect(transicionesGenericas("APROBADO_JEFATURA", "superadmin")).toEqual(["ANULADO"]);
     expect(transicionesGenericas("PRESENTADO", "admin")).toEqual(["EN_REVISION"]);
-    for (const e of ["INSPECTOR_DESIGNADO", "DILIGENCIA_PROGRAMADA", "EN_SUBSANACION", "CUMPLE", "NO_CUMPLE"] as const) {
+    for (const e of ["INSPECTOR_DESIGNADO", "DILIGENCIA_PROGRAMADA", "EN_SUBSANACION", "CUMPLE", "NO_CUMPLE", "CERTIFICADO_PENDIENTE_FIRMA"] as const) {
       expect(transicionesGenericas(e, "admin")).toEqual([]);
       expect(transicionesGenericas(e, "superadmin")).toEqual(["ANULADO"]);
     }
+    expect(transicionesGenericas("FINALIZADO", "admin")).toEqual(["ENTREGADO"]);
+    expect(transicionesGenericas("FINALIZADO", "superadmin")).toEqual(["ENTREGADO", "ANULADO"]);
   });
 
   it("diligencia: resultado con suspensión; EN_SUBSANACION solo se alcanza desde la diligencia", () => {
@@ -152,10 +166,6 @@ describe("transiciones", () => {
       "NO_CUMPLE",
       "ANULADO",
     ]);
-    for (const e of ["CUMPLE", "NO_CUMPLE"] as const) {
-      expect(transicionesPermitidas(e, "admin")).toEqual([]);
-      expect(transicionesPermitidas(e, "superadmin")).toEqual(["ANULADO"]);
-    }
     for (const e of ESTADOS) {
       expect(TRANSICIONES[e].includes("EN_SUBSANACION")).toBe(e === "DILIGENCIA_PROGRAMADA");
     }
@@ -171,6 +181,29 @@ describe("transiciones", () => {
     expect(transicionesPermitidas("EN_SUBSANACION", "cliente")).toEqual([]);
     expect(transicionesGenericas("EN_SUBSANACION", "admin")).toEqual([]);
     expect(transicionesGenericas("EN_SUBSANACION", "superadmin")).toEqual(["ANULADO"]);
+  });
+
+  it("NO_CUMPLE es final: sin salidas salvo ANULADO del superadmin", () => {
+    expect(transicionesPermitidas("NO_CUMPLE", "admin")).toEqual([]);
+    expect(transicionesPermitidas("NO_CUMPLE", "superadmin")).toEqual(["ANULADO"]);
+    expect(transicionesPermitidas("NO_CUMPLE", "cliente")).toEqual([]);
+  });
+
+  it("certificado: lo genera el admin, solo el superadmin aprueba, el admin envía al cliente", () => {
+    expect(transicionesPermitidas("CUMPLE", "admin")).toEqual(["CERTIFICADO_PENDIENTE_FIRMA"]);
+    expect(transicionesPermitidas("CUMPLE", "superadmin")).toEqual(["CERTIFICADO_PENDIENTE_FIRMA", "ANULADO"]);
+    expect(transicionesPermitidas("CERTIFICADO_PENDIENTE_FIRMA", "admin")).toEqual([]);
+    expect([...transicionesPermitidas("CERTIFICADO_PENDIENTE_FIRMA", "superadmin")].sort()).toEqual([
+      "ANULADO",
+      "FINALIZADO",
+    ]);
+    expect(transicionesPermitidas("FINALIZADO", "admin")).toEqual(["ENTREGADO"]);
+    expect(transicionesPermitidas("FINALIZADO", "superadmin")).toEqual(["ENTREGADO", "ANULADO"]);
+    expect(transicionesPermitidas("ENTREGADO", "superadmin")).toEqual([]);
+    expect(transicionesGenericas("CUMPLE", "admin")).not.toContain("CERTIFICADO_PENDIENTE_FIRMA");
+    expect(transicionesPermitidas("PENDIENTE_RESOLUCION", "admin")).toEqual([]);
+    expect(transicionesPermitidas("PENDIENTE_RESOLUCION", "superadmin")).toEqual(["ANULADO"]);
+    for (const e of ESTADOS) expect(TRANSICIONES[e]).not.toContain("PENDIENTE_RESOLUCION");
   });
 
   it("requiereMotivo: OBSERVADO_REQUISITOS, ANULADO y devolución desde Jefatura", () => {

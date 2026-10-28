@@ -101,7 +101,7 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 
 **Pago de la tasa:** no hay comprobante de pago como archivo ni número de boleta. El cliente paga en línea con Stripe (Checkout hospedado, **modo prueba**, dinero ficticio). El monto lo fija el servidor según el nivel de riesgo y la solicitud solo se presenta cuando Stripe confirma el pago.
 
-**Un solo expediente en curso por establecimiento:** un establecimiento no puede tener 2 o más expedientes en curso (cualquier estado salvo ANULADO, ENTREGADO y DERIVADO_COMERCIALIZACION; el BORRADOR cuenta). En el paso 1 de la solicitud esos establecimientos aparecen deshabilitados y el servidor lo valida al crear o editar el borrador. Al editar un borrador, ese mismo borrador no cuenta.
+**Un solo expediente en curso por establecimiento:** un establecimiento no puede tener 2 o más expedientes en curso (cualquier estado salvo ANULADO, ENTREGADO y NO_CUMPLE; el BORRADOR cuenta). En el paso 1 de la solicitud esos establecimientos aparecen deshabilitados y el servidor lo valida al crear o editar el borrador. Al editar un borrador, ese mismo borrador no cuenta.
 
 **Anular un borrador:** el cliente puede anular un borrador no pagado (BORRADOR pasa a ANULADO), libera el establecimiento y se borran de UploadThing los archivos que había subido (mejor esfuerzo).
 
@@ -118,20 +118,8 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 5. El inspector recoge el expediente y la **Constancia de Designación** firmada por el jefe de GRDyDC.
 6. El inspector coordina la fecha con el administrado y realiza la diligencia.
 7. El inspector entrega el **Informe de ITSE** con anexos y fotos.
-8. **Si cumple:** GRDyDC emite el **Certificado de ITSE** firmado por el jefe y solicita a Servicios Públicos la **Resolución Gerencial**. Con ambos documentos, se llama al administrado para la entrega.
-9. **Si no cumple:** no se emite certificado. El informe va a Servicios Públicos, que deriva a **Comercialización**:
-
-| Nivel de riesgo | Trámite | Acción de Comercialización |
-|---|---|---|
-| Bajo / Medio | Nueva | **Revocar** la licencia (ya fue otorgada antes de la ITSE) |
-| Bajo / Medio | Renovación | **Revocar** la licencia |
-| Alto / Muy alto | Nueva | **Denegar** la licencia (nunca se otorgó) |
-| Alto / Muy alto | Renovación | **Revocar** la licencia |
-
-```ts
-accionComercializacion(riesgo, tipoTramite) →
-  (riesgo in [ALTO, MUY_ALTO] && tipoTramite === "NUEVA") ? "DENEGAR_LICENCIA" : "REVOCAR_LICENCIA"
-```
+8. **Si cumple:** GRDyDC emite el **Certificado de ITSE** firmado por el jefe y solicita a Servicios Públicos la **Resolución Gerencial**. Con ambos documentos, se llama al administrado para la entrega. En el MVP la Resolución es ficticia y la genera el sistema al aprobar el certificado (no se solicita a Servicios Públicos ni se sube como archivo).
+9. **Si no cumple:** no se emite certificado. En el sistema el expediente queda cerrado en `NO_CUMPLE` (estado final, sin derivación a ninguna área: la derivación a Comercialización ya no forma parte del proceso). El administrado, si corresponde, inicia un trámite nuevo.
 
 ---
 
@@ -150,12 +138,12 @@ accionComercializacion(riesgo, tipoTramite) →
 | `DILIGENCIA_PROGRAMADA` | admin | Fecha de visita acordada |
 | `EN_SUBSANACION` | admin | Diligencia suspendida con observaciones subsanables y plazo activo |
 | `CUMPLE` | admin | Informe favorable registrado |
-| `NO_CUMPLE` | admin | Informe desfavorable registrado |
-| `CERTIFICADO_PENDIENTE_FIRMA` | sistema | Certificado generado; espera aprobación del superadmin |
-| `PENDIENTE_RESOLUCION` | superadmin | Certificado aprobado; espera la Resolución Gerencial |
-| `FINALIZADO` | admin | Resolución subida; certificado y resolución disponibles para el cliente |
-| `ENTREGADO` | admin | Documentos entregados al administrado |
-| `DERIVADO_COMERCIALIZACION` | admin | Caso NO_CUMPLE derivado a Comercialización. Guarda la acción calculada con `accionComercializacion()`: `REVOCAR_LICENCIA` o `DENEGAR_LICENCIA` |
+| `NO_CUMPLE` | admin | Informe desfavorable registrado. **Estado final**: no se emite certificado y no tiene salidas (solo el superadmin puede anularlo) |
+| `CERTIFICADO_PENDIENTE_FIRMA` | admin | Certificado generado y enviado a Jefatura; espera aprobación del superadmin |
+| `PENDIENTE_RESOLUCION` | — | **En desuso**: la Resolución Gerencial se genera al aprobar el certificado; nadie entra a este estado |
+| `FINALIZADO` | superadmin | Certificado aprobado y Resolución generada; pendiente de enviar al cliente |
+| `ENTREGADO` | admin | Certificado y resolución enviados al cliente |
+| `DERIVADO_COMERCIALIZACION` | admin | **En desuso**: ya no forma parte del flujo (el área de Comercialización no interviene; `NO_CUMPLE` es final) |
 | `ANULADO` | superadmin | Expediente anulado (con motivo obligatorio) |
 
 ### 6.1 Transiciones permitidas
@@ -171,10 +159,9 @@ INSPECTOR_DESIGNADO → DILIGENCIA_PROGRAMADA
 DILIGENCIA_PROGRAMADA → EN_SUBSANACION | CUMPLE | NO_CUMPLE
 EN_SUBSANACION → CUMPLE | NO_CUMPLE
 CUMPLE → CERTIFICADO_PENDIENTE_FIRMA
-CERTIFICADO_PENDIENTE_FIRMA → PENDIENTE_RESOLUCION
-PENDIENTE_RESOLUCION → FINALIZADO
+CERTIFICADO_PENDIENTE_FIRMA → FINALIZADO   [solo superadmin; genera la Resolución Gerencial]
 FINALIZADO → ENTREGADO
-NO_CUMPLE → DERIVADO_COMERCIALIZACION
+(NO_CUMPLE es estado final: sin salidas, salvo ANULADO por el superadmin)
 (cualquier estado no final) → ANULADO   [solo superadmin]
 ```
 
@@ -260,12 +247,16 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 ## 9. Certificado de ITSE
 
 - **Solo se genera** si el expediente está en `CUMPLE`.
-- Numeración correlativa por año: `0001-2026`, `0002-2026`…
-- Datos: número, administrado, establecimiento, dirección, giro, nivel de riesgo, área, aforo, fecha de expedición, **fecha de vencimiento (+2 años)**, nombre del jefe de GRDyDC.
+- Numeración correlativa por año (de Lima): `0001-2026`, `0002-2026`…; el número se asigna **al generar** el certificado (si el expediente se anula antes de aprobar, el número queda sin usar).
+- Lo genera el `admin` o el `superadmin` desde `CUMPLE` y queda en `CERTIFICADO_PENDIENTE_FIRMA`.
+- Datos: número, administrado, establecimiento, dirección, giro, nivel de riesgo, área, fecha de expedición, **fecha de vencimiento (+2 años)**, nombre del jefe de GRDyDC.
 - Incluye un **código de verificación** y un **QR** que apunta a `/verificar/[codigo]`.
-- **Solo el `superadmin`** puede aprobarlo (equivale a la firma del jefe).
-- Estado del certificado: `VIGENTE`, `POR_VENCER` (≤ 60 días), `VENCIDO`, `REVOCADO`. Se calcula al leer, salvo `REVOCADO`.
-- El certificado solo es visible para el cliente cuando el expediente llega a `FINALIZADO`.
+- **Solo el `superadmin`** puede aprobarlo (equivale a la firma del jefe). Un superadmin puede generar y aprobar el mismo certificado.
+- Al aprobar, en un solo acto: se fija la fecha de expedición, la vigencia empieza (+2 años, hasta el final del día de vencimiento en Lima) y el sistema genera la **Resolución Gerencial** (`RG-AAAA-NNNN`, correlativa por año; ficticia, PDF generado al vuelo, sin subir archivos). El expediente pasa a `FINALIZADO`.
+- El `admin` envía entonces el certificado y la resolución al cliente (`ENTREGADO`).
+- No hay campo de aforo: el sistema no registra el aforo del establecimiento.
+- Estado del certificado: `VIGENTE`, `POR_VENCER` (≤ 60 días), `VENCIDO`, `REVOCADO`. Se calcula al leer; `REVOCADO` equivale a que el expediente esté `ANULADO` (en pantalla se muestra «Anulado»).
+- El certificado y la resolución solo son visibles y descargables para el cliente cuando el expediente llega a `ENTREGADO`; el personal los ve desde `FINALIZADO`.
 
 ---
 
@@ -289,13 +280,15 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 | Crear y enviar solicitud | ✅ | | |
 | Ver sus expedientes | ✅ | | |
 | Subir subsanación (DJ + fotos) | ✅ | | |
-| Descargar su certificado y resolución | ✅ | | |
+| Descargar su certificado y resolución (solo tras el envío, en `ENTREGADO`) | ✅ | | |
 | Ver todos los expedientes | | ✅ | ✅ |
 | Cambiar estados (según transiciones) | | ✅ | ✅ |
 | Gestionar inspectores | | ✅ | ✅ |
 | Registrar diligencia y observaciones | | ✅ | ✅ |
 | Aprobar / devolver expedientes en Jefatura | | | ✅ |
-| Aprobar certificados | | | ✅ |
+| Generar certificado y enviarlo a Jefatura | | ✅ | ✅ |
+| Aprobar certificados y generar la resolución | | | ✅ |
+| Enviar certificado y resolución al cliente | | ✅ | ✅ |
 | Anular expedientes | | | ✅ |
 | Gestionar usuarios y roles | | | ✅ |
 | Gestionar catálogo de observaciones y feriados | | | ✅ |
@@ -307,5 +300,5 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 
 - Firma digital certificada.
 - Integración con el sistema de trámite documentario de la municipalidad.
-- Inspectores, Servicios Públicos, Logística y Comercialización como usuarios del sistema.
+- Inspectores, Servicios Públicos y Logística como usuarios del sistema.
 - ECSE (espectáculos) y VISE completas.

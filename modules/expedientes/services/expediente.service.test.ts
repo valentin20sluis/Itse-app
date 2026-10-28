@@ -121,7 +121,7 @@ vi.mock("@/db", async () => {
 });
 
 vi.mock("@/modules/establecimientos/services/establecimiento.service", () => ({
-  ESTADOS_NO_BLOQUEANTES: ["BORRADOR", "ANULADO", "ENTREGADO", "DERIVADO_COMERCIALIZACION"],
+  ESTADOS_NO_BLOQUEANTES: ["BORRADOR", "ANULADO", "ENTREGADO", "NO_CUMPLE", "DERIVADO_COMERCIALIZACION"],
   getEstablecimientoById: async (actor: { id: string; rol: string }, id: string) =>
     store.establecimientos.find(
       (e) =>
@@ -279,7 +279,7 @@ describe("un solo expediente en curso por establecimiento", () => {
     await expect(createBorrador(A, paso1)).rejects.toBeInstanceOf(EstablecimientoOcupadoError);
   });
 
-  it.each(["ANULADO", "ENTREGADO", "DERIVADO_COMERCIALIZACION"])("%s no bloquea", async (estado) => {
+  it.each(["ANULADO", "ENTREGADO", "NO_CUMPLE", "DERIVADO_COMERCIALIZACION"])("%s no bloquea", async (estado) => {
     enCurso(estado);
     expect(await createBorrador(A, paso1)).not.toBeNull();
     expect(await listEstablecimientosOcupados(A)).toEqual([ESTAB]);

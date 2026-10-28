@@ -179,6 +179,7 @@ describe("guardia de archivado con expedientes", () => {
       { establecimientoId: e.id, estado: "BORRADOR" },
       { establecimientoId: e.id, estado: "ENTREGADO" },
       { establecimientoId: e.id, estado: "ANULADO" },
+      { establecimientoId: e.id, estado: "NO_CUMPLE" },
       { establecimientoId: e.id, estado: "DERIVADO_COMERCIALIZACION" },
     ];
     expect((await archiveEstablecimiento(A, e.id))?.archivadoAt).toBeInstanceOf(Date);

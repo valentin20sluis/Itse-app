@@ -41,7 +41,7 @@ export type PresentarResultado =
   | { status: "ok"; expediente: Expediente }
   | { status: "no_encontrado" };
 
-const MAX_INTENTOS_NUMERO = 3;
+export const MAX_INTENTOS_NUMERO = 3;
 
 function assertCliente(actor: Actor) {
   if (actor.rol !== "cliente") throw new Error("No autorizado");
@@ -222,7 +222,7 @@ export async function listOwnExpedientes(actor: Actor): Promise<ExpedienteListIt
   }));
 }
 
-function codigoPg(e: unknown): unknown {
+export function codigoPg(e: unknown): unknown {
   const err = e as { code?: unknown; cause?: { code?: unknown } };
   return err?.code ?? err?.cause?.code;
 }

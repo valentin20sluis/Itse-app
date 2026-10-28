@@ -12,6 +12,7 @@ vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("@/modules/usuarios/services/authorization.service", () => ({ requireRole }));
 vi.mock("@/modules/expedientes/services/bandeja.service", () => ({ getExpedienteDetalle }));
 vi.mock("@/modules/inspecciones/components/PanelInspeccion", () => ({ PanelInspeccion: () => null }));
+vi.mock("@/modules/certificados/components/PanelCertificado", () => ({ PanelCertificado: () => null }));
 vi.mock("@/modules/expedientes/components/AccionesExpediente", () => ({ AccionesExpediente: () => null }));
 vi.mock("@/modules/expedientes/components/ExpedienteDatos", () => ({ ExpedienteDatos: () => null }));
 vi.mock("@/modules/expedientes/components/HistorialTimeline", () => ({ HistorialTimeline: () => null }));

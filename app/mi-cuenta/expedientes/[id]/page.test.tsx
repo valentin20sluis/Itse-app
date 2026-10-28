@@ -4,6 +4,7 @@ const requireRole = vi.hoisted(() => vi.fn());
 const getExpedienteDetalle = vi.hoisted(() => vi.fn());
 const getResumenInspeccion = vi.hoisted(() => vi.fn());
 const getResumenSubsanacion = vi.hoisted(() => vi.fn());
+const getResumenCertificado = vi.hoisted(() => vi.fn());
 const notFound = vi.hoisted(() =>
   vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
@@ -15,6 +16,7 @@ vi.mock("@/modules/usuarios/services/authorization.service", () => ({ requireRol
 vi.mock("@/modules/expedientes/services/bandeja.service", () => ({ getExpedienteDetalle }));
 vi.mock("@/modules/inspecciones/services/designacion.service", () => ({ getResumenInspeccion }));
 vi.mock("@/modules/inspecciones/services/diligencia.service", () => ({ getResumenSubsanacion }));
+vi.mock("@/modules/certificados/services/certificado.service", () => ({ getResumenCertificado }));
 vi.mock("@/modules/expedientes/components/ExpedienteDetalleCliente", () => ({
   ExpedienteDetalleCliente: () => null,
 }));
@@ -35,8 +37,12 @@ describe("/mi-cuenta/expedientes/[id]", () => {
     getResumenInspeccion.mockResolvedValue({ total: 2 });
     getResumenSubsanacion.mockResolvedValue({ tipoItse: "POSTERIOR", limite: null, observaciones: [] });
 
+    getResumenCertificado.mockResolvedValue({ numero: "0001-2026" });
+
     const element = await ExpedienteDetallePage({ params: params(ID) });
 
+    expect(getResumenCertificado).toHaveBeenCalledWith(usuario, ID);
+    expect(element.props.certificado).toEqual({ numero: "0001-2026" });
     expect(requireRole).toHaveBeenCalledWith("cliente");
     expect(getExpedienteDetalle).toHaveBeenCalledWith(usuario, ID);
     expect(getResumenInspeccion).toHaveBeenCalledWith(usuario, ID);

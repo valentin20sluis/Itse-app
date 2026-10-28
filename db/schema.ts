@@ -270,3 +270,28 @@ export const observacionesDiligencia = pgTable(
 );
 
 export type ObservacionDiligencia = typeof observacionesDiligencia.$inferSelect;
+
+export const certificados = pgTable(
+  "certificados",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    expedienteId: uuid("expediente_id")
+      .notNull()
+      .references(() => expedientes.id, { onDelete: "restrict" }),
+    numero: text("numero").notNull(),
+    codigo: text("codigo").notNull(),
+    emitidoAt: timestamp("emitido_at", { withTimezone: true }),
+    venceAt: timestamp("vence_at", { withTimezone: true }),
+    resolucionNumero: text("resolucion_numero"),
+    resolucionAt: timestamp("resolucion_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("certificados_expediente_id_uidx").on(t.expedienteId),
+    uniqueIndex("certificados_numero_uidx").on(t.numero),
+    uniqueIndex("certificados_codigo_uidx").on(t.codigo),
+    uniqueIndex("certificados_resolucion_numero_uidx").on(t.resolucionNumero),
+  ],
+);
+
+export type Certificado = typeof certificados.$inferSelect;

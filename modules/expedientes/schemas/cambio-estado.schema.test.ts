@@ -5,7 +5,7 @@ import { cambioEstadoSchema, cambioRiesgoSchema } from "./cambio-estado.schema";
 const motivo = (n: number) => "a".repeat(n);
 
 describe("cambioEstadoSchema", () => {
-  it.each(["EN_REVISION", "ENVIADO_JEFATURA", "APROBADO_JEFATURA"])("motivo opcional en %s", (hasta) => {
+  it.each(["EN_REVISION", "ENVIADO_JEFATURA", "APROBADO_JEFATURA", "ENTREGADO"])("motivo opcional en %s", (hasta) => {
     expect(cambioEstadoSchema.safeParse({ hasta, comentario: "" }).success).toBe(true);
     expect(cambioEstadoSchema.safeParse({ hasta, comentario: "ok" }).success).toBe(true);
   });
@@ -27,7 +27,9 @@ describe("cambioEstadoSchema", () => {
   });
 
   it("rechaza destinos inválidos", () => {
-    expect(cambioEstadoSchema.safeParse({ hasta: "ENTREGADO", comentario: "" }).success).toBe(false);
+    for (const hasta of ["FINALIZADO", "CERTIFICADO_PENDIENTE_FIRMA", "PENDIENTE_RESOLUCION", "EN_TRAMITE_EXTERNO"]) {
+      expect(cambioEstadoSchema.safeParse({ hasta, comentario: "" }).success).toBe(false);
+    }
     expect(cambioEstadoSchema.safeParse({ hasta: "", comentario: "" }).success).toBe(false);
   });
 });
