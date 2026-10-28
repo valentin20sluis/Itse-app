@@ -1,6 +1,8 @@
 import { Download } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import type { Establecimiento } from "@/db/schema";
+import { getCatalogoActivo } from "@/modules/configuracion/services/catalogo-lectura.service";
+import { getFeriados } from "@/modules/configuracion/services/feriado-lectura.service";
 import type { EstadoExpediente } from "@/modules/expedientes/constants/estado-labels";
 import type { Expediente } from "@/modules/expedientes/types/expediente.types";
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
@@ -82,6 +84,7 @@ export async function PanelInspeccion({ usuario, expediente, establecimiento }: 
   }
   if (expediente.estado === "DILIGENCIA_PROGRAMADA") {
     const ahora = new Date();
+    const [feriados, catalogo] = await Promise.all([getFeriados(), getCatalogoActivo()]);
     return (
       <>
         {resumenVista}
@@ -89,20 +92,22 @@ export async function PanelInspeccion({ usuario, expediente, establecimiento }: 
           expedienteId={expediente.id}
           tipoItse={expediente.nivelRiesgo ? tipoItsePorRiesgo(expediente.nivelRiesgo) : null}
           min={aInputLima(ahora)}
-          max={aInputLima(calcularLimiteSubsanacion("PREVIA", ahora))}
+          max={aInputLima(calcularLimiteSubsanacion("PREVIA", ahora, feriados))}
+          catalogo={catalogo}
         />
       </>
     );
   }
   if (ESTADOS_CON_OBSERVACIONES.includes(expediente.estado)) {
     const subsanacion = await getResumenSubsanacion(usuario, expediente.id);
+    const feriados = await getFeriados();
     return (
       <>
         {resumenVista}
         <ObservacionesLista observaciones={subsanacion.observaciones} />
         {expediente.estado === "EN_SUBSANACION" && subsanacion.limite && subsanacion.tipoItse && (
           <>
-            <PlazoSubsanacion limite={subsanacion.limite} />
+            <PlazoSubsanacion limite={subsanacion.limite} feriados={feriados} />
             <p className="text-sm">
               {subsanacion.tipoItse === "PREVIA"
                 ? "Los inspectores vuelven en la fecha reprogramada: el solicitante no sube archivos."
@@ -115,7 +120,7 @@ export async function PanelInspeccion({ usuario, expediente, establecimiento }: 
               opciones={opcionesEvaluacion({
                 tipoItse: subsanacion.tipoItse,
                 presentada: expediente.subsanacionPresentadaAt !== null,
-                vencido: estadoPlazo(subsanacion.limite, new Date()).vencido,
+                vencido: estadoPlazo(subsanacion.limite, new Date(), feriados).vencido,
               })}
             />
           </>

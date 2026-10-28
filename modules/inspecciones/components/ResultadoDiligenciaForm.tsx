@@ -15,8 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionResult } from "@/lib/action-result";
+import type { ObservacionCatalogo } from "@/modules/configuracion/types/configuracion.types";
 import { registrarResultadoAction } from "@/modules/inspecciones/actions/diligencia.actions";
-import { OBSERVACIONES_NO_RELEVANTES } from "@/modules/inspecciones/constants/observaciones-no-relevantes";
 import { plazoSubsanacionDias, type TipoItse } from "@/modules/inspecciones/utils/plazo-subsanacion";
 
 type Resultado = "CUMPLE" | "EN_SUBSANACION" | "NO_CUMPLE";
@@ -28,6 +28,7 @@ type Props = {
   // Hoy y el límite de 20 días hábiles en Lima (YYYY-MM-DD), calculados en el servidor.
   min: string;
   max: string;
+  catalogo: readonly ObservacionCatalogo[];
 };
 
 const OPCIONES: { valor: Resultado; label: string }[] = [
@@ -39,7 +40,7 @@ const OPCIONES: { valor: Resultado; label: string }[] = [
 const MENSAJE_RELEVANTE =
   'Hay observaciones relevantes: en una inspección posterior solo se puede registrar "No cumple".';
 
-export function ResultadoDiligenciaForm({ expedienteId, tipoItse, min, max }: Props) {
+export function ResultadoDiligenciaForm({ expedienteId, tipoItse, min, max, catalogo }: Props) {
   const uid = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const [confirmar, setConfirmar] = useState(false);
@@ -105,8 +106,13 @@ export function ResultadoDiligenciaForm({ expedienteId, tipoItse, min, max }: Pr
           <legend className="mb-2 text-sm font-medium">
             Observaciones{suspende ? "" : " (opcional)"}
           </legend>
+          {catalogo.length === 0 && tipoItse === "POSTERIOR" && (
+            <p className="text-sm text-muted-foreground">
+              No hay observaciones no relevantes activas: cualquier observación será relevante.
+            </p>
+          )}
           <div className="flex flex-col gap-2">
-            {OBSERVACIONES_NO_RELEVANTES.map((o) => (
+            {catalogo.map((o) => (
               <label
                 key={o.codigo}
                 className="flex min-h-11 min-w-0 cursor-pointer items-start gap-3 rounded-lg border border-input px-3 py-2 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"

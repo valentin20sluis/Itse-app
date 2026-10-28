@@ -155,6 +155,20 @@
       "when": 1793226356291,
       "tag": "0021_brave_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793230274190,
+      "tag": "0022_handy_killer_shrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793230974722,
+      "tag": "0023_heavy_bastion",
+      "breakpoints": true
     }
   ]
 }

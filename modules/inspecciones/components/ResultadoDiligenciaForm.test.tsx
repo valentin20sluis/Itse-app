@@ -9,13 +9,19 @@ import { ResultadoDiligenciaForm } from "@/modules/inspecciones/components/Resul
 
 afterEach(cleanup);
 
-const montar = (tipoItse: "POSTERIOR" | "PREVIA" | null) =>
+const CATALOGO = Array.from({ length: 6 }, (_, i) => ({ codigo: `C${i}`, descripcion: `Observación ${i}` }));
+
+const montar = (
+  tipoItse: "POSTERIOR" | "PREVIA" | null,
+  catalogo: readonly { codigo: string; descripcion: string }[] = CATALOGO,
+) =>
   render(
     <ResultadoDiligenciaForm
       expedienteId="e1"
       tipoItse={tipoItse}
       min="2026-10-28"
       max="2026-11-25"
+      catalogo={catalogo}
     />,
   );
 
@@ -76,5 +82,27 @@ describe("ResultadoDiligenciaForm", () => {
       target: { value: "Grieta en la columna" },
     });
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("lista solo las casillas del catálogo recibido", () => {
+    montar("POSTERIOR", CATALOGO.slice(0, 2));
+    elegir("No cumple");
+    expect(screen.getAllByRole("checkbox")).toHaveLength(2);
+    expect(screen.getByRole("checkbox", { name: "Observación 1" })).toBeInTheDocument();
+  });
+
+  it("catálogo vacío en posterior avisa y no ofrece casillas", () => {
+    montar("POSTERIOR", []);
+    elegir("Observaciones subsanables");
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    expect(
+      screen.getByText("No hay observaciones no relevantes activas: cualquier observación será relevante."),
+    ).toBeInTheDocument();
+  });
+
+  it("catálogo vacío en previa no muestra el aviso", () => {
+    montar("PREVIA", []);
+    elegir("Observaciones subsanables");
+    expect(screen.queryByText(/No hay observaciones no relevantes activas/)).not.toBeInTheDocument();
   });
 });

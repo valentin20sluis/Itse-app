@@ -6,6 +6,7 @@ import {
   validarReprogramacion,
 } from "@/modules/inspecciones/utils/plazo-subsanacion";
 
+const FERIADOS_SEMILLA = ["2026-11-01", "2026-12-08"];
 const lima = (f: string) => parseFechaLima(f) as Date;
 
 describe("plazo de subsanación", () => {
@@ -16,8 +17,15 @@ describe("plazo de subsanación", () => {
 
   it("calcula el límite", () => {
     const suspendida = new Date("2026-10-28T15:00:00Z");
-    expect(calcularLimiteSubsanacion("POSTERIOR", suspendida).toISOString()).toBe("2026-11-02T05:00:00.000Z");
-    expect(calcularLimiteSubsanacion("PREVIA", suspendida).toISOString()).toBe("2026-11-25T05:00:00.000Z");
+    expect(calcularLimiteSubsanacion("POSTERIOR", suspendida, FERIADOS_SEMILLA).toISOString()).toBe("2026-11-02T05:00:00.000Z");
+    expect(calcularLimiteSubsanacion("PREVIA", suspendida, FERIADOS_SEMILLA).toISOString()).toBe("2026-11-25T05:00:00.000Z");
+  });
+
+  it("un feriado extra mueve el límite un día hábil", () => {
+    const suspendida = new Date("2026-10-28T15:00:00Z");
+    expect(
+      calcularLimiteSubsanacion("POSTERIOR", suspendida, [...FERIADOS_SEMILLA, "2026-10-30"]).toISOString(),
+    ).toBe("2026-11-03T05:00:00.000Z");
   });
 });
 

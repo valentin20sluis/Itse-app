@@ -6,6 +6,7 @@ const getResumenInspeccion = vi.hoisted(() => vi.fn());
 const getResumenSubsanacion = vi.hoisted(() => vi.fn());
 const getResumenCertificado = vi.hoisted(() => vi.fn());
 const getResolucionNoCumplePdfData = vi.hoisted(() => vi.fn());
+const getFeriados = vi.hoisted(() => vi.fn());
 const notFound = vi.hoisted(() =>
   vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
@@ -17,6 +18,7 @@ vi.mock("@/modules/usuarios/services/authorization.service", () => ({ requireRol
 vi.mock("@/modules/expedientes/services/bandeja.service", () => ({ getExpedienteDetalle }));
 vi.mock("@/modules/inspecciones/services/designacion.service", () => ({ getResumenInspeccion }));
 vi.mock("@/modules/inspecciones/services/diligencia.service", () => ({ getResumenSubsanacion }));
+vi.mock("@/modules/configuracion/services/feriado-lectura.service", () => ({ getFeriados }));
 vi.mock("@/modules/certificados/services/certificado.service", () => ({ getResumenCertificado }));
 vi.mock("@/modules/certificados/services/resolucion-pdf.service", () => ({ getResolucionNoCumplePdfData }));
 vi.mock("@/modules/expedientes/components/ExpedienteDetalleCliente", () => ({
@@ -40,6 +42,7 @@ describe("/mi-cuenta/expedientes/[id]", () => {
     getResumenSubsanacion.mockResolvedValue({ tipoItse: "POSTERIOR", limite: null, observaciones: [] });
 
     getResumenCertificado.mockResolvedValue({ numero: "0001-2026" });
+    getFeriados.mockResolvedValue(["2026-12-25"]);
 
     const element = await ExpedienteDetallePage({ params: params(ID) });
 
@@ -50,6 +53,8 @@ describe("/mi-cuenta/expedientes/[id]", () => {
     expect(getResumenInspeccion).toHaveBeenCalledWith(usuario, ID);
     expect(element.props.detalle).toBe(detalle);
     expect(getResumenSubsanacion).toHaveBeenCalledWith(usuario, ID);
+    expect(getFeriados).toHaveBeenCalledTimes(1);
+    expect(element.props.feriados).toEqual(["2026-12-25"]);
     expect(element.props.inspeccion).toEqual({ total: 2 });
     expect(element.props.subsanacion).toEqual({ tipoItse: "POSTERIOR", limite: null, observaciones: [] });
   });

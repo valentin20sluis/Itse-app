@@ -29,6 +29,19 @@ vi.mock("@/db", () => ({
   },
 }));
 
+const FERIADOS_SEMILLA = vi.hoisted(() => {
+  const comunes = ["05-01", "06-29", "07-28", "07-29", "08-30", "10-08", "11-01", "12-08", "12-09", "12-25"];
+  return [
+    ...["01-01", "04-02", "04-03", ...comunes].map((f) => `2026-${f}`),
+    ...["01-01", "03-25", "03-26", ...comunes].map((f) => `2027-${f}`),
+  ];
+});
+
+vi.mock("@/modules/configuracion/services/feriado-lectura.service", () => ({
+  getFeriados: vi.fn(async () => FERIADOS_SEMILLA),
+}));
+
+import { getFeriados } from "@/modules/configuracion/services/feriado-lectura.service";
 import {
   evaluarSubsanacion,
   presentarSubsanacion,
@@ -97,6 +110,13 @@ describe("presentarSubsanacion", () => {
     expect(h.batch).not.toHaveBeenCalled();
   });
 
+  it("evalúa el plazo con los feriados leídos de la base de datos", async () => {
+    vi.mocked(getFeriados).mockClear();
+    h.lecturas = [exp()];
+    await presentarSubsanacion(cliente, "e", VENCIDO);
+    expect(getFeriados).toHaveBeenCalledTimes(1);
+  });
+
   it("el último día todavía se puede presentar", async () => {
     h.lecturas = [exp(), dosDocs];
     const r = await presentarSubsanacion(cliente, "e", new Date("2026-11-02T20:00:00.000Z"));
@@ -134,6 +154,13 @@ describe("presentarSubsanacion", () => {
 });
 
 describe("evaluarSubsanacion", () => {
+  it("evalúa el vencimiento con los feriados leídos de la base de datos", async () => {
+    vi.mocked(getFeriados).mockClear();
+    h.lecturas = [exp({ presentadaAt: A_TIEMPO })];
+    await evaluarSubsanacion(admin, "e", { resultado: "CUMPLE" }, A_TIEMPO);
+    expect(getFeriados).toHaveBeenCalledTimes(1);
+  });
+
   const evaluar = (
     resultado: "CUMPLE" | "SIGUE_EN_SUBSANACION" | "NO_CUMPLE",
     ahora = A_TIEMPO,

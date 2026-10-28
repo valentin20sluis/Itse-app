@@ -1,4 +1,3 @@
-import { FERIADOS } from "@/modules/inspecciones/constants/feriados";
 import { aInputLima, parseFechaLima } from "@/modules/inspecciones/utils/fecha-diligencia";
 
 const DIA_MS = 86_400_000;
@@ -12,7 +11,7 @@ function sumarDias(inicioDia: Date, dias: number): Date {
   return new Date(inicioDia.getTime() + dias * DIA_MS);
 }
 
-export function esDiaHabil(fecha: string, feriados: readonly string[] = FERIADOS): boolean {
+export function esDiaHabil(fecha: string, feriados: readonly string[]): boolean {
   const inicio = parseFechaLima(fecha);
   if (!inicio) return false;
   // 05:00 UTC cae el mismo día calendario en UTC, así que getUTCDay es el día de semana de Lima.
@@ -20,7 +19,7 @@ export function esDiaHabil(fecha: string, feriados: readonly string[] = FERIADOS
   return dia !== 0 && dia !== 6 && !feriados.includes(fecha);
 }
 
-export function sumarDiasHabiles(desde: Date, n: number, feriados: readonly string[] = FERIADOS): Date {
+export function sumarDiasHabiles(desde: Date, n: number, feriados: readonly string[]): Date {
   if (!Number.isInteger(n) || n < 0) throw new RangeError("n debe ser un entero >= 0");
   let actual = inicioDiaLima(desde);
   let restantes = n;
@@ -34,7 +33,7 @@ export function sumarDiasHabiles(desde: Date, n: number, feriados: readonly stri
 export function estadoPlazo(
   limite: Date,
   ahora: Date,
-  feriados: readonly string[] = FERIADOS,
+  feriados: readonly string[],
 ): { vencido: boolean; diasRestantes: number } {
   const hoy = inicioDiaLima(ahora);
   const fin = inicioDiaLima(limite);

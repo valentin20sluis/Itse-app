@@ -29,13 +29,39 @@ vi.mock("@/db", () => ({
   },
 }));
 
+const FERIADOS_SEMILLA = vi.hoisted(() => {
+  const comunes = ["05-01", "06-29", "07-28", "07-29", "08-30", "10-08", "11-01", "12-08", "12-09", "12-25"];
+  return [
+    ...["01-01", "04-02", "04-03", ...comunes].map((f) => `2026-${f}`),
+    ...["01-01", "03-25", "03-26", ...comunes].map((f) => `2027-${f}`),
+  ];
+});
+
+const SEMILLA = vi.hoisted(() => [
+  { codigo: "RETIRAR_OBSTACULOS_EVACUACION", descripcion: "Retirar obstáculos de los medios de evacuación." },
+  { codigo: "COLOCAR_SENALIZACION", descripcion: "Colocar señalización de seguridad." },
+  { codigo: "EXTINTORES", descripcion: "Instalar, recargar o reubicar extintores." },
+  { codigo: "TAPAS_TABLEROS_ELECTRICOS", descripcion: "Colocar tapas a los tableros eléctricos." },
+  { codigo: "TAPA_CAJAS_DE_PASO", descripcion: "Colocar tapa a las cajas de paso." },
+  { codigo: "ILUMINACION_TABLEROS", descripcion: "Instalar iluminación en la zona de tableros." },
+]);
+
+vi.mock("@/modules/configuracion/services/catalogo-lectura.service", () => ({
+  getCatalogoActivo: vi.fn(async () => SEMILLA),
+}));
+
+vi.mock("@/modules/configuracion/services/feriado-lectura.service", () => ({
+  getFeriados: vi.fn(async () => FERIADOS_SEMILLA),
+}));
+
+import { getCatalogoActivo } from "@/modules/configuracion/services/catalogo-lectura.service";
+import { getFeriados } from "@/modules/configuracion/services/feriado-lectura.service";
 import { cambiarEstado } from "@/modules/expedientes/services/transicion.service";
 import {
   getResumenSubsanacion,
   programarDiligencia,
   registrarResultadoDiligencia,
 } from "@/modules/inspecciones/services/diligencia.service";
-import { OBSERVACIONES_NO_RELEVANTES } from "@/modules/inspecciones/constants/observaciones-no-relevantes";
 import { calcularLimiteSubsanacion } from "@/modules/inspecciones/utils/plazo-subsanacion";
 
 const admin = { id: "u1", rol: "admin" as const };
@@ -167,7 +193,7 @@ describe("registrarResultadoDiligencia", () => {
 });
 
 describe("registrarResultadoDiligencia: suspensión con observaciones", () => {
-  const [c1, c2] = OBSERVACIONES_NO_RELEVANTES;
+  const [c1, c2] = SEMILLA;
   const ahoraSub = new Date("2026-10-28T15:00:00.000Z");
   const hoy = new Date("2026-10-28T05:00:00.000Z");
   const suspender = (extra: Record<string, unknown>) =>
@@ -234,12 +260,26 @@ describe("registrarResultadoDiligencia: suspensión con observaciones", () => {
     expect(params(sentencias[3].q)).toEqual(expect.arrayContaining([c2.codigo, c2.descripcion]));
   });
 
+  it("un código desactivado (fuera del catálogo activo) es observacion_invalida y no escribe", async () => {
+    vi.mocked(getCatalogoActivo).mockResolvedValueOnce(SEMILLA.slice(1));
+    h.lecturas = [exp("DILIGENCIA_PROGRAMADA", "EXP-1", "BAJO")];
+    expect(await suspender({ codigos: [c1.codigo] })).toEqual({ status: "observacion_invalida" });
+    expect(h.batch).not.toHaveBeenCalled();
+  });
+
+  it("un feriado extra mueve el límite un día hábil", async () => {
+    vi.mocked(getFeriados).mockResolvedValueOnce([...FERIADOS_SEMILLA, "2026-10-30"]);
+    h.lecturas = [exp("DILIGENCIA_PROGRAMADA", "EXP-1", "BAJO")];
+    expect(await suspender({ codigos: [c1.codigo] })).toEqual({ status: "ok" });
+    expect(h.sets[0]).toMatchObject({ subsanacionLimite: new Date("2026-11-03T05:00:00.000Z") });
+  });
+
   it.each([
     ["sin fecha", undefined],
     ["pasada", new Date("2026-10-27T05:00:00.000Z")],
     [
       "después del límite",
-      new Date(calcularLimiteSubsanacion("PREVIA", ahoraSub).getTime() + 86_400_000),
+      new Date(calcularLimiteSubsanacion("PREVIA", ahoraSub, FERIADOS_SEMILLA).getTime() + 86_400_000),
     ],
   ])("PREVIA %s: reprogramacion_invalida", async (_n, reprogramadaPara) => {
     h.lecturas = [exp("DILIGENCIA_PROGRAMADA", "EXP-1", "ALTO")];
@@ -258,7 +298,7 @@ describe("registrarResultadoDiligencia: suspensión con observaciones", () => {
       reprogramadaPara: fecha,
     });
     expect(r).toEqual({ status: "ok" });
-    const limite = calcularLimiteSubsanacion("PREVIA", ahoraSub);
+    const limite = calcularLimiteSubsanacion("PREVIA", ahoraSub, FERIADOS_SEMILLA);
     expect(h.sets[0]).toMatchObject({ diligenciaProgramadaPara: fecha, subsanacionLimite: limite });
     const [sentencias] = h.batch.mock.calls[0];
     expect(sentencias).toHaveLength(4);

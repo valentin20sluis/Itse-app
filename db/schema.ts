@@ -1,5 +1,6 @@
 import {
   boolean,
+  date,
   index,
   integer,
   numeric,
@@ -324,3 +325,52 @@ export const usuariosAuditoria = pgTable(
 );
 
 export type UsuarioAuditoria = typeof usuariosAuditoria.$inferSelect;
+
+export const feriados = pgTable("feriados", {
+  fecha: date("fecha", { mode: "string" }).primaryKey(),
+  nombre: text("nombre").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type Feriado = typeof feriados.$inferSelect;
+
+export const catalogoObservaciones = pgTable("catalogo_observaciones", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  codigo: text("codigo").notNull().unique(),
+  descripcion: text("descripcion").notNull(),
+  activo: boolean("activo").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type CatalogoObservacion = typeof catalogoObservaciones.$inferSelect;
+
+export const entidadConfiguracionEnum =pgEnum("entidad_configuracion", ["FERIADO", "OBSERVACION", "TASA"]);
+
+export const accionConfiguracionEnum = pgEnum("accion_configuracion", [
+  "CREAR",
+  "EDITAR",
+  "ELIMINAR",
+  "ACTIVAR",
+  "DESACTIVAR",
+]);
+
+export const configuracionAuditoria = pgTable(
+  "configuracion_auditoria",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => usuarios.id, { onDelete: "restrict" }),
+    entidad: entidadConfiguracionEnum("entidad").notNull(),
+    accion: accionConfiguracionEnum("accion").notNull(),
+    referencia: text("referencia").notNull(),
+    valorAnterior: text("valor_anterior"),
+    valorNuevo: text("valor_nuevo"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("configuracion_auditoria_entidad_created_idx").on(t.entidad, t.createdAt)],
+);
+
+export type ConfiguracionAuditoria = typeof configuracionAuditoria.$inferSelect;

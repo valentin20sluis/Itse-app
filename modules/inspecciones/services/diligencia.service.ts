@@ -2,11 +2,13 @@ import { and, asc, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { expedientes, observacionesDiligencia } from "@/db/schema";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
+import { getCatalogoActivo } from "@/modules/configuracion/services/catalogo-lectura.service";
+import type { ObservacionCatalogo } from "@/modules/configuracion/types/configuracion.types";
+import { getFeriados } from "@/modules/configuracion/services/feriado-lectura.service";
 import { aplicar, type TransicionResultado } from "@/modules/expedientes/services/transicion.service";
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
 import { tipoItsePorRiesgo } from "@/modules/expedientes/utils/riesgo";
 import { puedeTransicionar } from "@/modules/expedientes/utils/transiciones";
-import { buscarObservacion } from "@/modules/inspecciones/constants/observaciones-no-relevantes";
 import { validarProgramacion } from "@/modules/inspecciones/utils/fecha-diligencia";
 import { evaluarObservaciones } from "@/modules/inspecciones/utils/observaciones";
 import {
@@ -88,10 +90,14 @@ export async function programarDiligencia(
 
 type FilaObservacion = { codigo: string | null; descripcion: string };
 
-function filasObservaciones(codigos: readonly string[], libres: readonly string[]): FilaObservacion[] {
+function filasObservaciones(
+  codigos: readonly string[],
+  libres: readonly string[],
+  catalogo: readonly ObservacionCatalogo[],
+): FilaObservacion[] {
   return [
     ...codigos.flatMap((c) => {
-      const o = buscarObservacion(c);
+      const o = catalogo.find((x) => x.codigo === c);
       return o ? [{ codigo: o.codigo, descripcion: o.descripcion }] : [];
     }),
     ...libres.map((l) => ({ codigo: null, descripcion: l })),
@@ -121,11 +127,12 @@ export async function registrarResultadoDiligencia(
   ) {
     return { status: "no_permitido" };
   }
+  const catalogo = await getCatalogoActivo();
   const informe = `Resultado de la inspección: ${ETIQUETAS[resultado]}.`;
 
   if (resultado !== "EN_SUBSANACION") {
     // En "No cumple" las observaciones son opcionales y no se exige que sean no relevantes.
-    if (hayObservaciones && !evaluarObservaciones("PREVIA", { codigos, libres }).ok) {
+    if (hayObservaciones && !evaluarObservaciones("PREVIA", { codigos, libres }, catalogo).ok) {
       return { status: "observacion_invalida" };
     }
     return aplicar(
@@ -136,12 +143,12 @@ export async function registrarResultadoDiligencia(
       { estado: resultado },
       undefined,
       informe,
-      hayObservaciones ? (gano) => insertarObservaciones(id, filasObservaciones(codigos, libres), gano) : undefined,
+      hayObservaciones ? (gano) => insertarObservaciones(id, filasObservaciones(codigos, libres, catalogo), gano) : undefined,
     );
   }
 
   const tipoItse = tipo as TipoItse;
-  const evaluacion = evaluarObservaciones(tipoItse, { codigos, libres });
+  const evaluacion = evaluarObservaciones(tipoItse, { codigos, libres }, catalogo);
   if (!evaluacion.ok) {
     return {
       status: {
@@ -151,7 +158,7 @@ export async function registrarResultadoDiligencia(
       }[evaluacion.motivo],
     } as DiligenciaResultado;
   }
-  const limite = calcularLimiteSubsanacion(tipoItse, ahora);
+  const limite = calcularLimiteSubsanacion(tipoItse, ahora, await getFeriados());
   const reprogramada = input.reprogramadaPara;
   if (
     tipoItse === "PREVIA"
@@ -175,7 +182,7 @@ export async function registrarResultadoDiligencia(
     },
     undefined,
     comentario,
-    (gano) => insertarObservaciones(id, filasObservaciones(codigos, libres), gano),
+    (gano) => insertarObservaciones(id, filasObservaciones(codigos, libres, catalogo), gano),
   );
 }
 

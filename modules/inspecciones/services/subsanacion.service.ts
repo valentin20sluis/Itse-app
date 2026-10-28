@@ -2,6 +2,7 @@ import { and, eq, gt, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { expedienteDocumentos, expedientes } from "@/db/schema";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
+import { getFeriados } from "@/modules/configuracion/services/feriado-lectura.service";
 import { aplicar, type TransicionResultado } from "@/modules/expedientes/services/transicion.service";
 import { DOCUMENTOS_SUBSANACION } from "@/modules/expedientes/utils/documentos";
 import { tipoItsePorRiesgo } from "@/modules/expedientes/utils/riesgo";
@@ -71,7 +72,7 @@ export async function presentarSubsanacion(
   ) {
     return { status: "no_permitido" };
   }
-  if (estadoPlazo(exp.limite, ahora).vencido) return { status: "vencido" };
+  if (estadoPlazo(exp.limite, ahora, await getFeriados()).vencido) return { status: "vencido" };
   const subidos = await db
     .select({ tipo: expedienteDocumentos.tipo })
     .from(expedienteDocumentos)
@@ -117,7 +118,7 @@ export async function evaluarSubsanacion(
   const informe = `Evaluación de la subsanación: ${ETIQUETAS[resultado]}.`;
 
   const presentada = exp.presentadaAt !== null;
-  const vencido = exp.limite ? estadoPlazo(exp.limite, ahora).vencido : true;
+  const vencido = exp.limite ? estadoPlazo(exp.limite, ahora, await getFeriados()).vencido : true;
   if (!opcionesEvaluacion({ tipoItse, presentada, vencido }).includes(resultado)) {
     return { status: presentada ? "plazo_vencido" : "sin_evidencia" };
   }

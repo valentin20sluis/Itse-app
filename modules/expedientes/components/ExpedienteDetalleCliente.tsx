@@ -26,17 +26,19 @@ export function ExpedienteDetalleCliente({
   detalle,
   inspeccion,
   subsanacion,
+  feriados,
   certificado = null,
   resolucionNoCumple = null,
 }: {
   detalle: ExpedienteDetalle;
   inspeccion: ResumenInspeccion;
   subsanacion: ResumenSubsanacion;
+  feriados: readonly string[];
   certificado?: ResumenCertificado | null;
   resolucionNoCumple?: { resolucionAt: Date } | null;
 }) {
   const { expediente: e, historial } = detalle;
-  const vencido = subsanacion.limite ? estadoPlazo(subsanacion.limite, new Date()).vencido : true;
+  const vencido = subsanacion.limite ? estadoPlazo(subsanacion.limite, new Date(), feriados).vencido : true;
   const presentadaAt = e.subsanacionPresentadaAt;
 
   return (
@@ -88,7 +90,7 @@ export function ExpedienteDetalleCliente({
         />
         <ObservacionesLista observaciones={subsanacion.observaciones} />
         {e.estado === "EN_SUBSANACION" && subsanacion.limite && (
-          <PlazoSubsanacion limite={subsanacion.limite} />
+          <PlazoSubsanacion limite={subsanacion.limite} feriados={feriados} />
         )}
         {certificado && <CertificadoCliente resumen={certificado} entregado={e.estado === "ENTREGADO"} />}
         {resolucionNoCumple && (

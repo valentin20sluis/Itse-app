@@ -8,8 +8,12 @@ export function plazoSubsanacionDias(tipo: TipoItse): number {
   return tipo === "PREVIA" ? 20 : 3;
 }
 
-export function calcularLimiteSubsanacion(tipo: TipoItse, suspendidaEn: Date): Date {
-  return sumarDiasHabiles(suspendidaEn, plazoSubsanacionDias(tipo));
+export function calcularLimiteSubsanacion(
+  tipo: TipoItse,
+  suspendidaEn: Date,
+  feriados: readonly string[],
+): Date {
+  return sumarDiasHabiles(suspendidaEn, plazoSubsanacionDias(tipo), feriados);
 }
 
 export function validarReprogramacion(fecha: Date, limite: Date, ahora: Date): ReprogramacionValidacion {

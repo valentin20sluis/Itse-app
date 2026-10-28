@@ -3,8 +3,16 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
 import { estadoPlazo } from "@/modules/inspecciones/utils/dias-habiles";
 
-export function PlazoSubsanacion({ limite, ahora = new Date() }: { limite: Date; ahora?: Date }) {
-  const { vencido, diasRestantes } = estadoPlazo(limite, ahora);
+export function PlazoSubsanacion({
+  limite,
+  feriados,
+  ahora = new Date(),
+}: {
+  limite: Date;
+  feriados: readonly string[];
+  ahora?: Date;
+}) {
+  const { vencido, diasRestantes } = estadoPlazo(limite, ahora, feriados);
   const restante =
     diasRestantes === 0
       ? "Vence hoy"
