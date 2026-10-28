@@ -47,6 +47,7 @@ const input = {
   documento: "12345678",
   telefono: "987654321",
   email: "ana@example.com",
+  profesion: "ING_CIVIL" as const,
   habilitadoPrevia: false,
 };
 const ID = "3f2b8c1e-5a4d-4e6f-8b7a-1c2d3e4f5a6b";

@@ -18,11 +18,16 @@ import {
   crearInspectorAction,
   editarInspectorAction,
 } from "@/modules/inspecciones/actions/inspector.actions";
+import {
+  PROFESION_LABELS,
+  PROFESION_VALUES,
+} from "@/modules/inspecciones/constants/profesiones";
 
-type FieldName = "nombres" | "apellidos" | "documento" | "telefono" | "email";
+type InputName = "nombres" | "apellidos" | "documento" | "telefono" | "email";
+type FieldName = InputName | "profesion";
 
 const FIELDS: {
-  name: FieldName;
+  name: InputName;
   label: string;
   type?: string;
   inputMode?: "numeric" | "tel" | "email";
@@ -67,6 +72,7 @@ function FormBody({ inspector, onDone }: { inspector?: Inspector; onDone: () => 
     documento: inspector?.documento ?? "",
     telefono: inspector?.telefono ?? "",
     email: inspector?.email ?? "",
+    profesion: inspector?.profesion ?? "",
   });
 
   useEffect(() => {
@@ -117,6 +123,33 @@ function FormBody({ inspector, onDone }: { inspector?: Inspector; onDone: () => 
             </div>
           );
         })}
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="profesion">Profesión</Label>
+          <select
+            id="profesion"
+            name="profesion"
+            value={values.profesion}
+            onChange={(e) => setValues((v) => ({ ...v, profesion: e.target.value }))}
+            required
+            className="h-11 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
+            aria-invalid={fieldErrors.profesion?.[0] ? true : undefined}
+            aria-describedby={fieldErrors.profesion?.[0] ? "profesion-error" : undefined}
+          >
+            <option value="" disabled className="bg-background text-foreground">
+              Selecciona una profesión
+            </option>
+            {PROFESION_VALUES.map((v) => (
+              <option key={v} value={v} className="bg-background text-foreground">
+                {PROFESION_LABELS[v]}
+              </option>
+            ))}
+          </select>
+          {fieldErrors.profesion?.[0] && (
+            <p id="profesion-error" className="text-sm text-destructive">
+              {fieldErrors.profesion[0]}
+            </p>
+          )}
+        </div>
         {generalError && (
           <p role="alert" className="text-sm text-destructive sm:col-span-2">
             {generalError}

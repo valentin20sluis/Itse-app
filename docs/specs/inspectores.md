@@ -2,6 +2,8 @@
 
 Estado: approved
 
+> Cambio posterior: el inspector tiene el campo **Profesión** (obligatorio al crear y editar; NULLABLE en BD para fichas previas). Solo cinco opciones: Arquitecto, Ing. Civil, Ing. Industrial, Ing. Eléctrica, Ing. Mecánica Eléctrica (enum `profesion_inspector`, etiquetas en `modules/inspecciones/constants/profesiones.ts`). Visible solo para el personal; la vista del cliente no cambia.
+
 Parte 1 de 4 de la funcionalidad `inspeccion`. Orden: `inspectores` → `designacion-inspectores` → `diligencia-inspeccion` → `constancia-designacion`.
 
 ## Objetivo

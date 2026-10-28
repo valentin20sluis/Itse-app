@@ -38,6 +38,7 @@ function form(overrides: Record<string, string> = {}) {
     documento: "12345678",
     telefono: "987654321",
     email: "ana@example.com",
+    profesion: "ARQUITECTO",
     rol: "superadmin",
     ...overrides,
   };
@@ -66,11 +67,21 @@ describe("crearInspectorAction", () => {
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 
+  it("exige la profesión", async () => {
+    const r = await crearInspectorAction(null, form({ profesion: "" }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.fieldErrors?.profesion).toEqual(["Selecciona la profesión."]);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
   it("crea con el usuario de requireRole, revalida y devuelve ok", async () => {
     mocks.create.mockResolvedValue({ id: ID });
     const r = await crearInspectorAction(null, form());
     expect(r).toEqual({ ok: true, data: { id: ID } });
-    expect(mocks.create).toHaveBeenCalledWith(usuario, expect.objectContaining({ documento: expect.any(String) }));
+    expect(mocks.create).toHaveBeenCalledWith(
+      usuario,
+      expect.objectContaining({ documento: expect.any(String), profesion: "ARQUITECTO" }),
+    );
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/panel/inspectores");
   });
 

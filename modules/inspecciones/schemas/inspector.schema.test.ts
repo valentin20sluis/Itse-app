@@ -7,6 +7,7 @@ const base = {
   documento: "12345678",
   telefono: "987654321",
   email: "ana@example.com",
+  profesion: "ING_CIVIL",
 };
 
 const camposInvalidos = (override: Record<string, unknown>) => {
@@ -42,6 +43,23 @@ describe("inspectorSchema", () => {
     [{ email: `${"a".repeat(120)}@example.com` }, "email"],
   ])("rechaza %j", (override, campo) => {
     expect(camposInvalidos(override)).toContain(campo);
+  });
+
+  it.each(["ARQUITECTO", "ING_CIVIL", "ING_INDUSTRIAL", "ING_ELECTRICA", "ING_MECANICA_ELECTRICA"])(
+    "acepta la profesión %s",
+    (profesion) => {
+      expect(camposInvalidos({ profesion })).toBeNull();
+    },
+  );
+
+  it("rechaza profesión inválida, vacía o ausente con el mensaje esperado", () => {
+    for (const override of [{ profesion: "MEDICO" }, { profesion: "" }, { profesion: null }]) {
+      expect(camposInvalidos(override)).toContain("profesion");
+    }
+    const r = inspectorSchema.safeParse({ ...base, profesion: undefined });
+    expect(!r.success && r.error.flatten().fieldErrors.profesion).toEqual([
+      "Selecciona la profesión.",
+    ]);
   });
 
   it("acepta documentos de 5 y 8 dígitos", () => {

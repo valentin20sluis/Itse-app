@@ -203,6 +203,14 @@ export const historialEstados = pgTable(
 
 export type HistorialEstado = typeof historialEstados.$inferSelect;
 
+export const profesionInspectorEnum = pgEnum("profesion_inspector", [
+  "ARQUITECTO",
+  "ING_CIVIL",
+  "ING_INDUSTRIAL",
+  "ING_ELECTRICA",
+  "ING_MECANICA_ELECTRICA",
+]);
+
 export const inspectores = pgTable(
   "inspectores",
   {
@@ -212,6 +220,7 @@ export const inspectores = pgTable(
     documento: text("documento").notNull(),
     telefono: text("telefono").notNull(),
     email: text("email").notNull(),
+    profesion: profesionInspectorEnum("profesion"),
     habilitadoPrevia: boolean("habilitado_previa").notNull().default(false),
     activo: boolean("activo").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

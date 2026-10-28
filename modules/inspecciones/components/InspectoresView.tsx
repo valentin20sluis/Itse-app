@@ -18,12 +18,14 @@ import {
 } from "@/components/ui/table";
 import type { Inspector } from "@/db/schema";
 import { setInspectorActivoAction } from "@/modules/inspecciones/actions/inspector.actions";
+import { PROFESION_LABELS } from "@/modules/inspecciones/constants/profesiones";
 import { InspectorForm } from "@/modules/inspecciones/components/InspectorForm";
 import { ToggleInspectorDialog } from "@/modules/inspecciones/components/ToggleInspectorDialog";
 
 type FormTarget = { inspector?: Inspector } | null;
 
 const nombreCompleto = (i: Inspector) => `${i.apellidos}, ${i.nombres}`;
+const profesion = (i: Inspector) => (i.profesion ? PROFESION_LABELS[i.profesion] : "—");
 // Por ahora todos los inspectores están habilitados para cualquier nivel de riesgo.
 function Habilitado() {
   return (
@@ -125,6 +127,7 @@ export function InspectoresView({ inspectores }: { inspectores: Inspector[] }) {
               <TableHeader>
                 <TableRow>
                   <TableHead scope="col">Nombre</TableHead>
+                  <TableHead scope="col">Profesión</TableHead>
                   <TableHead scope="col">Documento</TableHead>
                   <TableHead scope="col">Teléfono</TableHead>
                   <TableHead scope="col">Correo</TableHead>
@@ -141,6 +144,7 @@ export function InspectoresView({ inspectores }: { inspectores: Inspector[] }) {
                     <TableCell className="whitespace-normal break-words font-medium">
                       {nombreCompleto(i)}
                     </TableCell>
+                    <TableCell className="whitespace-normal">{profesion(i)}</TableCell>
                     <TableCell className="whitespace-normal">{i.documento}</TableCell>
                     <TableCell className="whitespace-normal">{i.telefono}</TableCell>
                     <TableCell className="whitespace-normal break-words">{i.email}</TableCell>
@@ -163,6 +167,8 @@ export function InspectoresView({ inspectores }: { inspectores: Inspector[] }) {
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
                   <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1 text-sm">
+                    <dt className="text-muted-foreground">Profesión</dt>
+                    <dd className="min-w-0 break-words">{profesion(i)}</dd>
                     <dt className="text-muted-foreground">Documento</dt>
                     <dd className="min-w-0 break-words">{i.documento}</dd>
                     <dt className="text-muted-foreground">Teléfono</dt>

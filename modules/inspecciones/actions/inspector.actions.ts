@@ -27,6 +27,7 @@ function parseForm(formData: FormData) {
     documento: formData.get("documento"),
     telefono: formData.get("telefono"),
     email: formData.get("email"),
+    profesion: formData.get("profesion"),
   });
 }
 

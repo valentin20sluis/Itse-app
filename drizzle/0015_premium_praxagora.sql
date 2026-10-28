@@ -1,0 +1,2 @@
+CREATE TYPE "public"."profesion_inspector" AS ENUM('ARQUITECTO', 'ING_CIVIL', 'ING_INDUSTRIAL', 'ING_ELECTRICA', 'ING_MECANICA_ELECTRICA');--> statement-breakpoint
+ALTER TABLE "inspectores" ADD COLUMN "profesion" "profesion_inspector";

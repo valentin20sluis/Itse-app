@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PROFESION_VALUES } from "@/modules/inspecciones/constants/profesiones";
 
 const nombre = (campo: string) =>
   z
@@ -28,6 +29,7 @@ export const inspectorSchema = z.object({
         .email("Ingresa un correo válido.")
         .max(120, "Debe tener como máximo 120 caracteres."),
     ),
+  profesion: z.enum(PROFESION_VALUES, { error: "Selecciona la profesión." }),
 });
 
 export type InspectorInput = z.infer<typeof inspectorSchema>;
