@@ -59,9 +59,9 @@ function ExpedienteCard({ expediente: e }: { expediente: ExpedienteListItem }) {
           <Link
             href={`${NUEVA_SOLICITUD}?borrador=${e.id}`}
             className={buttonVariants({ variant: "outline", className: "h-11 flex-1" })}
-            aria-label={`${e.pagoPendiente ? "Pagar" : "Continuar"} solicitud de ${e.establecimientoNombre}`}
+            aria-label={`Continuar solicitud de ${e.establecimientoNombre}`}
           >
-            {e.pagoPendiente ? "Pagar" : "Continuar"}
+            Continuar
           </Link>
         </CardFooter>
       )}
