@@ -1,3 +1,4 @@
+import { buttonVariants } from "@/components/ui/button";
 import type { Establecimiento } from "@/db/schema";
 import type { Expediente } from "@/modules/expedientes/types/expediente.types";
 import { inspectoresRequeridos } from "@/modules/expedientes/utils/riesgo";
@@ -31,12 +32,27 @@ export async function PanelInspeccion({ usuario, expediente, establecimiento }: 
     );
   }
   const resumen = await getResumenInspeccion(usuario, expediente.id);
+  const puedeDescargar =
+    resumen.total > 0 &&
+    expediente.estado !== "ANULADO" &&
+    (usuario.rol === "admin" || usuario.rol === "superadmin");
   const resumenVista = (
-    <InspeccionResumen
-      {...resumen}
-      programadaPara={expediente.diligenciaProgramadaPara}
-      lugar={establecimiento.direccion}
-    />
+    <>
+      <InspeccionResumen
+        {...resumen}
+        programadaPara={expediente.diligenciaProgramadaPara}
+        lugar={establecimiento.direccion}
+      />
+      {puedeDescargar ? (
+        <a
+          href={`/api/expedientes/${expediente.id}/constancia`}
+          aria-label={`Descargar constancia de designación del expediente ${expediente.numero ?? ""}`.trim()}
+          className={buttonVariants({ variant: "outline", className: "inline-flex min-h-11 w-fit" })}
+        >
+          Descargar constancia
+        </a>
+      ) : null}
+    </>
   );
   if (expediente.estado === "INSPECTOR_DESIGNADO") {
     return (

@@ -54,7 +54,7 @@ Instala `@react-pdf/renderer`, crea una ruta de descarga y un documento con maqu
 - Cubre: AC-1
 - Detalle: `npm install @react-pdf/renderer`; no tocar otras dependencias.
 - Tests: `constancia-numero.test.ts` — formato válido y los casos inválidos de AC-1.
-- [ ] Completada
+- [x] Completada
 
 ### T2 — Servicio de datos de la constancia
 - Archivos: `modules/inspecciones/services/constancia.service.ts` (crear), `modules/inspecciones/services/constancia.service.test.ts` (crear)
@@ -62,7 +62,7 @@ Instala `@react-pdf/renderer`, crea una ruta de descarga y un documento con maqu
 - Grupo paralelo: G2
 - Cubre: AC-2, AC-6 (datos)
 - Tests: cliente rechazado; `null` por cada causa de AC-2; datos completos con `db` mockeado; ausencia de teléfono/correo; `jefeNombre` nulo sin fila de aprobación.
-- [ ] Completada
+- [x] Completada
 
 ### T3 — Documento PDF y ruta de descarga
 - Archivos: `modules/inspecciones/components/ConstanciaDesignacionDocument.tsx` (crear), `app/api/expedientes/[id]/constancia/route.ts` (crear), `app/api/expedientes/[id]/constancia/route.test.ts` (crear)
@@ -71,7 +71,7 @@ Instala `@react-pdf/renderer`, crea una ruta de descarga y un documento con maqu
 - Cubre: AC-3, AC-4, AC-6 (ruta)
 - Detalle: `route.ts` usa `renderToBuffer` y responde `new NextResponse(new Uint8Array(buffer), …)`; sigue el patrón de `app/api/documentos/[id]/route.ts`.
 - Tests: `route.test.ts` — 401, 404 (cliente, id no uuid, datos `null`), 200 con las tres cabeceras de AC-3 (con `getOrCreateUser`, `getConstanciaData` y `renderToBuffer` mockeados). El documento es presentacional (SETUP.md 3.2).
-- [ ] Completada
+- [x] Completada
 
 ### T4 — Enlace de descarga y documentación
 - Archivos: `modules/inspecciones/components/PanelInspeccion.tsx` (modificar), `docs/reglas-negocio-itse.md` (modificar)
@@ -79,7 +79,7 @@ Instala `@react-pdf/renderer`, crea una ruta de descarga y un documento con maqu
 - Grupo paralelo: G4
 - Cubre: AC-5, AC-7
 - Tests: no aplica (enlace presentacional y documentación; SETUP.md 3.2).
-- [ ] Completada
+- [x] Completada
 
 ## Grupos paralelos
 Secuencial por contrato (dependencia → servicio → ruta → enlace); no hay paralelismo útil.

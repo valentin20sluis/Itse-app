@@ -271,8 +271,11 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 
 ## 10. Constancia de Designación
 
-- Se genera al pasar a `INSPECTOR_DESIGNADO`.
-- Datos: número, expediente, establecimiento, nivel de riesgo, inspector(es) designado(s), fecha, nombre del jefe de GRDyDC.
+- Se habilita al pasar a `INSPECTOR_DESIGNADO`; el PDF se genera bajo demanda (no se almacena) y solo lo descarga el personal (admin/superadmin), nunca el cliente.
+- Número: `CD-AAAA-NNNNN`, derivado del número del expediente (`EXP-2026-00001` → `CD-2026-00001`); un expediente tiene una sola constancia.
+- Fecha: la de la designación (la más antigua del expediente), no la de la descarga.
+- Datos: número, expediente, establecimiento, nivel de riesgo, inspector(es) designado(s) con su profesión si existe, fecha, nombre del jefe de GRDyDC.
+- Jefe: el usuario que aprobó el expediente en Jefatura (`APROBADO_JEFATURA`); si no consta, solo «Jefe de GRDyDC».
 - Validar que la cantidad de inspectores coincida con `inspectoresRequeridos(riesgo)`.
 - Validar que el inspector esté activo y autorizado para ese nivel de riesgo.
 
