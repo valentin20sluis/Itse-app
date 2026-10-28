@@ -23,6 +23,8 @@ vi.mock("drizzle-orm", async (importOriginal) => {
     inArray: (col: { name: string }, vs: unknown[]): Pred => (r) => vs.includes(r[key(col)]),
     ne: (col: { name: string }, v: unknown): Pred => (r) => r[key(col)] !== v,
     notInArray: (col: { name: string }, vs: unknown[]): Pred => (r) => !vs.includes(r[key(col)]),
+    or: (...ps: (Pred | undefined)[]): Pred => (r) => ps.some((p) => !!p && p(r)),
+    isNotNull: (col: { name: string }): Pred => (r) => r[key(col)] != null,
     and: (...ps: (Pred | undefined)[]): Pred => (r) => ps.every((p) => !p || p(r)),
     desc: () => "desc",
     sql: (_s: TemplateStringsArray, ...values: unknown[]) => ({ isSql: true, values }),
@@ -382,6 +384,22 @@ describe("listOwnExpedientes", () => {
     const lista = await listOwnExpedientes(A);
     expect(lista.map((r) => r.id)).toEqual([e2.id, e1.id]);
     expect(lista[0].establecimientoNombre).toBe("Bodega Ficticia");
+  });
+
+  it("oculta los borradores anulados (sin número) y muestra los anulados ya presentados", async () => {
+    const anulado = (await createBorrador(A, paso1))!;
+    await anularBorrador(A, anulado.id);
+    store.expedientes.push({
+      id: "presentado-anulado",
+      seq: 98,
+      usuarioId: "user-a",
+      establecimientoId: ESTAB,
+      estado: "ANULADO",
+      numero: "EXP-2026-00001",
+    });
+    const ids = (await listOwnExpedientes(A)).map((r) => r.id);
+    expect(ids).not.toContain(anulado.id);
+    expect(ids).toContain("presentado-anulado");
   });
 
   it("pagoPendiente solo en borradores completos", async () => {

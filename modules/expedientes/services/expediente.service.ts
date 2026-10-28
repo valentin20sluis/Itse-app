@@ -1,4 +1,15 @@
-import { and, desc, eq, getTableColumns, inArray, ne, notInArray, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  getTableColumns,
+  inArray,
+  isNotNull,
+  ne,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import { db } from "@/db";
 import { establecimientos, expedienteDocumentos, expedientes, historialEstados } from "@/db/schema";
 import {
@@ -181,7 +192,13 @@ export async function listOwnExpedientes(actor: Actor): Promise<ExpedienteListIt
     })
     .from(expedientes)
     .innerJoin(establecimientos, eq(expedientes.establecimientoId, establecimientos.id))
-    .where(eq(expedientes.usuarioId, actor.id))
+    .where(
+      and(
+        eq(expedientes.usuarioId, actor.id),
+        // Un borrador anulado nunca se presentó (sin número): no aporta nada a la lista.
+        or(ne(expedientes.estado, "ANULADO"), isNotNull(expedientes.numero)),
+      ),
+    )
     .orderBy(desc(expedientes.createdAt));
 
   const borradorIds = filas.filter((f) => f.estado === "BORRADOR").map((f) => f.id);
