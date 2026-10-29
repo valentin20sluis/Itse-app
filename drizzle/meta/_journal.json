@@ -169,6 +169,13 @@
       "when": 1793230974722,
       "tag": "0023_heavy_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793234273733,
+      "tag": "0024_outgoing_screwball",
+      "breakpoints": true
     }
   ]
 }

@@ -22,7 +22,7 @@ describe("/panel/configuracion", () => {
     await expect(ConfiguracionPage()).rejects.toThrow("NEXT_REDIRECT");
   });
 
-  it("muestra las tarjetas de feriados y catálogo con su enlace y las reglas fijas con los valores de las constantes", async () => {
+  it("muestra las tarjetas de feriados, catálogo y tasa con su enlace y las reglas fijas con los valores de las constantes", async () => {
     requireRole.mockResolvedValue({ id: "s1", rol: "superadmin" });
     render(await ConfiguracionPage());
     expect(screen.getByRole("link", { name: /Feriados/ })).toHaveAttribute("href", "/panel/configuracion/feriados");
@@ -30,6 +30,7 @@ describe("/panel/configuracion", () => {
       "href",
       "/panel/configuracion/catalogo",
     );
+    expect(screen.getByRole("link", { name: /Tasa de pago/ })).toHaveAttribute("href", "/panel/configuracion/tasas");
     expect(screen.getByText("Reglas fijas por norma")).toBeInTheDocument();
     expect(screen.getByText(`${VIGENCIA_ANIOS} años`)).toBeInTheDocument();
     expect(screen.getByText(/3 días hábiles en ITSE posterior y 20 en ITSE previa/)).toBeInTheDocument();

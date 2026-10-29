@@ -99,7 +99,7 @@ Los documentos que debe subir el cliente dependen del nivel de riesgo declarado 
 
 **Plan de seguridad:** se sube como archivo (`PLAN_SEGURIDAD`). Es obligatorio en riesgo ALTO/MUY_ALTO (siempre) y en riesgo MEDIO cuando el edificio tiene 2 o más pisos (con más de 2 pisos el local ya es ALTO). No se pide en MEDIO de 1 piso ni en BAJO. Regla anterior (reemplazada): el plan no se subía y solo se mostraba un aviso porque el inspector lo revisaba en físico.
 
-**Pago de la tasa:** no hay comprobante de pago como archivo ni número de boleta. El cliente paga en línea con Stripe (Checkout hospedado, **modo prueba**, dinero ficticio). El monto lo fija el servidor según el nivel de riesgo y la solicitud solo se presenta cuando Stripe confirma el pago.
+**Pago de la tasa:** no hay comprobante de pago como archivo ni número de boleta. El cliente paga en línea con Stripe (Checkout hospedado, **modo prueba**, dinero ficticio). El monto lo fija el servidor según el tipo de ITSE que corresponde al nivel de riesgo y la solicitud solo se presenta cuando Stripe confirma el pago. La tasa es **editable por el superadmin** en `/panel/configuracion/tasas`, con dos montos: uno para ITSE posterior (riesgo bajo y medio) y otro para ITSE previa (riesgo alto y muy alto), entre S/ 5.00 y S/ 5,000.00. El expediente guarda el monto aplicado al abrir el pago (`expedientes.tasa_monto`) y el pago se valida contra ese monto, de modo que un cambio de tasa no afecta pagos en curso ni expedientes ya pagados.
 
 **Un solo expediente por establecimiento:** un establecimiento no puede tener 2 o más expedientes. Solo vuelve a estar disponible si su expediente se anula (ANULADO); cualquier otro estado, incluidos BORRADOR, ENTREGADO («Finalizado» en pantalla) y NO_CUMPLE, lo mantiene ocupado. En el paso 1 de la solicitud esos establecimientos aparecen deshabilitados y el servidor lo valida al crear o editar el borrador. Al editar un borrador, ese mismo borrador no cuenta. La regla de archivar un establecimiento es distinta y no cambia.
 
@@ -199,7 +199,7 @@ plazoSubsanacion(tipoItse) → tipoItse === "POSTERIOR" ? 3 : 20   // días háb
 
 ### 7.3 Observaciones NO relevantes en términos de riesgo (catálogo)
 
-Lista cerrada definida como constante en código (`modules/inspecciones/constants/observaciones-no-relevantes.ts`; no hay tabla). Solo estas permiten subsanación en ITSE posterior. Ejemplos tomados del Anexo 9:
+Lista guardada en la tabla `catalogo_observaciones`, editable por el superadmin en `/panel/configuracion/catalogo`. Solo estas permiten subsanación en ITSE posterior. Al crear una observación el usuario escribe solo la descripción; el código lo genera el sistema, es único e inmutable. Una observación **se desactiva, no se borra**: deja de ofrecerse en diligencias nuevas, pero las ya registradas en expedientes conservan su código y descripción copiados. Si no queda ninguna activa, toda observación se considera relevante. Ejemplos tomados del Anexo 9 (semilla inicial):
 
 - Retirar obstáculos de los medios de evacuación (pasadizos, escaleras, accesos, salidas).
 - Colocar señalización de seguridad (salida, zona segura en caso de sismo, riesgo eléctrico, extintores).
@@ -208,7 +208,7 @@ Lista cerrada definida como constante en código (`modules/inspecciones/constant
 - Colocar tapa a las cajas de paso de conductores eléctricos.
 - Instalar iluminación general y de emergencia en la zona de los tableros eléctricos.
 
-> **Pendiente:** copiar la lista completa y textual del Anexo 9 oficial del CENEPRED a la constante del catálogo.
+> **Pendiente:** copiar la lista completa y textual del Anexo 9 oficial del CENEPRED al catálogo (tabla `catalogo_observaciones`).
 
 ### 7.4 Observaciones relevantes en términos de riesgo (ejemplos)
 
@@ -235,12 +235,14 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 | Concepto | Plazo |
 |---|---|
 | Ejecución de la diligencia de ITSE posterior | Máx. 7 días hábiles desde la notificación de la licencia |
-| Subsanación en ITSE posterior | Máx. 3 días hábiles |
-| Subsanación en ITSE previa | Máx. 20 días hábiles (no se computa en el plazo del procedimiento) |
+| Subsanación en ITSE posterior | Máx. 3 días hábiles (fijo por norma, DS 002-2018-PCM art. 28) |
+| Subsanación en ITSE previa | Máx. 20 días hábiles (no se computa en el plazo del procedimiento; fijo por norma, DS 002-2018-PCM art. 23) |
 | Reprogramación por diligencia no realizada | Dentro de los 2 días hábiles siguientes |
 | Subsanación en VISE | 2 días hábiles |
-| Vigencia del certificado | **2 años** desde su expedición |
-| Alerta de renovación (regla del sistema) | 60 días antes del vencimiento |
+| Vigencia del certificado | **2 años** desde su expedición (fija por norma, Ley 30619) |
+| Alerta de renovación (regla del sistema) | 60 días antes del vencimiento (fija, no configurable) |
+
+**Feriados:** los días hábiles excluyen sábados, domingos y los feriados de la tabla `feriados`, que edita el superadmin en `/panel/configuracion/feriados` (la fecha es la clave; no hay dos feriados en la misma fecha). `subsanacion_limite` guarda la fecha límite calculada al abrir el plazo, pero los «días restantes» y «vencido» se recalculan al leer con los feriados vigentes: agregar o quitar un feriado puede cambiar el conteo de los plazos en curso (límite aceptado).
 
 > **Pendiente de verificar en el texto oficial del DS 002-2018-PCM:** los plazos de ejecución de la diligencia en ITSE previa y los plazos máximos de **finalización del procedimiento** (7 y 9 días hábiles). Las fuentes secundarias consultadas no coinciden en cuál corresponde a cada tipo de ITSE. Importante: esos 7 o 9 días son el plazo **total del procedimiento**, no el plazo para ejecutar la visita, y no incluyen el tiempo de subsanación. No implementar alertas sobre estos plazos hasta confirmarlos.
 
@@ -302,10 +304,10 @@ Todo lo que **no** está en el catálogo. Ejemplos:
 | Enviar certificado y resolución (o la resolución de no cumple) al cliente | | ✅ | ✅ |
 | Anular expedientes | | | ✅ |
 | Gestionar usuarios y roles (listado, detalle con auditoría, cambio de rol, activar/desactivar e invitar personal en `/panel/usuarios`) | | | ✅ |
-| Gestionar catálogo de observaciones y feriados *(Próximamente: no implementado)* | | | ✅ |
+| Gestionar feriados, catálogo de observaciones y tasa de pago (`/panel/configuracion`, con historial de cambios) | | | ✅ |
 | Ver reportes | | ✅ | ✅ |
 
-> El catálogo de observaciones y los feriados viven como constantes en código, no como tablas editables. `usuarios.activo` y el rol se cambian solo desde `/panel/usuarios` (superadmin), con auditoría en `usuarios_auditoria`; nadie puede modificar su propia cuenta y siempre queda al menos un jefe activo. La pantalla de configuración sigue mostrando «Próximamente». El cliente ve el nombre del inspector designado, pero no el del personal (admin/superadmin) que actúa en el expediente.
+> Los feriados, el catálogo de observaciones y la tasa viven en la BD (`feriados`, `catalogo_observaciones`, `tasas`) y los edita solo el superadmin; cada cambio queda en `configuracion_auditoria`. Siguen fijos en código por ser norma o regla del sistema: la vigencia de 2 años, los plazos de subsanación de 3 y 20 días hábiles y la alerta de 60 días. `usuarios.activo` y el rol se cambian solo desde `/panel/usuarios` (superadmin), con auditoría en `usuarios_auditoria`; nadie puede modificar su propia cuenta y siempre queda al menos un jefe activo. El cliente ve el nombre del inspector designado, pero no el del personal (admin/superadmin) que actúa en el expediente.
 
 ---
 

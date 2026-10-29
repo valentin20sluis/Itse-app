@@ -5,6 +5,8 @@ const requireRole = vi.hoisted(() => vi.fn());
 const listOwnEstablecimientos = vi.hoisted(() => vi.fn());
 const getExpedienteById = vi.hoisted(() => vi.fn());
 const listDocumentos = vi.hoisted(() => vi.fn());
+const getTasas = vi.hoisted(() => vi.fn());
+vi.mock("@/modules/configuracion/services/tasa-lectura.service", () => ({ getTasas }));
 
 vi.mock("@/modules/usuarios/services/authorization.service", () => ({ requireRole }));
 vi.mock("@/modules/establecimientos/services/establecimiento.service", () => ({
@@ -47,6 +49,7 @@ describe("/mi-cuenta/nueva-solicitud", () => {
     requireRole.mockResolvedValue(usuario);
     listOwnEstablecimientos.mockResolvedValue([{ id: "e1" }]);
     listEstablecimientosOcupados.mockResolvedValue([]);
+    getTasas.mockResolvedValue({ POSTERIOR: 15000, PREVIA: 30000 });
   });
 
   it("pasa los establecimientos ocupados excluyendo el borrador cargado", async () => {
@@ -83,6 +86,7 @@ describe("/mi-cuenta/nueva-solicitud", () => {
     expect(wizard.type).toBe(SolicitudWizard);
     expect(wizard.props.borrador).toBeNull();
     expect(wizard.props.documentos).toEqual([]);
+    expect(wizard.props.tasas).toEqual({ POSTERIOR: 15000, PREVIA: 30000 });
     expect(wizard.props.defaultsSolicitante).toEqual({
       nombre: "Ana Pérez",
       documento: "",

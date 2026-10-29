@@ -3,6 +3,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { buttonVariants } from "@/components/ui/button";
+import { getTasas } from "@/modules/configuracion/services/tasa-lectura.service";
 import { listOwnEstablecimientos } from "@/modules/establecimientos/services/establecimiento.service";
 import { SolicitudWizard } from "@/modules/expedientes/components/SolicitudWizard";
 import { listDocumentos } from "@/modules/expedientes/services/documento.service";
@@ -45,6 +46,7 @@ export default async function NuevaSolicitudPage({
   const borrador = found?.estado === "BORRADOR" ? found : null;
   const documentos = borrador ? await listDocumentos(usuario, borrador.id) : [];
   const ocupados = await listEstablecimientosOcupados(usuario, borrador?.id);
+  const tasas = await getTasas();
 
   return (
     <>
@@ -53,6 +55,7 @@ export default async function NuevaSolicitudPage({
         establecimientos={establecimientos}
         borrador={borrador}
         documentos={documentos}
+        tasas={tasas}
         establecimientosOcupados={ocupados}
         defaultsSolicitante={{
           nombre: `${usuario.nombres} ${usuario.apellidos}`.trim(),

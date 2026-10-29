@@ -43,13 +43,13 @@ npm run build         # build de producción + chequeo de tipos
 
 - `cliente`: administrado; gestiona sus establecimientos y solicitudes.
 - `admin`: personal de GRDyDC; bandeja, inspectores, diligencias, reportes.
-- `superadmin`: jefe de GRDyDC; todo lo anterior, más aprobar expedientes y certificados.
+- `superadmin`: jefe de GRDyDC; todo lo anterior, más aprobar expedientes y certificados, gestionar usuarios y configurar feriados, catálogo de observaciones y tasa de pago (`/panel/configuracion`).
 
 ## Estructura
 
 ```
 app/        rutas (landing, /mi-cuenta, /panel, /verificar, /api)
-modules/    dominios: usuarios, establecimientos, expedientes, inspecciones, certificados, reportes, navigation, landing
+modules/    dominios: usuarios, establecimientos, expedientes, inspecciones, certificados, reportes, configuracion, navigation, landing
 components/ ui/ (shadcn) y shared/
 db/         esquema y cliente de Drizzle (migraciones en drizzle/)
 lib/        utilidades transversales

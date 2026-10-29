@@ -266,11 +266,12 @@ export async function guardarSesionPago(
   actor: Actor,
   id: string,
   stripeSessionId: string,
+  tasaMonto: number,
 ): Promise<boolean> {
   assertCliente(actor);
   const rows = await db
     .update(expedientes)
-    .set({ stripeSessionId, updatedAt: new Date() })
+    .set({ stripeSessionId, tasaMonto, updatedAt: new Date() })
     .where(ownBorrador(actor, id))
     .returning({ id: expedientes.id });
   return rows.length > 0;

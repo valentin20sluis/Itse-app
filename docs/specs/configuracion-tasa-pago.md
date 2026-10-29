@@ -46,7 +46,7 @@ El monto de la tasa (hoy `MONTO_TASA_BAJO_MEDIO = 15000` y `MONTO_TASA_ALTO_MUY_
 - Cubre: AC-1
 - Detalle: el `CHECK` y el `INSERT`/`UPDATE` se añaden a mano al `.sql` generado. Exportar `tipoItseEnum` y el tipo `Tasa`.
 - Tests: no aplica (esquema y SQL).
-- [ ] Completada
+- [x] Completada
 
 ### T2 — Lectura de tasas y cálculo del monto
 - Archivos: `modules/configuracion/services/tasa-lectura.service.ts` (crear), `modules/configuracion/services/tasa-lectura.service.test.ts` (crear), `modules/expedientes/constants/tasa.ts` (modificar), `modules/expedientes/constants/tasa.test.ts` (crear)
@@ -55,7 +55,7 @@ El monto de la tasa (hoy `MONTO_TASA_BAJO_MEDIO = 15000` y `MONTO_TASA_ALTO_MUY_
 - Cubre: AC-2, AC-8 (parte)
 - Detalle: `getTasas()` con `cache()` de React; `tasa.ts` conserva `MONEDA`, exporta `montoTasa(nivel, tasas)` y el tipo `Tasas`, sin las constantes de monto.
 - Tests: AC-2.
-- [ ] Completada
+- [x] Completada
 
 ### T3 — Regla de validación del monto y guardado en el expediente
 - Archivos: `modules/expedientes/utils/pago-monto.ts` (crear), `modules/expedientes/utils/pago-monto.test.ts` (crear), `modules/expedientes/services/expediente.service.ts` (modificar), `modules/expedientes/services/expediente.service.test.ts` (modificar)
@@ -64,7 +64,7 @@ El monto de la tasa (hoy `MONTO_TASA_BAJO_MEDIO = 15000` y `MONTO_TASA_ALTO_MUY_
 - Cubre: AC-4, AC-6
 - Detalle: `guardarSesionPago(actor, id, stripeSessionId, tasaMonto)` escribe ambos campos en el mismo `UPDATE` con `ownBorrador`. Es un cambio de firma: `pago.service.ts` se adapta en T4.
 - Tests: tabla de AC-4; `guardarSesionPago` guarda el monto y no actúa sobre expedientes que no son borrador propio.
-- [ ] Completada
+- [x] Completada
 
 ### T4 — Pago con tasa de la BD
 - Archivos: `modules/expedientes/services/pago.service.ts` (modificar), `modules/expedientes/services/pago.service.test.ts` (modificar)
@@ -73,7 +73,7 @@ El monto de la tasa (hoy `MONTO_TASA_BAJO_MEDIO = 15000` y `MONTO_TASA_ALTO_MUY_
 - Cubre: AC-3, AC-5, AC-8
 - Detalle: `crearSesionPago` lee `getTasas()`, calcula el monto, envía `metadata.tipoItse`, y llama `guardarSesionPago` con el monto; `confirmarPago` usa `validarMontoPago` con `session.metadata?.tipoItse`, `exp.tasaMonto` y el monto vigente.
 - Tests: reexpresar los casos existentes y agregar «la tasa subió mientras el cliente pagaba», «cambió el tipo de ITSE», sesión antigua sin metadata.
-- [ ] Completada
+- [x] Completada
 
 ### T5 — Resumen del wizard con la tasa de la BD
 - Archivos: `modules/expedientes/components/StepResumen.tsx` (modificar), `modules/expedientes/components/SolicitudWizard.tsx` (modificar), `modules/expedientes/components/SolicitudWizard.test.tsx` (modificar), `app/mi-cuenta/nueva-solicitud/page.tsx` (modificar), `app/mi-cuenta/nueva-solicitud/page.test.tsx` (modificar)
@@ -82,7 +82,7 @@ El monto de la tasa (hoy `MONTO_TASA_BAJO_MEDIO = 15000` y `MONTO_TASA_ALTO_MUY_
 - Cubre: AC-7
 - Detalle: la página llama `getTasas()` y pasa `tasas` a `SolicitudWizard`, que lo entrega a `StepResumen` (prop obligatoria); `StepResumen` usa `montoTasa(nivel, tasas)`.
 - Tests: ajustar los existentes con la prop; el monto mostrado cambia con el nivel de riesgo.
-- [ ] Completada
+- [x] Completada
 
 ## Grupos paralelos
 G1: T1. G2: T2 y T3 (archivos disjuntos). G3: T4 y T5 (archivos disjuntos).

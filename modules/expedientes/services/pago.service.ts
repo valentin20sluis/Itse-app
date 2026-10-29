@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getStripe } from "@/lib/stripe";
+import { getTasas } from "@/modules/configuracion/services/tasa-lectura.service";
 import type { Actor } from "@/modules/establecimientos/types/establecimiento.types";
 import { MONEDA, montoTasa } from "@/modules/expedientes/constants/tasa";
 import {
@@ -8,6 +9,8 @@ import {
   presentarExpediente,
 } from "@/modules/expedientes/services/expediente.service";
 import type { Expediente } from "@/modules/expedientes/types/expediente.types";
+import { validarMontoPago } from "@/modules/expedientes/utils/pago-monto";
+import { tipoItsePorRiesgo } from "@/modules/expedientes/utils/riesgo";
 
 export type CrearSesionResultado = { status: "ok"; url: string } | { status: "no_encontrado" };
 
@@ -33,7 +36,7 @@ function urlConfirmacion(sessionId: string): string {
 export async function crearSesionPago(actor: Actor, exp: Expediente): Promise<CrearSesionResultado> {
   if (actor.rol !== "cliente") throw new Error("No autorizado");
   if (!exp.nivelRiesgo) throw new Error("Nivel de riesgo no definido");
-  const monto = montoTasa(exp.nivelRiesgo);
+  const monto = montoTasa(exp.nivelRiesgo, await getTasas());
   const stripe = getStripe();
 
   if (exp.stripeSessionId) {
@@ -61,12 +64,12 @@ export async function crearSesionPago(actor: Actor, exp: Expediente): Promise<Cr
       },
     ],
     client_reference_id: actor.id,
-    metadata: { expedienteId: exp.id },
+    metadata: { expedienteId: exp.id, tipoItse: tipoItsePorRiesgo(exp.nivelRiesgo) },
     success_url: `${appUrl()}/mi-cuenta/pago/confirmar?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl()}/mi-cuenta/nueva-solicitud?borrador=${exp.id}`,
   });
   if (!sesion.url) throw new Error("Stripe no devolvió la URL de pago");
-  if (!(await guardarSesionPago(actor, exp.id, sesion.id))) return { status: "no_encontrado" };
+  if (!(await guardarSesionPago(actor, exp.id, sesion.id, monto))) return { status: "no_encontrado" };
   return { status: "ok", url: sesion.url };
 }
 
@@ -94,8 +97,14 @@ export async function confirmarPago(actor: Actor, sessionId: string): Promise<Co
 
   if (
     !exp.nivelRiesgo ||
-    session.amount_total !== montoTasa(exp.nivelRiesgo) ||
-    session.currency?.toLowerCase() !== MONEDA
+    session.currency?.toLowerCase() !== MONEDA ||
+    !validarMontoPago({
+      amountTotal: session.amount_total,
+      tasaMonto: exp.tasaMonto,
+      tipoSesion: session.metadata?.tipoItse,
+      tipoActual: tipoItsePorRiesgo(exp.nivelRiesgo),
+      montoActual: montoTasa(exp.nivelRiesgo, await getTasas()),
+    })
   ) {
     return { status: "no_pagado" };
   }

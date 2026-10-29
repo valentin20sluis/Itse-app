@@ -215,7 +215,7 @@ describe("autorización por rol", () => {
       await expect(updateBorrador(s, "x", paso3)).rejects.toThrow("No autorizado");
       await expect(prepararPago(s, "x", true)).rejects.toThrow("No autorizado");
       await expect(presentarExpediente(s, "x", pago())).rejects.toThrow("No autorizado");
-      await expect(guardarSesionPago(s, "x", "cs_test_a")).rejects.toThrow("No autorizado");
+      await expect(guardarSesionPago(s, "x", "cs_test_a", 30000)).rejects.toThrow("No autorizado");
       await expect(listOwnExpedientes(s)).rejects.toThrow("No autorizado");
     });
 
@@ -375,7 +375,7 @@ describe("IDOR", () => {
     expect(await updateBorrador(B, e.id, paso3)).toBeNull();
     expect(await prepararPago(B, e.id, true)).toEqual({ status: "no_encontrado" });
     expect(await presentarExpediente(B, e.id, pago())).toEqual({ status: "no_encontrado" });
-    expect(await guardarSesionPago(B, e.id, "cs_test_a")).toBe(false);
+    expect(await guardarSesionPago(B, e.id, "cs_test_a", 30000)).toBe(false);
     expect(store).toEqual(before);
 
     expect(await getExpedienteById(A, "no-existe")).toBeNull();
@@ -513,14 +513,16 @@ describe("prepararPago", () => {
 describe("guardarSesionPago", () => {
   it("guarda la sesión en el borrador propio", async () => {
     const e = (await createBorrador(A, paso1))!;
-    expect(await guardarSesionPago(A, e.id, "cs_test_a")).toBe(true);
+    expect(await guardarSesionPago(A, e.id, "cs_test_a", 30000)).toBe(true);
     expect(store.expedientes[0].stripeSessionId).toBe("cs_test_a");
+    expect(store.expedientes[0].tasaMonto).toBe(30000);
   });
 
   it("false si ya no es BORRADOR", async () => {
     const e = (await createBorrador(A, paso1))!;
     store.expedientes[0].estado = "PRESENTADO";
-    expect(await guardarSesionPago(A, e.id, "cs_test_a")).toBe(false);
+    expect(await guardarSesionPago(A, e.id, "cs_test_a", 30000)).toBe(false);
+    expect(store.expedientes[0].tasaMonto ?? null).toBeNull();
   });
 });
 

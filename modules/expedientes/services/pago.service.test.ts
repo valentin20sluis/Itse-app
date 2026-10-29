@@ -6,18 +6,20 @@ const mocks = vi.hoisted(() => ({
   getExpedienteById: vi.fn(),
   guardarSesionPago: vi.fn(),
   presentarExpediente: vi.fn(),
+  getTasas: vi.fn(),
 }));
 
 vi.mock("@/lib/stripe", () => ({
   getStripe: () => ({ checkout: { sessions: { retrieve: mocks.retrieve, create: mocks.create } } }),
 }));
+vi.mock("@/modules/configuracion/services/tasa-lectura.service", () => ({ getTasas: mocks.getTasas }));
 vi.mock("@/modules/expedientes/services/expediente.service", () => ({
   getExpedienteById: mocks.getExpedienteById,
   guardarSesionPago: mocks.guardarSesionPago,
   presentarExpediente: mocks.presentarExpediente,
 }));
 
-import { MONEDA, montoTasa } from "@/modules/expedientes/constants/tasa";
+import { MONEDA } from "@/modules/expedientes/constants/tasa";
 import type { Expediente } from "@/modules/expedientes/types/expediente.types";
 import { confirmarPago, crearSesionPago } from "./pago.service";
 
@@ -33,16 +35,17 @@ const borrador = (extra: Partial<Expediente> = {}) =>
     stripeSessionId: null,
     pagadoAt: null,
     numero: null,
+    tasaMonto: null,
     ...extra,
   }) as Expediente;
 
 const sesionPagada = (extra: Record<string, unknown> = {}) => ({
   id: SID,
   payment_status: "paid",
-  amount_total: montoTasa("ALTO"),
+  amount_total: 30000,
   currency: MONEDA,
   client_reference_id: "u-1",
-  metadata: { expedienteId: EXP_ID },
+  metadata: { expedienteId: EXP_ID, tipoItse: "PREVIA" },
   ...extra,
 });
 
@@ -50,17 +53,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
   mocks.guardarSesionPago.mockResolvedValue(true);
-});
-
-describe("montoTasa", () => {
-  it.each([
-    ["BAJO", 15000],
-    ["MEDIO", 15000],
-    ["ALTO", 30000],
-    ["MUY_ALTO", 30000],
-  ] as const)("%s cuesta %i céntimos", (nivel, monto) => {
-    expect(montoTasa(nivel)).toBe(monto);
-  });
+  mocks.getTasas.mockResolvedValue({ POSTERIOR: 15000, PREVIA: 30000 });
 });
 
 describe("crearSesionPago", () => {
@@ -74,12 +67,12 @@ describe("crearSesionPago", () => {
     expect(args.line_items[0].price_data.currency).toBe(MONEDA);
     expect(args.line_items[0].price_data.unit_amount).toBe(30000);
     expect(args.client_reference_id).toBe("u-1");
-    expect(args.metadata).toEqual({ expedienteId: EXP_ID });
+    expect(args.metadata).toEqual({ expedienteId: EXP_ID, tipoItse: "PREVIA" });
     expect(args.success_url).toBe(
       "http://localhost:3000/mi-cuenta/pago/confirmar?session_id={CHECKOUT_SESSION_ID}",
     );
     expect(args.cancel_url).toBe(`http://localhost:3000/mi-cuenta/nueva-solicitud?borrador=${EXP_ID}`);
-    expect(mocks.guardarSesionPago).toHaveBeenCalledWith(actor, EXP_ID, SID);
+    expect(mocks.guardarSesionPago).toHaveBeenCalledWith(actor, EXP_ID, SID, 30000);
   });
 
   it("sesión guardada pagada: devuelve la URL de confirmación sin crear otra", async () => {
@@ -113,7 +106,7 @@ describe("crearSesionPago", () => {
     mocks.create.mockResolvedValue({ id: "cs_test_new", url: "https://stripe.test/new" });
     const res = await crearSesionPago(actor, borrador({ stripeSessionId: SID }));
     expect(res).toEqual({ status: "ok", url: "https://stripe.test/new" });
-    expect(mocks.guardarSesionPago).toHaveBeenCalledWith(actor, EXP_ID, "cs_test_new");
+    expect(mocks.guardarSesionPago).toHaveBeenCalledWith(actor, EXP_ID, "cs_test_new", 30000);
   });
 
   it("sesión inexistente: crea una nueva", async () => {
@@ -121,6 +114,14 @@ describe("crearSesionPago", () => {
     mocks.create.mockResolvedValue({ id: "cs_test_new", url: "https://stripe.test/new" });
     const res = await crearSesionPago(actor, borrador({ stripeSessionId: SID }));
     expect(res.status).toBe("ok");
+  });
+
+  it("usa la tasa vigente de la BD", async () => {
+    mocks.getTasas.mockResolvedValue({ POSTERIOR: 15000, PREVIA: 35000 });
+    mocks.create.mockResolvedValue({ id: SID, url: "https://stripe.test/pay" });
+    await crearSesionPago(actor, borrador());
+    expect(mocks.create.mock.calls[0][0].line_items[0].price_data.unit_amount).toBe(35000);
+    expect(mocks.guardarSesionPago).toHaveBeenCalledWith(actor, EXP_ID, SID, 35000);
   });
 
   it("sin nivel de riesgo no llama a Stripe", async () => {
@@ -146,6 +147,21 @@ describe("confirmarPago", () => {
     });
   });
 
+  it("la tasa subió mientras el cliente pagaba: acepta el monto guardado", async () => {
+    mocks.getTasas.mockResolvedValue({ POSTERIOR: 15000, PREVIA: 40000 });
+    mocks.retrieve.mockResolvedValue(sesionPagada());
+    mocks.getExpedienteById.mockResolvedValue(borrador({ stripeSessionId: SID, tasaMonto: 30000 }));
+    mocks.presentarExpediente.mockResolvedValue({ status: "ok", expediente: { numero: "EXP-2026-00002" } });
+    expect(await confirmarPago(actor, SID)).toEqual({ status: "ok", numero: "EXP-2026-00002" });
+  });
+
+  it("sesión antigua sin tipo: valida solo el monto", async () => {
+    mocks.retrieve.mockResolvedValue(sesionPagada({ metadata: { expedienteId: EXP_ID } }));
+    mocks.getExpedienteById.mockResolvedValue(borrador({ stripeSessionId: SID }));
+    mocks.presentarExpediente.mockResolvedValue({ status: "ok", expediente: { numero: "EXP-2026-00003" } });
+    expect((await confirmarPago(actor, SID)).status).toBe("ok");
+  });
+
   it("formato inválido: no llama a Stripe", async () => {
     expect((await confirmarPago(actor, "abc")).status).toBe("no_encontrado");
     expect(mocks.retrieve).not.toHaveBeenCalled();
@@ -155,8 +171,10 @@ describe("confirmarPago", () => {
     ["sesión de otro usuario", sesionPagada({ client_reference_id: "u-2" }), borrador({ stripeSessionId: SID }), "no_encontrado"],
     ["sin pagar", sesionPagada({ payment_status: "unpaid" }), borrador({ stripeSessionId: SID }), "no_pagado"],
     ["expedienteId no uuid", sesionPagada({ metadata: { expedienteId: "x" } }), borrador({ stripeSessionId: SID }), "no_encontrado"],
-    ["monto menor al del riesgo actual", sesionPagada({ amount_total: 15000 }), borrador({ stripeSessionId: SID }), "no_pagado"],
-    ["monto mayor al del riesgo actual", sesionPagada({ amount_total: 30000 }), borrador({ stripeSessionId: SID, nivelRiesgo: "BAJO" }), "no_pagado"],
+    ["monto menor al guardado", sesionPagada({ amount_total: 15000 }), borrador({ stripeSessionId: SID, tasaMonto: 30000 }), "no_pagado"],
+    ["monto mayor al guardado", sesionPagada({ amount_total: 35000 }), borrador({ stripeSessionId: SID, tasaMonto: 30000 }), "no_pagado"],
+    ["cambió el tipo de ITSE tras abrir la sesión", sesionPagada(), borrador({ stripeSessionId: SID, tasaMonto: 30000, nivelRiesgo: "BAJO" }), "no_pagado"],
+    ["sesión antigua sin tipo y monto distinto al actual", sesionPagada({ metadata: { expedienteId: EXP_ID } }), borrador({ stripeSessionId: SID, nivelRiesgo: "BAJO" }), "no_pagado"],
     ["moneda distinta", sesionPagada({ currency: "usd" }), borrador({ stripeSessionId: SID }), "no_pagado"],
     ["expediente ajeno", sesionPagada(), null, "no_encontrado"],
     ["sesión distinta de la guardada", sesionPagada(), borrador({ stripeSessionId: "cs_test_otra" }), "no_encontrado"],

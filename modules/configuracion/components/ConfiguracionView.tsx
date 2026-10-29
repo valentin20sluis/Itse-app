@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, ChevronRight, ClipboardList, type LucideIcon } from "lucide-react";
+import { CalendarDays, ChevronRight, ClipboardList, Receipt, type LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DIAS_ALERTA_VENCIMIENTO, VIGENCIA_ANIOS } from "@/modules/certificados/utils/vigencia";
@@ -19,6 +19,12 @@ const SECCIONES: Seccion[] = [
     descripcion: "Observaciones no relevantes que se ofrecen al registrar una inspección.",
     href: "/panel/configuracion/catalogo",
     icono: ClipboardList,
+  },
+  {
+    titulo: "Tasa de pago",
+    descripcion: "Monto que se cobra al presentar la solicitud, según el tipo de inspección.",
+    href: "/panel/configuracion/tasas",
+    icono: Receipt,
   },
 ];
 

@@ -11,6 +11,7 @@ import {
   type DefaultsSolicitante,
 } from "@/modules/expedientes/components/StepSolicitante";
 import { WizardStepper } from "@/modules/expedientes/components/WizardStepper";
+import type { Tasas } from "@/modules/expedientes/constants/tasa";
 import type { Expediente, ExpedienteDocumento } from "@/modules/expedientes/types/expediente.types";
 import { faltantesBorrador } from "@/modules/expedientes/utils/completitud";
 
@@ -18,6 +19,7 @@ type Props = {
   establecimientos: Establecimiento[];
   borrador: Expediente | null;
   documentos: ExpedienteDocumento[];
+  tasas: Tasas;
   defaultsSolicitante: DefaultsSolicitante;
   establecimientosOcupados?: string[];
 };
@@ -26,6 +28,7 @@ export function SolicitudWizard({
   establecimientos,
   borrador,
   documentos,
+  tasas,
   defaultsSolicitante,
   establecimientosOcupados = [],
 }: Props) {
@@ -89,6 +92,7 @@ export function SolicitudWizard({
           expediente={expediente}
           establecimiento={establecimiento}
           tiposSubidos={documentos.map((d) => d.tipo)}
+          tasas={tasas}
           onBack={atras}
         />
       )}

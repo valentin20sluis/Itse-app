@@ -44,7 +44,7 @@ El superadmin, en `/panel/configuracion/tasas`, ve y cambia el monto de la tasa 
 - Cubre: AC-1 (servicio), AC-2, AC-3, AC-4, AC-5
 - Detalle: `solesACentimos(texto): number | null` (regex `^\d+([.,]\d{1,2})?$`, sin `parseFloat` para los céntimos); `tasasSchema` con `posterior` y `previa`. `listTasas(actor)` y `guardarTasas(actor, { posterior, previa })` → `{ ok; data } | { ok: false; error }`.
 - Tests: casos de AC-1 a AC-5 con BD simulada.
-- [ ] Completada
+- [x] Completada
 
 ### T2 — Server Action
 - Archivos: `modules/configuracion/actions/tasa.actions.ts` (crear), `modules/configuracion/actions/tasa.actions.test.ts` (crear)
@@ -53,7 +53,7 @@ El superadmin, en `/panel/configuracion/tasas`, ve y cambia el monto de la tasa 
 - Cubre: AC-1 (acción), AC-2
 - Detalle: `"use server"`; `guardarTasasAction(formData)`: `requireRole("superadmin")` → zod con `fieldErrors` → servicio → `revalidatePath("/panel/configuracion/tasas")` y `revalidatePath("/mi-cuenta/nueva-solicitud")`. Excepción → «No se pudo guardar el cambio. Inténtalo de nuevo.».
 - Tests: rechazo de rol, validación con `fieldErrors`, éxito con ambas revalidaciones, error sin revalidar.
-- [ ] Completada
+- [x] Completada
 
 ### T3 — Formulario de tasas
 - Archivos: `modules/configuracion/components/TasasForm.tsx` (crear), `modules/configuracion/components/TasasForm.test.tsx` (crear)
@@ -62,7 +62,7 @@ El superadmin, en `/panel/configuracion/tasas`, ve y cambia el monto de la tasa 
 - Cubre: AC-6, AC-8
 - Detalle: `"use client"`; `TasasForm({ tasas, historial })` con estado local de los dos campos, detección de cambios, `AlertDialog` de confirmación y `HistorialCambios` debajo.
 - Tests: deshabilitado sin cambios; abrir el diálogo muestra «Antes → Ahora» solo de lo modificado; la acción no se llama sin confirmar; error general y por campo; el diálogo sigue abierto con error.
-- [ ] Completada
+- [x] Completada
 
 ### T4 — Página y tarjeta en el hub
 - Archivos: `app/panel/configuracion/tasas/page.tsx` (crear), `app/panel/configuracion/tasas/page.test.tsx` (crear), `modules/configuracion/components/ConfiguracionView.tsx` (modificar)
@@ -71,7 +71,7 @@ El superadmin, en `/panel/configuracion/tasas`, ve y cambia el monto de la tasa 
 - Cubre: AC-1 (página), AC-7
 - Detalle: página de servidor: `requireRole("superadmin")`, `listTasas`, `listAuditoria(actor, "TASA")`. El hub agrega «Tasa de pago».
 - Tests: página — rol `superadmin`, rechazo corta antes de leer.
-- [ ] Completada
+- [x] Completada
 
 ## Grupos paralelos
 G1: T1. G2: T2. G3: T3. G4: T4.

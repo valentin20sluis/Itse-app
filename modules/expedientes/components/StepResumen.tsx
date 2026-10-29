@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { iniciarPagoAction } from "@/modules/expedientes/actions/pago.actions";
-import { MONEDA, montoTasa } from "@/modules/expedientes/constants/tasa";
+import { MONEDA, montoTasa, type Tasas } from "@/modules/expedientes/constants/tasa";
 import type {
   Expediente,
   NivelRiesgo,
@@ -32,6 +32,7 @@ type Props = {
   expediente: Expediente;
   establecimiento: Establecimiento;
   tiposSubidos: readonly TipoDocumento[];
+  tasas: Tasas;
   onBack: () => void;
 };
 
@@ -48,6 +49,7 @@ export function StepResumen({
   expediente,
   establecimiento,
   tiposSubidos,
+  tasas,
   onBack,
 }: Props) {
   const [state, action, pending] = useActionState<
@@ -156,7 +158,7 @@ export function StepResumen({
               {new Intl.NumberFormat("es-PE", {
                 style: "currency",
                 currency: MONEDA.toUpperCase(),
-              }).format(montoTasa(nivel) / 100)}
+              }).format(montoTasa(nivel, tasas) / 100)}
             </p>
             <p className="text-muted-foreground">
               Monto ficticio, modo de prueba.

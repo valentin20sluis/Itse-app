@@ -50,6 +50,7 @@ La estructura la define **`docs/SETUP.md`** (módulos de dominio en `modules/`).
 | `inspecciones` | inspectores, designación, diligencia, observaciones, subsanación |
 | `certificados` | emisión, aprobación, PDF, QR, verificación |
 | `reportes` | métricas del dashboard y reportes |
+| `configuracion` | feriados, catálogo de observaciones y tasa de pago editables por el superadmin, con historial en `configuracion_auditoria` |
 | `navigation` | menú lateral por rol |
 | `landing` | landing pública del trámite |
 
@@ -98,7 +99,9 @@ Clerk no puede enviar webhooks a `localhost`. Usar **sincronización al primer a
 ## 6. Plazos y fechas
 
 - Los estados vencidos se **calculan al leer**, no dependen de un cron.
-- Los días hábiles excluyen sábados, domingos y los feriados definidos como constante en código (`modules/inspecciones/constants/feriados.ts`; no hay tabla).
+- Los días hábiles excluyen sábados, domingos y los feriados de la tabla `feriados` (editable por el superadmin en `/panel/configuracion`).
+- Datos configurables en BD: `feriados`, `catalogo_observaciones` y `tasas` (monto por tipo de ITSE; `expedientes.tasa_monto` guarda el monto aplicado). Cada cambio escribe el dato y su fila en `configuracion_auditoria` en un único `db.batch`. La lectura (`getFeriados`, `getCatalogoActivo`, `getTasas` en `modules/configuracion/services/`) usa `cache()` de React solo para no repetir la consulta dentro de una petición; no hay caché entre peticiones.
+- Siguen fijos en código por norma: vigencia del certificado de 2 años, plazos de subsanación de 3 y 20 días hábiles y alerta de 60 días.
 - Formato de fecha `dd/MM/yyyy`, zona horaria `America/Lima`.
 
 ## 7. Pruebas

@@ -60,6 +60,7 @@ const expediente = {
   calidadSolicitante: "PROPIETARIO",
 } as unknown as Expediente;
 
+const tasas = { POSTERIOR: 15000, PREVIA: 32050 };
 const defaults = { nombre: "Ana Pérez", documento: "12345678", telefono: "999888777", email: "ana@mail.pe" };
 
 function renderWizard(borrador: Expediente | null = null, documentos: ExpedienteDocumento[] = []) {
@@ -68,7 +69,7 @@ function renderWizard(borrador: Expediente | null = null, documentos: Expediente
       establecimientos={establecimientos}
       borrador={borrador}
       documentos={documentos}
-      defaultsSolicitante={defaults}
+      tasas={tasas} defaultsSolicitante={defaults}
     />,
   );
 }
@@ -91,7 +92,7 @@ describe("SolicitudWizard", () => {
         establecimientos={establecimientos}
         borrador={null}
         documentos={[]}
-        defaultsSolicitante={defaults}
+        tasas={tasas} defaultsSolicitante={defaults}
         establecimientosOcupados={[EST_ID]}
       />,
     );
@@ -109,7 +110,7 @@ describe("SolicitudWizard", () => {
         establecimientos={establecimientos}
         borrador={null}
         documentos={[]}
-        defaultsSolicitante={defaults}
+        tasas={tasas} defaultsSolicitante={defaults}
         establecimientosOcupados={[EST_ID, EST_CHICO_ID]}
       />,
     );
@@ -169,7 +170,7 @@ describe("SolicitudWizard", () => {
         establecimientos={[{ ...establecimientos[0], funcion }] as unknown as Establecimiento[]}
         borrador={expediente}
         documentos={[]}
-        defaultsSolicitante={defaults}
+        tasas={tasas} defaultsSolicitante={defaults}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
@@ -192,7 +193,7 @@ describe("SolicitudWizard", () => {
     async function irAlPaso2(ests: Establecimiento[]) {
       mocks.saveBorradorAction.mockResolvedValue({ ok: true, data: expediente });
       render(
-        <SolicitudWizard establecimientos={ests} borrador={expediente} documentos={[]} defaultsSolicitante={defaults} />,
+        <SolicitudWizard establecimientos={ests} borrador={expediente} documentos={[]} tasas={tasas} defaultsSolicitante={defaults} />,
       );
       fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
       await screen.findByText("Paso 2 de 5: Riesgo");
@@ -338,6 +339,11 @@ describe("SolicitudWizard", () => {
       expect((await screen.findByRole("alert")).textContent).toContain("No se pudo iniciar el pago");
     });
 
+    it("el paso 5 muestra la tasa de ITSE previa para riesgo alto", async () => {
+      await irAlPaso({ ...expediente, nivelRiesgo: "ALTO" }, 5);
+      expect(screen.getByText(/320[.,]50/)).toBeTruthy();
+    });
+
     it("con documentos faltantes el botón Aceptar y pagar está bloqueado", async () => {
       await irAlPaso({ ...expediente, nivelRiesgo: "BAJO" }, 5);
       expect(screen.getByText(/Súbelos para poder pagar/)).toBeTruthy();
@@ -361,7 +367,7 @@ describe("SolicitudWizard", () => {
           establecimientos={establecimientos}
           borrador={completo}
           documentos={documentos}
-          defaultsSolicitante={defaults}
+          tasas={tasas} defaultsSolicitante={defaults}
         />,
       );
       expect(screen.getByText(/Paso 5 de 5/)).toBeTruthy();

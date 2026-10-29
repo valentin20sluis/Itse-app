@@ -1,11 +1,11 @@
 import type { NivelRiesgo } from "@/modules/expedientes/types/expediente.types";
+import { tipoItsePorRiesgo } from "@/modules/expedientes/utils/riesgo";
 
 export const MONEDA = "pen";
 
-export const MONTO_TASA_BAJO_MEDIO = 15000;
-export const MONTO_TASA_ALTO_MUY_ALTO = 30000;
+/** Monto de la tasa por tipo de ITSE, en céntimos. */
+export type Tasas = { POSTERIOR: number; PREVIA: number };
 
-/** Monto ficticio de la tasa, en céntimos. */
-export function montoTasa(nivel: NivelRiesgo): number {
-  return nivel === "BAJO" || nivel === "MEDIO" ? MONTO_TASA_BAJO_MEDIO : MONTO_TASA_ALTO_MUY_ALTO;
+export function montoTasa(nivel: NivelRiesgo, tasas: Tasas): number {
+  return tasas[tipoItsePorRiesgo(nivel)];
 }
