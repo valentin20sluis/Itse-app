@@ -21,19 +21,26 @@ export const getOrCreateUser = cache(async (): Promise<Usuario | null> => {
     await client.users.updateUserMetadata(userId, { publicMetadata: { role: "cliente" } });
   }
 
+  const email = clerkUser.primaryEmailAddress?.emailAddress ?? "";
+  const nombres = clerkUser.firstName ?? "";
+  const apellidos = clerkUser.lastName ?? "";
+
   const [usuario] = await db
     .insert(usuarios)
     .values({
       clerkId: userId,
-      email: clerkUser.primaryEmailAddress?.emailAddress ?? "",
-      nombres: clerkUser.firstName ?? "",
-      apellidos: clerkUser.lastName ?? "",
+      email,
+      nombres,
+      apellidos,
       rol,
     })
     .onConflictDoUpdate({
       target: usuarios.clerkId,
       set: {
         rol,
+        nombres: sql`coalesce(nullif(${nombres}, ''), ${usuarios.nombres})`,
+        apellidos: sql`coalesce(nullif(${apellidos}, ''), ${usuarios.apellidos})`,
+        email: sql`coalesce(nullif(${email}, ''), ${usuarios.email})`,
         updatedAt: sql`case when ${usuarios.rol} <> ${rol} then now() else ${usuarios.updatedAt} end`,
       },
     })

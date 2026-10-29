@@ -28,7 +28,10 @@ vi.mock("@/db", () => {
   };
 });
 
+import { PgDialect } from "drizzle-orm/pg-core";
 import { getCurrentUser, getOrCreateUser } from "./user.service";
+
+const dialect = new PgDialect();
 
 const clerkUser = (role?: unknown) => ({
   publicMetadata: role === undefined ? {} : { role },
@@ -94,6 +97,21 @@ describe("getOrCreateUser", () => {
 
     const { set } = mocks.onConflictDoUpdate.mock.calls[0][0];
     expect(Object.keys(set)).not.toContain("activo");
+  });
+
+  it("el upsert actualiza nombres, apellidos y email sin pisar con vacío", async () => {
+    mocks.auth.mockResolvedValue({ userId: "u1" });
+    mocks.currentUser.mockResolvedValue(clerkUser("cliente"));
+    mocks.returning.mockResolvedValue([{ clerkId: "u1", rol: "cliente", activo: true }]);
+
+    await getOrCreateUser();
+
+    const { set } = mocks.onConflictDoUpdate.mock.calls[0][0];
+    for (const col of ["nombres", "apellidos", "email"]) {
+      const { sql, params } = dialect.sqlToQuery(set[col]);
+      expect(sql).toMatch(/coalesce\(nullif\(\$1, ''\), /);
+      expect(params[0]).toBe({ nombres: "Ana", apellidos: "Perez", email: "a@b.pe" }[col]);
+    }
   });
 
   it("es idempotente: dos llamadas usan upsert por clerk_id", async () => {

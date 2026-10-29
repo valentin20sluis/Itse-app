@@ -1,4 +1,5 @@
 import { and, asc, count, desc, eq, ilike, isNull, ne, or, type SQL } from "drizzle-orm";
+import { clerkClient } from "@clerk/nextjs/server";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { establecimientos, expedientes, usuarios, usuariosAuditoria } from "@/db/schema";
@@ -16,6 +17,33 @@ const AUDITORIA_MAX = 20;
 
 function assertSuperadmin(actor: Actor) {
   if (actor.rol !== "superadmin") throw new Error("No autorizado");
+}
+
+type ConClerk = { nombres: string; apellidos: string; clerkId: string };
+
+// Filas sin nombre (usuarios que no han vuelto a iniciar sesión): Clerk es la fuente.
+// Si Clerk falla se devuelve lo que hay en BD. Nunca devuelve clerkId.
+async function refrescarNombres<T extends ConClerk>(filas: T[]): Promise<Omit<T, "clerkId">[]> {
+  const ids = filas.filter((f) => !f.nombres && !f.apellidos).map((f) => f.clerkId);
+  const nuevos = new Map<string, { nombres: string; apellidos: string }>();
+
+  if (ids.length > 0) {
+    try {
+      const client = await clerkClient();
+      const { data } = await client.users.getUserList({ userId: ids, limit: POR_PAGINA });
+      for (const u of data) {
+        const nombres = u.firstName ?? "";
+        const apellidos = u.lastName ?? "";
+        if (!nombres && !apellidos) continue;
+        await db.update(usuarios).set({ nombres, apellidos }).where(eq(usuarios.clerkId, u.id));
+        nuevos.set(u.id, { nombres, apellidos });
+      }
+    } catch (error) {
+      console.error("No se pudieron refrescar los nombres desde Clerk", error);
+    }
+  }
+
+  return filas.map(({ clerkId, ...resto }) => ({ ...resto, ...nuevos.get(clerkId) }));
 }
 
 export function escapeLike(texto: string): string {
@@ -50,6 +78,7 @@ export async function listUsuarios(actor: Actor, filtros: UsuarioFiltros): Promi
   const rows = await db
     .select({
       id: usuarios.id,
+      clerkId: usuarios.clerkId,
       nombres: usuarios.nombres,
       apellidos: usuarios.apellidos,
       email: usuarios.email,
@@ -63,16 +92,20 @@ export async function listUsuarios(actor: Actor, filtros: UsuarioFiltros): Promi
     .limit(POR_PAGINA)
     .offset((pagina - 1) * POR_PAGINA);
 
-  const items: UsuarioListItem[] = rows.map((r) => ({ ...r, esActual: r.id === actor.id }));
+  const items: UsuarioListItem[] = (await refrescarNombres(rows)).map((r) => ({
+    ...r,
+    esActual: r.id === actor.id,
+  }));
   return { items, total, pagina, totalPaginas };
 }
 
 export async function getUsuarioDetalle(actor: Actor, id: string): Promise<UsuarioDetalle | null> {
   assertSuperadmin(actor);
 
-  const [u] = await db
+  const [fila] = await db
     .select({
       id: usuarios.id,
+      clerkId: usuarios.clerkId,
       nombres: usuarios.nombres,
       apellidos: usuarios.apellidos,
       email: usuarios.email,
@@ -85,7 +118,8 @@ export async function getUsuarioDetalle(actor: Actor, id: string): Promise<Usuar
     .from(usuarios)
     .where(eq(usuarios.id, id))
     .limit(1);
-  if (!u) return null;
+  if (!fila) return null;
+  const [u] = await refrescarNombres([fila]);
 
   let expedientesPresentados: number | null = null;
   let establecimientosRegistrados: number | null = null;

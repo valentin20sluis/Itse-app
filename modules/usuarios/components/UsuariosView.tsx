@@ -22,7 +22,7 @@ import { UsuariosFiltros } from "@/modules/usuarios/components/UsuariosFiltros";
 import type { UsuarioListItem, UsuariosPagina } from "@/modules/usuarios/types/usuario-admin.types";
 
 const nombreCompleto = (u: UsuarioListItem) =>
-  [u.apellidos, u.nombres].filter(Boolean).join(", ") || u.email;
+  [u.nombres, u.apellidos].filter(Boolean).join(" ") || u.email;
 
 const accionesDe = (u: UsuarioListItem) => ({
   id: u.id,
