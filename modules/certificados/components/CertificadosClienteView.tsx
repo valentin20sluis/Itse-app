@@ -9,17 +9,8 @@ import type {
   CertificadoClienteFila,
   ResolucionNoCumpleClienteFila,
 } from "@/modules/certificados/services/certificado-lista.service";
+import { avisoCertificado } from "@/modules/certificados/utils/aviso-certificado";
 import { formatFecha } from "@/modules/expedientes/utils/format-fecha";
-
-function aviso({
-  estado,
-  diasRestantes,
-}: CertificadoClienteFila): string | null {
-  if (estado === "VENCIDO")
-    return "Tu certificado venció. Inicia una nueva solicitud para renovarlo.";
-  if (estado !== "POR_VENCER") return null;
-  return `Tu certificado vence en ${diasRestantes} ${diasRestantes === 1 ? "día" : "días"}. Cuando falte poco, inicia una nueva solicitud para renovarlo.`;
-}
 
 type Props = {
   filas: CertificadoClienteFila[];
@@ -43,7 +34,7 @@ export function CertificadosClienteView({ filas, resoluciones = [] }: Props) {
           {filas.length > 0 && (
             <ul className="grid gap-3 lg:grid-cols-2">
               {filas.map((f) => {
-                const texto = aviso(f);
+                const texto = avisoCertificado(f);
                 return (
                   <li
                     key={f.expedienteId}
