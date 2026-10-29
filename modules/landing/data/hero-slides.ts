@@ -17,7 +17,7 @@ export const heroSlides: HeroSlide[] = [
     icon: ClipboardCheck,
     image: {
       src: "/images/landing/hero-1.jpg",
-      alt: "Librero de edad avanzada atendiendo su negocio entre estantes de libros",
+      alt: "Tendero con delantal atendiendo a dos clientes en su tienda",
     },
   },
   {
